@@ -3,6 +3,7 @@ class TransactionsController < ApplicationController
 
   before_action :set_entry_for_unlock, only: :unlock
   before_action :store_params!, only: :index
+  before_action :set_breadcrumbs
 
   def new
     super
@@ -120,8 +121,16 @@ class TransactionsController < ApplicationController
             turbo_stream.replace(@entry),
             *flash_notification_stream_items
           ]
-        end
-      end
+  end
+
+  private
+    def set_breadcrumbs
+      @breadcrumbs = [
+        [ t("breadcrumbs.home", default: "Home"), root_path ],
+        [ t("breadcrumbs.transactions", default: "Transactions"), nil ]
+      ]
+    end
+end
     else
       render :show, status: :unprocessable_entity
     end

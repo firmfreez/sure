@@ -1,0 +1,145 @@
+---
+ru:
+  accounts:
+    account:
+      link_lunchflow: Связь с Lunch Flow
+      link_provider: Ссылка на провайдера
+      unlink_provider: Отвязаться от провайдера
+      troubleshoot: Устранение неполадок
+    chart:
+      data_not_available: Данные недоступны за выбранный период.
+    create:
+      success: Счет %{type} создан
+    destroy:
+      success: Счет %{type} планируется удалить
+      cannot_delete_linked: Невозможно удалить связанную счет. Пожалуйста, сначала отключите его.
+    empty:
+      empty_message: Добавьте счет через подключение, импорт или ввод вручную.
+      new_account: Новый счет
+      no_accounts: Счетов пока нет
+    form:
+      balance: Текущий баланс
+      name_label: Имя счета
+      name_placeholder: Пример имени счета
+      additional_details: Дополнительная информация
+      institution_name_label: Название учреждения
+      institution_name_placeholder: например, Чейз Банк
+      institution_domain_label: Домен учреждения
+      institution_domain_placeholder: например, Chase.com
+      notes_label: Примечания
+      notes_placeholder: Храните дополнительную информацию, такую ​​как номера счетов, коды сортировки, IBAN, номера маршрутов и т. д.
+    index:
+      accounts: Счета
+      manual_accounts:
+        other_accounts: Другие счета
+      new_account: Новый счет
+      sync: Синхронизировать все
+    sync_all:
+      syncing: Синхронизация счетов...
+    new:
+      import_accounts: Импортировать счета
+      method_selector:
+        connected_entry: Связать счет
+        connected_entry_eu: Привязать счет ЕС
+        link_with_provider: Связать с %{provider}
+        lunchflow_entry: Привязать счет Lunch Flow
+        manual_entry: Введите баланс счета
+        title: Как бы вы хотели это добавить?
+      title: Что бы вы хотели добавить?
+    show:
+      activity:
+        amount: Количество
+        balance: Баланс
+        confirmed: Подтвержденный
+        date: Дата
+        entries: записи
+        entry: вход
+        filter: Фильтр
+        new: Новый
+        new_activity: Новая деятельность
+        new_balance: Новый баланс
+        new_trade: Новая сделка
+        new_transaction: Новая транзакция
+        new_transfer: Новый трансфер
+        no_entries: Записи не найдены
+        pending: В ожидании
+        search:
+          placeholder: Поиск записей по имени
+        status: Статус
+        title: Активность
+      chart:
+        balance: Баланс
+        owed: Сумма задолженности
+      menu:
+        confirm_accept: Удалить "%{name}"
+        confirm_body_html: <p>Удалив эту счет, вы сотрете историю ее стоимости, что повлияет на различные аспекты вашей учетной записи в целом. Это действие окажет непосредственное влияние на расчета вашего собственного капитала и графики учетной записи.</p><br /> <p>После удаления вы не сможете восстановить информацию об учетной записи, поскольку вам придется добавить ее как новую счет.</p>
+        confirm_title: Удалить счет?
+        edit: Редактировать
+        import: Импорт транзакций
+        import_trades: Импортные сделки
+        import_transactions: Импорт транзакций
+        manage: Управление счетами
+    update:
+      success: Счет %{type} обновлен
+    sidebar:
+      missing_data: Отсутствуют исторические данные
+      missing_data_description: '%{product} использует сторонних провайдеров для получения исторических обменных курсов, цен на ценные бумаги и т. д. Эти данные необходимы для расчета точных исторических остатков на счетах.'
+      configure_providers: Настройте своих провайдеров здесь.
+      tabs:
+        all: Все
+        assets: Ресурсы
+        debts: Долги
+      new_asset: Новый актив
+      new_debt: Новый долг
+      new_account: Новый счет
+      new_account_group: Новый %{account_group}
+    types:
+      depository: Наличные
+      investment: Инвестиции
+      crypto: Крипто
+      property: Недвижимость
+      vehicle: Транспортное средство
+      other_asset: Другой актив
+      credit_card: Кредитная карта
+      loan: Заем
+      other_liability: Другая ответственность
+    tax_treatments:
+      taxable: облагаемый налогом
+      tax_deferred: Отложенный налог
+      tax_exempt: Освобождён от налогов
+      tax_advantaged: Налоговые льготы
+    tax_treatment_descriptions:
+      taxable: Прибыль, облагаемая налогом при реализации
+      tax_deferred: Взносы, подлежащие вычету, облагаются налогом при снятии средств
+      tax_exempt: Взносы после уплаты налогов, прибыль не облагается налогом
+      tax_advantaged: Специальные налоговые льготы с условиями
+    subtype_regions:
+      us: Соединенные Штаты
+      uk: Великобритания
+      ca: Канада
+      au: Австралия
+      eu: Европа
+      generic: Общий
+    confirm_unlink:
+      title: Отвязать счет от провайдера?
+      description_html: Вы собираетесь отменить связь <strong>%{account_name}</strong> с <strong>%{provider_name}</strong>. Это преобразует его в счет, созданную вручную.
+      warning_title: Что это значит
+      warning_no_sync: Счет больше не будет автоматически синхронизироваться с вашим провайдером.
+      warning_manual_updates: Вам нужно будет добавлять транзакции и обновлять балансы вручную.
+      warning_transactions_kept: Все существующие транзакции и балансы будут сохранены.
+      warning_can_delete: После отвязки вы сможете при необходимости удалить счет.
+      confirm_button: Подтвердите и отмените связь
+    unlink:
+      success: Связь с счетом успешно отменена. Теперь это ручной счет.
+      not_linked: Счет не привязан к провайдеру
+      error: 'Не удалось отсоединить счет: %{error}.'
+      generic_error: Произошла непредвиденная ошибка. Пожалуйста, попробуйте еще раз.
+    select_provider:
+      title: Выберите провайдера для связи
+      description: Выберите, какого провайдера вы хотите использовать для связи %{account_name}
+      already_linked: Счет уже привязан к провайдеру
+      no_providers: Ни один провайдер в настоящее время не настроен
+  email_confirmations:
+    new:
+      invalid_token: Недействительная или просроченная ссылка для подтверждения.
+      success_login: Ваш адрес электронной почты подтвержден. Пожалуйста, войдите в систему, используя новый адрес электронной почты.

@@ -12,7 +12,10 @@ class ReportsController < ApplicationController
     # Build reports sections for collapsible/reorderable UI
     @reports_sections = build_reports_sections
 
-    @breadcrumbs = [ [ "Home", root_path ], [ "Reports", nil ] ]
+    @breadcrumbs = [
+      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ t("breadcrumbs.reports", default: "Reports"), nil ]
+    ]
   end
 
   def print

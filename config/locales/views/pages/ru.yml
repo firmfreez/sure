@@ -1,0 +1,65 @@
+---
+ru:
+  pages:
+    changelog:
+      title: Что нового
+    feedback:
+      title: Обратная связь
+      header: Оставьте отзыв
+      subtitle: Расскажите, что можно улучшить. При желании приложите ссылки на видео или скриншоты.
+      feature_request: Предложить функцию
+      bug_report: Сообщить об ошибке
+      discuss: "Обсудить %{product_name} с другими"
+    privacy:
+      title: политика конфиденциальности
+      heading: политика конфиденциальности
+      placeholder: Здесь будет отображаться содержание политики конфиденциальности.
+    terms:
+      title: Условия использования
+      heading: Условия использования
+      placeholder: Здесь будет отображаться содержание условий обслуживания.
+    dashboard:
+      welcome: С возвращением, %{name}
+      subtitle: Вот что происходит с вашими финансами
+      new: Новый
+      drag_to_reorder: Перетащите, чтобы изменить порядок раздела
+      toggle_section: Переключить видимость раздела
+      net_worth_chart:
+        data_not_available: Данные недоступны за выбранный период.
+        title: Чистая стоимость
+      no_account_empty_state:
+        new_account: Новый аккаунт
+        no_account_subtitle: Поскольку счета не были добавлены, данные для отображения отсутствуют. Добавьте свои первые счета, чтобы начать просматривать данные информационной панели.
+        no_account_title: Аккаунтов пока нет
+      balance_sheet:
+        title: Балансовый отчет
+        no_items: '%{name} пока нет'
+        add_accounts: Добавьте свои аккаунты %{name}, чтобы просмотреть полную информацию.
+      cashflow_sankey:
+        title: Денежный поток
+        no_data_title: Нет данных о движении денежных средств за этот период времени
+        no_data_description: Добавляйте транзакции для отображения данных о движении денежных средств или расширяйте период времени.
+        add_transaction: Добавить транзакцию
+      no_accounts:
+        title: Счетов пока нет
+        description: Добавьте счета для отображения данных о собственном капитале
+        add_account: Добавить счет
+      outflows_donut:
+        title: Оттоки
+        total_outflows: Общий отток
+        categories: Категории
+        value: Стоимость
+        weight: Масса
+      investment_summary:
+        title: Инвестиции
+        total_return: Общий доход
+        holding: Холдинг
+        weight: Масса
+        value: Стоимость
+        return: Доходность
+        period_activity: '%{period} Активность'
+        contributions: Взносы
+        withdrawals: Вывод средств
+        trades: Сделки
+        no_investments: Нет инвестиционных счетов
+        add_investment: Добавьте инвестиционный счет, чтобы отслеживать свой портфель

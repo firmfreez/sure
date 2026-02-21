@@ -5,5 +5,9 @@ class Settings::PaymentsController < ApplicationController
 
   def show
     @family = Current.family
+    @breadcrumbs = [
+      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ t("settings.settings_nav.payment_label"), nil ]
+    ]
   end
 end

@@ -7,5 +7,6 @@
     hex_color: accountable.color,
   ) %>
 
-  <%= accountable.display_name.singularize %>
+  <% type_key = accountable.class.name.underscore %>
+  <%= t("accounts.types.#{type_key}", default: accountable.display_name.singularize) %>
 <% end %>

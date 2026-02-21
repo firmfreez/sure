@@ -89,15 +89,22 @@ en:
       success: Kept as separate transactions
       failure: Could not dismiss duplicate suggestion
     header:
+      new_rule: New rule
+      edit_rules: Edit rules
       edit_categories: Edit categories
       edit_imports: Edit imports
       edit_merchants: Edit merchants
       edit_tags: Edit tags
       import: Import
     index:
+      title: Transactions
       transaction: transaction
       transactions: transactions
       import: Import
+    summary:
+      total: Total transactions
+      income: Income
+      expenses: Expenses
     list:
       drag_drop_title: Drop CSV to import
       drag_drop_subtitle: Upload transactions directly
@@ -105,6 +112,8 @@ en:
       transactions: transactions
     toggle_recurring_section: Toggle upcoming recurring transactions
     search:
+      placeholder: Search transactions ...
+      filter_button: Filter
       filters:
         account: Account
         date: Date
@@ -114,6 +123,11 @@ en:
         category: Category
         tag: Tag
         merchant: Merchant
+        placeholders:
+          accounts: Filter accounts
+          categories: Filter categories
+          tags: Filter tags
+          merchants: Filter merchants
     convert_to_trade:
       title: Convert to Security Trade
       description: Convert this transaction into a trade with security details

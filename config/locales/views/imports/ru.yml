@@ -1,0 +1,299 @@
+---
+ru:
+  import:
+    cleans:
+      show:
+        all_rows: Все строки
+        cleaned_notice: Данные очищены
+        description: Отредактируйте свои данные в таблице ниже.  Красные клетки недействительны.
+        errors_notice: У вас есть ошибки в данных.  Наведите курсор на ошибку, чтобы увидеть подробности.
+        errors_notice_mobile: У вас есть ошибки в данных.  Нажмите на всплывающую подсказку об ошибке, чтобы просмотреть подробности.
+        error_rows: Строки с ошибками
+        next_step: Следующий шаг
+        title: Очистите свои данные
+    mappings:
+      form:
+        leave_unassigned: Оставить без назначения
+        select_option: Выберите вариант
+        unassigned: (не назначено)
+    configurations:
+      shared:
+        account: Счет
+        amount: Сумма
+        apply_configuration: Применить настройку
+        category: Категория
+        currency: Валюта
+        date: Дата
+        date_format: Формат даты
+        default: По умолчанию
+        format: Формат
+        incomes_negative: Доходы — отрицательные
+        incomes_positive: Доходы — положительные
+        leave_empty: Оставить пустым
+        name: Название
+        notes: Заметки
+        select_column: Выберите столбец
+        select_format: Выберите формат
+        tags: Теги
+      template:
+        apply: Применить шаблон
+        description: Мы нашли конфигурацию из предыдущего импорта для этого счета. Применить её к этому импорту?
+        manual: Настроить вручную
+        title: Найдена конфигурация
+      sample_caption: Пример данных из вашего CSV
+      update:
+        success: Импорт настроен успешно.
+      account_import:
+        balance: Баланс
+        balance_date: Дата баланса
+        currency: Валюта
+        entity_type: Тип сущности
+        name: Название
+      category_import:
+        button_label: Продолжать
+        description: Загрузите простой файл CSV (похожий на тот, который мы создаем при экспорте ваших данных). Мы автоматически сопоставим столбцы для вас.
+        instructions: Выберите «Продолжить анализ CSV» и перейдите к шагу очистки.
+      mint_import:
+        date_format_label: Формат даты
+        notice: Мы уже настроили импорт Mint. Пожалуйста, перейдите к следующему шагу.
+        account_optional: Счет (необязательно)
+        name_optional: Название (необязательно)
+        category_optional: Категория (необязательно)
+        tags_optional: Теги (необязательно)
+      rule_import:
+        description: Настройте импорт правил. Правила будут создаваться или обновляться на основе данных CSV.
+        process_button: Обработать правила
+        process_help: Нажмите кнопку ниже, чтобы обработать CSV-файл и создать строки правил.
+      show:
+        description: Выберите столбцы, соответствующие каждому полю в CSV-файле.
+        title: Настройте импорт
+      trade_import:
+        date_format_label: Формат даты
+        buys_negative: Покупки — отрицательное количество
+        buys_positive: Покупки — положительное количество
+        exchange_code: Код биржи
+        price: Цена
+        quantity: Количество
+        ticker: Тикер
+        warning_title: "Важно:"
+        warning_body: Провайдер цен на бумаги не настроен. Импорт сделок будет работать, но Sure не сможет подтянуть историю цен. Настройте это в параметрах.
+      transaction_import:
+        date_format_label: Формат даты
+        rows_to_skip_label: Пропустить первые n строк
+        amount_type: Тип суммы
+        amount_type_strategy: Стратегия типа суммы
+        amount_type_strategies:
+          custom_column: Пользовательский столбец
+          signed_amount: Знак суммы
+          simple: Простая
+        as_amount_type_column: как столбец типа суммы
+        as_identifier_value: как значение‑идентификатор
+        expense_outflow: Расход (отток)
+        income_inflow: Доход (приток)
+        select_convention: Выберите правило
+        select_strategy: Выберите стратегию
+        select_type: Выберите тип
+        select_value: Выберите значение
+        set: Установить
+        treat_as_prefix: Считать
+        treat_as_suffix: как
+    confirms:
+      mappings:
+        create_account: Создать счет
+        csv_mapping_label: '%{mapping} в CSV'
+        sure_mapping_label: '%{mapping} в %{product_name}'
+        no_accounts: У вас пока нет счетов. Создайте счет, который мы сможем использовать для (неназначенных) строк в вашем CSV‑файле, или вернитесь к шагу «Очистка» и укажите имя счета, которое мы можем использовать.
+        next: Далее
+        rows_label: Строки
+        unassigned_account: Нужно создать новый счет для неназначенных строк?
+      show:
+        account_mapping_description: Назначьте все счета импортированного файла существующим учетным записям Maybe.  Вы также можете добавлять новые счета или оставить их без категории.
+        account_mapping_title: Назначьте свои счета
+        account_type_mapping_description: Назначьте все типы учетных записей импортированного файла группе Maybe.
+        account_type_mapping_title: Назначьте типы учетных записей
+        category_mapping_description: Назначьте все категории импортированного файла существующим категориям Maybe.  Вы также можете добавить новые категории или оставить их без категорий.
+        category_mapping_title: Назначьте свои категории
+        tag_mapping_description: Назначьте все теги импортированного файла существующим тегам Maybe.  Вы также можете добавить новые теги или оставить их без категории.
+        tag_mapping_title: Назначьте свои теги
+        step: "Шаг %{number}"
+    uploads:
+      show:
+        description: Вставьте или загрузите свой CSV-файл ниже.  Прежде чем начать, ознакомьтесь с инструкциями в таблице ниже.
+        account_optional: Счет (необязательно)
+        browse: Выбрать
+        browse_suffix: чтобы добавить CSV‑файл
+        download_sample_csv: Скачать пример CSV
+        download_sample_csv_suffix: чтобы посмотреть требуемый формат
+        drag_drop_subtitle: Файл будет загружен автоматически
+        drag_drop_title: Перетащите CSV для загрузки
+        instructions_1: Ниже приведен пример CSV со столбцами, доступными для импорта.
+        instructions_2: В вашем CSV-файле должна быть строка заголовка.
+        instructions_3: Вы можете назвать свои столбцы как угодно.  Вы сопоставите их на более позднем этапе.
+        instructions_4: Столбцы, отмеченные звездочкой (*), являются обязательными данными.
+        instructions_5: Никаких запятых, символов валюты и круглых скобок в числах.
+        multi_account_import: Импорт по нескольким счетам
+        paste_placeholder: Вставьте содержимое CSV здесь
+        tabs:
+          paste: Вставка
+          upload: Загрузка CSV
+        title: Импортируйте ваши данные
+        upload_csv: Загрузить CSV
+  imports:
+    dry_run:
+      accounts: Счета
+      categories: Категории
+      rules: Правила
+      tags: Теги
+      transactions: Транзакции
+    index:
+      title: Импорт
+      new: Новый импорт
+    table:
+      title: Импорт
+      header:
+        date: Дата
+        operation: Операция
+        status: Статус
+        actions: Действия
+      row:
+        status:
+          in_progress: В ходе выполнения
+          uploading: Обработка строк
+          reverting: Возврат
+          revert_failed: Ошибка отката
+          complete: Завершен
+          failed: Ошибка
+        actions:
+          revert: Откатить
+          confirm_revert: При этом импортированные транзакции будут удалены, но вы по-прежнему сможете просмотреть и повторно импортировать свои данные в любое время.
+          delete: Удалить
+          view: Просмотреть
+      empty: Импорта пока нет.
+    failure:
+      title: Ошибка импорта
+      description: Проверьте формат файла, наличие ошибок и заполнение обязательных полей, затем попробуйте снова.
+      try_again: Попробовать снова
+    importing:
+      title: Импорт выполняется
+      description: Импорт в процессе. Проверьте меню «Импорт» для обновления статуса или нажмите «Проверить статус», чтобы обновить страницу. Вы можете продолжать пользоваться приложением.
+      check_status: Проверить статус
+      back_to_dashboard: Вернуться на главную
+    new:
+      description: Вы можете вручную импортировать различные типы данных через CSV или использовать один из наших шаблонов импорта, например Mint.
+      import_accounts: Импортировать счета
+      import_categories: Импортировать категории
+      import_mint: Импорт из Mint
+      import_portfolio: Импорт инвестиций
+      import_rules: Импортировать правила
+      import_transactions: Импорт транзакций
+      import_file: Импортировать документ
+      import_file_description: Анализ PDF-файлов на основе искусственного интеллекта и загрузка с возможностью поиска других поддерживаемых файлов.
+      requires_account: Сначала импортируйте счета, чтобы разблокировать эту опцию.
+      resume: Возобновить %{type}
+      sources: Источники
+      title: Новый импорт
+    ready:
+      description: Вот краткий обзор новых элементов, которые будут добавлены в ваш счет после публикации этого импорта.
+      publish: Опубликовать импорт
+      title: Подтвердите данные импорта
+      table:
+        item: Элемент
+        count: Количество
+    revert_failure:
+      title: Не удалось откатить импорт
+      description: Пожалуйста, попробуйте еще раз
+      try_again: Попробовать снова
+    success:
+      title: Импорт завершен
+      description: Импортированные данные успешно добавлены и готовы к использованию.
+      back_to_dashboard: Вернуться на главную
+    types:
+      account_import: Счет
+      category_import: Категория
+      document_import: Документ
+      mint_import: Mint
+      pdf_import: PDF
+      rule_import: Правило
+      trade_import: Сделка
+      transaction_import: Транзакция
+    create:
+      file_too_large: Файл слишком большой. Максимальный размер — %{max_size}MB.
+      invalid_file_type: Неверный тип файла. Пожалуйста, загрузите CSV-файл.
+      csv_uploaded: CSV успешно загружен.
+      pdf_too_large: PDF-файл слишком велик. Максимальный размер — %{max_size}MB.
+      pdf_processing: Ваш PDF-файл находится в обработке. Вы получите электронное письмо, когда анализ будет завершен.
+      invalid_pdf: Загруженный файл не является допустимым PDF-файлом.
+      document_too_large: Файл документа слишком велик. Максимальный размер — %{max_size}MB.
+      invalid_document_file_type: Недопустимый тип файла документа для активного векторного хранилища.
+      document_uploaded: Документ успешно загружен.
+      document_upload_failed: Не удалось загрузить документ в векторное хранилище. Пожалуйста, попробуйте еще раз.
+      document_provider_not_configured: Для загрузки документов не настроено хранилище векторов.
+    show:
+      finalize_upload: Пожалуйста, завершите загрузку файла.
+      finalize_mappings: Прежде чем продолжить, завершите сопоставление.
+    errors:
+      custom_column_requires_inflow: Для импорта пользовательских столбцов необходимо выбрать входящий столбец.
+    mappings:
+      labels:
+        account: Счет
+        account_type: Тип счета
+        category: Категория
+        tag: Тег
+    columns:
+      account: Счет
+      amount: Сумма
+      category: Категория
+      category_classification: Классификация
+      category_color: Цвет
+      category_icon: Иконка Lucide
+      category_parent: Родительская категория
+      currency: Валюта
+      date: Дата
+      entity_type: Тип
+      exchange: Биржа
+      name: Название
+      notes: Заметки
+      price: Цена
+      qty: Количество
+      tags: Теги
+      ticker: Тикер
+    document_types:
+      bank_statement: Выписка из банка
+      credit_card_statement: Выписка по кредитной карте
+      investment_statement: Инвестиционное заявление
+      financial_document: Финансовый документ
+      contract: Договор
+      other: Другой документ
+      unknown: Неизвестный документ
+    pdf_import:
+      ready_for_review_title: Готово к проверке
+      ready_for_review_description: Мы извлекли %{count} транзакций из выписки. Проверьте и опубликуйте их, чтобы добавить в ваш счет.
+      transactions_extracted: Извлеченные транзакции
+      transactions_extracted_count: "%{count} транзакций"
+      select_account: Импорт в счет
+      select_account_placeholder: Выберите счет...
+      select_account_hint: Выберите счет, в который нужно импортировать транзакции.
+      no_accounts: Счета недоступны. Сначала создайте счет.
+      create_account: Создать счет
+      save_account: Сохранить
+      publish_transactions: Опубликовать %{count} транзакций
+      review_transactions: Просмотреть транзакции
+      select_account_to_continue: Пожалуйста, выберите счет выше, чтобы продолжить.
+      processing_title: Обработка вашего PDF-файла
+      processing_description: Мы анализируем ваш документ с помощью ИИ. Это может занять некоторое время. Когда анализ будет завершен, вы получите электронное письмо.
+      check_status: Проверить статус
+      back_to_dashboard: Вернуться к панели управления
+      failed_title: Обработка не удалась
+      failed_description: Нам не удалось обработать ваш PDF-документ. Пожалуйста, попробуйте еще раз или обратитесь в службу поддержки.
+      try_again: Попробуйте еще раз
+      delete_import: Удалить импорт
+      complete_title: Документ проанализирован
+      complete_description: Мы проанализировали ваш PDF-файл и вот что обнаружили.
+      document_type_label: Тип документа
+      summary_label: Краткое содержание
+      email_sent_notice: Вам было отправлено письмо с дальнейшими действиями.
+      back_to_imports: Вернуться к импорту
+      unknown_state_title: Неизвестное состояние
+      unknown_state_description: Этот импорт находится в неожиданном состоянии. Пожалуйста, вернитесь к импорту.
+      processing_failed_with_message: '%{message}'
+      processing_failed_generic: 'Ошибка обработки: %{error}'

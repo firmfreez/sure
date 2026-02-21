@@ -1,6 +1,11 @@
 ---
 en:
   breadcrumbs:
+    budgets: Budgets
+    dashboard: Dashboard
     exports: Exports
     home: Home
     imports: Imports
+    intro: Intro
+    reports: Reports
+    transactions: Transactions

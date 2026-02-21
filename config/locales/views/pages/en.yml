@@ -1,6 +1,13 @@
 ---
 en:
   pages:
+    feedback:
+      title: Feedback
+      header: Leave feedback
+      subtitle: Let us know if you have any specific feedback. Feel free to include links to videos or screenshots.
+      feature_request: Write a feature request
+      bug_report: File a bug report
+      discuss: "Discuss %{product_name} with others"
     changelog:
       title: What's new
     privacy:

@@ -34,7 +34,7 @@ export default class extends Controller {
         button.setAttribute("hidden", true);
       }
 
-      button.textContent = data.confirmText || "Confirm";
+      button.textContent = data.confirmText || button.textContent || "Confirm";
     });
 
     this.titleTarget.textContent = data.title || "Are you sure?";

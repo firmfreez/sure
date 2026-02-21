@@ -1,6 +1,16 @@
 ---
 en:
   shared:
+    confirm_dialog:
+      body: This action cannot be undone.
+      confirm: Confirm
+      title: Are you sure?
+      resource_delete:
+        title: "Delete %{resource}?"
+        body: "Are you sure you want to delete %{resource}? This is not reversible."
+        confirm: "Delete %{resource}"
+      resources:
+        import: Import
     confirm_modal:
       accept: Confirm
       body_html: "<p>You will not be able to undo this decision</p>"

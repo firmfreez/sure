@@ -6,6 +6,8 @@ en:
         renewal: "Your contribution continues on %{date}."
         cancellation: "Your contribution ends on %{date}."
   settings:
+    guides:
+      title: Guides
     ai_prompts:
       show:
         page_title: AI Prompts
@@ -129,7 +131,10 @@ en:
       imports_label: Imports
       exports_label: Exports
       logout: Logout
+      llm_usage_label: LLM Usage
       merchants_label: Merchants
+      providers_label: Providers
+      sso_providers_label: SSO Providers
       guides_label: Guides
       other_section_title: More
       preferences_label: Preferences

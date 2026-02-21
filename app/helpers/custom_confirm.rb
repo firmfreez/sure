@@ -3,12 +3,16 @@
 class CustomConfirm
   class << self
     def for_resource_deletion(resource_name, high_severity: false)
+      resource_label = I18n.t("shared.confirm_dialog.resources.#{resource_name}", default: resource_name.to_s.titleize)
+      resource_title = resource_label.to_s
+      resource_lower = resource_label.to_s.downcase
+
       new(
         destructive: true,
         high_severity: high_severity,
-        title: "Delete #{resource_name.titleize}?",
-        body: "Are you sure you want to delete #{resource_name.downcase}? This is not reversible.",
-        btn_text: "Delete #{resource_name.titleize}"
+        title: I18n.t("shared.confirm_dialog.resource_delete.title", resource: resource_title),
+        body: I18n.t("shared.confirm_dialog.resource_delete.body", resource: resource_lower),
+        btn_text: I18n.t("shared.confirm_dialog.resource_delete.confirm", resource: resource_title)
       )
     end
   end
@@ -38,14 +42,14 @@ class CustomConfirm
     end
 
     def default_title
-      "Are you sure?"
+      I18n.t("shared.confirm_dialog.title")
     end
 
     def default_body
-      "This is not reversible."
+      I18n.t("shared.confirm_dialog.body")
     end
 
     def default_btn_text
-      "Confirm"
+      I18n.t("shared.confirm_dialog.confirm")
     end
 end
