@@ -9,6 +9,7 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
 
     @provider = mock
     Provider::Registry.stubs(:get_provider).with(:yahoo_finance).returns(@provider)
+    Provider::Registry.stubs(:get_provider).with(:twelve_data).returns(@provider)
     @provider.stubs(:healthy?).returns(true)
     @provider.stubs(:usage).returns(provider_success_response(
       OpenStruct.new(
