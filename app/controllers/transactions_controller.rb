@@ -121,16 +121,8 @@ class TransactionsController < ApplicationController
             turbo_stream.replace(@entry),
             *flash_notification_stream_items
           ]
-  end
-
-  private
-    def set_breadcrumbs
-      @breadcrumbs = [
-        [ t("breadcrumbs.home", default: "Home"), root_path ],
-        [ t("breadcrumbs.transactions", default: "Transactions"), nil ]
-      ]
-    end
-end
+        end
+      end
     else
       render :show, status: :unprocessable_entity
     end
@@ -319,6 +311,13 @@ end
     def set_entry_for_unlock
       transaction = Current.family.transactions.find(params[:id])
       @entry = transaction.entry
+    end
+
+    def set_breadcrumbs
+      @breadcrumbs = [
+        [ t("breadcrumbs.home", default: "Home"), root_path ],
+        [ t("breadcrumbs.transactions", default: "Transactions"), nil ]
+      ]
     end
 
     def needs_rule_notification?(transaction)

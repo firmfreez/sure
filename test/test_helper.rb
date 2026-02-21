@@ -5,6 +5,9 @@ if ENV["COVERAGE"] == "true"
   end
 end
 
+ENV["SELF_HOSTED"] = "false"
+ENV["SELF_HOSTING_ENABLED"] = "false"
+
 require_relative "../config/environment"
 
 ENV["RAILS_ENV"] ||= "test"
