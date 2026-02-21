@@ -21,17 +21,31 @@ module Onboardable
     end
 
     def redirectable_path?(path)
-      return false if path.starts_with?("/settings")
-      return false if path.starts_with?("/subscription")
-      return false if path.starts_with?("/onboarding")
-      return false if path.starts_with?("/users")
-      return false if path.starts_with?("/api")  # Exclude API endpoints from onboarding redirects
+      normalized = normalize_path_for_redirect(path)
+
+      return false if normalized.starts_with?("/settings")
+      return false if normalized.starts_with?("/subscription")
+      return false if normalized.starts_with?("/onboarding")
+      return false if normalized.starts_with?("/users")
+      return false if normalized.starts_with?("/api")  # Exclude API endpoints from onboarding redirects
 
       [
         new_registration_path,
         new_session_path,
         new_password_reset_path,
         new_email_confirmation_path
-      ].exclude?(path)
+      ].exclude?(normalized)
+    end
+
+    def normalize_path_for_redirect(path)
+      normalized = path.to_s
+      script_name = request.script_name.to_s
+
+      if script_name.present? && normalized.start_with?(script_name)
+        normalized = normalized.delete_prefix(script_name)
+        normalized = "/#{normalized}" unless normalized.start_with?("/")
+      end
+
+      normalized
     end
 end

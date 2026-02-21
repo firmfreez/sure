@@ -54,7 +54,11 @@ module ApplicationHelper
   end
 
   def page_active?(path)
-    current_page?(path) || (request.path.start_with?(path) && path != "/")
+    normalized_request_path = normalize_active_path(request.path)
+    normalized_path = normalize_active_path(path)
+
+    normalized_request_path == normalized_path ||
+      (normalized_request_path.start_with?(normalized_path) && normalized_path != "/")
   end
 
   # Wrapper around I18n.l to support custom date formats
@@ -113,7 +117,58 @@ module ApplicationHelper
     # Delegates to Chat.default_model for consistency
     Chat.default_model
   end
+  def omniauth_provider_path(provider_name)
+    script_name = request.script_name.to_s.sub(%r{/+\z}, "")
+    "#{script_name}/auth/#{provider_name}"
+  end
 
+  def ingress_prefixed_path(path)
+    return path if path.blank?
+
+    script_name = request.script_name.to_s.sub(%r{/+\z}, "")
+    return path if script_name.blank?
+
+    return path if path.start_with?("http://", "https://", "//")
+
+    normalized_path = path.start_with?("/") ? path : "/#{path}"
+    return normalized_path if normalized_path.start_with?("#{script_name}/")
+
+    "#{script_name}#{normalized_path}"
+  end
+
+  def ingress_asset_path(source, **options)
+    ingress_prefixed_path(asset_path(source, **options))
+  end
+
+  def ingress_javascript_importmap_tags
+    tags = javascript_importmap_tags
+    return tags if request.script_name.blank?
+
+    fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
+
+    importmap = fragment.at_css("script[type='importmap']")
+    if importmap&.content.present?
+      data = JSON.parse(importmap.content)
+      data["imports"] = prefix_importmap_values(data["imports"]) if data["imports"].is_a?(Hash)
+
+      if data["scopes"].is_a?(Hash)
+        data["scopes"] = data["scopes"].transform_values do |scoped_imports|
+          prefix_importmap_values(scoped_imports)
+        end
+      end
+
+      importmap.content = JSON.generate(data)
+    end
+
+    fragment.css("link[rel='modulepreload']").each do |node|
+      href = node["href"]
+      next if href.blank?
+
+      node["href"] = ingress_prefixed_path(href)
+    end
+
+    fragment.to_html.html_safe
+  end
   # Renders Markdown text using Redcarpet
   def markdown(text)
     return "" if text.blank?
@@ -165,6 +220,42 @@ module ApplicationHelper
   end
 
   private
+    def normalize_active_path(value)
+      return "/" if value.blank?
+
+      path = value.to_s
+
+      if path.start_with?("http://", "https://")
+        begin
+          path = URI.parse(path).path
+        rescue URI::InvalidURIError
+          # Keep the original path as-is for non-parseable inputs.
+        end
+      end
+
+      script_name = request.script_name.to_s
+      if script_name.present? && path.start_with?(script_name)
+        path = path.delete_prefix(script_name)
+        path = "/#{path}" unless path.start_with?("/")
+      end
+
+      path = "/#{path}" unless path.start_with?("/")
+      path = path.sub(%r{/+\z}, "")
+      path = "/" if path.empty?
+
+      path
+    end
+
+    def prefix_importmap_values(imports)
+      return imports unless imports.is_a?(Hash)
+
+      imports.transform_values do |value|
+        next value unless value.is_a?(String)
+
+        ingress_prefixed_path(value)
+      end
+    end
+
     def calculate_total(item, money_method, negate)
       # Filter out transfer-type transactions from entries
       # Only Entry objects have entryable transactions, Account objects don't
