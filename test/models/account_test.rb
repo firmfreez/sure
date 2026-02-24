@@ -86,8 +86,8 @@ class AccountTest < ActiveSupport::TestCase
 
     # Test with nil subtype
     account.accountable.update!(subtype: nil)
-    assert_equal "Investments", account.short_subtype_label
-    assert_equal "Investments", account.long_subtype_label
+    assert_equal "Investment", account.short_subtype_label
+    assert_equal "Investment", account.long_subtype_label
   end
 
   # Tax treatment tests (TaxTreatable concern)

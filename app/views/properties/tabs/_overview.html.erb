@@ -1,15 +1,15 @@
 <%# locals: (account:) %>
 
 <div class="grid grid-cols-3 gap-2">
-  <%= summary_card title: t(".market_value") do %>
+  <%= summary_card title: t("properties.overview.market_value") do %>
     <%= format_money(account.balance_money) %>
   <% end %>
 
-  <%= summary_card title: t(".purchase_price") do %>
-    <%= account.property.purchase_price ? format_money(account.property.purchase_price) : t(".unknown") %>
+  <%= summary_card title: t("properties.overview.purchase_price") do %>
+    <%= account.property.purchase_price ? format_money(account.property.purchase_price) : t("properties.overview.unknown") %>
   <% end %>
 
-  <%= summary_card title: t(".trend") do %>
+  <%= summary_card title: t("properties.overview.trend") do %>
     <div class="flex items-center gap-1" style="color: <%= account.property.trend.color %>">
       <p class="text-xl font-medium">
         <%= account.property.trend.value %>
@@ -19,18 +19,18 @@
     </div>
   <% end %>
 
-  <%= summary_card title: t(".year_built") do %>
-    <%= account.property.year_built || t(".unknown") %>
+  <%= summary_card title: t("properties.overview.year_built") do %>
+    <%= account.property.year_built || t("properties.overview.unknown") %>
   <% end %>
 
-  <%= summary_card title: t(".living_area") do %>
-    <%= account.property.area || t(".unknown") %>
+  <%= summary_card title: t("properties.overview.living_area") do %>
+    <%= account.property.area || t("properties.overview.unknown") %>
   <% end %>
 </div>
 
 <div class="flex justify-center py-8">
   <%= render DS::Link.new(
-    text: "Edit account details",
+    text: t("properties.overview.edit_account_details"),
     href: edit_property_path(account),
     variant: "ghost",
     frame: :modal

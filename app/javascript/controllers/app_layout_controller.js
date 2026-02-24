@@ -9,6 +9,10 @@ export default class extends Controller {
     "expandedTransition",
     "collapsedTransition",
   ];
+  static values = {
+    userId: Number,
+    basePath: String,
+  };
 
   openMobileSidebar() {
     this.mobileSidebarTarget.classList.remove("hidden");
@@ -41,7 +45,10 @@ export default class extends Controller {
   }
 
   #updateUserPreference(field, value) {
-    fetch(`/users/${this.userIdValue}`, {
+    const basePath = (this.basePathValue || "").replace(/\/+$/, "");
+    const url = basePath ? `${basePath}/users/${this.userIdValue}` : `/users/${this.userIdValue}`;
+
+    fetch(url, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",

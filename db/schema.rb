@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_18_120001) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_25_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -1451,7 +1451,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_120001) do
     t.boolean "show_sidebar", default: true
     t.string "default_period", default: "last_30_days", null: false
     t.uuid "last_viewed_chat_id"
-    t.boolean "show_ai_sidebar", default: true
+    t.boolean "show_ai_sidebar", default: false
     t.boolean "ai_enabled", default: false, null: false
     t.string "theme", default: "system"
     t.boolean "rule_prompts_disabled", default: false

@@ -100,10 +100,13 @@ class Budget < ApplicationRecord
   end
 
   def uncategorized_budget_category
-    budget_categories.uncategorized.tap do |bc|
-      bc.budgeted_spending = [ available_to_allocate, 0 ].max
-      bc.currency = family.currency
-    end
+    BudgetCategory.new(
+      id: BudgetCategory.uncategorized.id,
+      budget: self,
+      category: family.categories.uncategorized,
+      budgeted_spending: [ available_to_allocate, 0 ].max,
+      currency: family.currency
+    )
   end
 
   def transactions
@@ -170,6 +173,12 @@ class Budget < ApplicationRecord
       { color: bc.category.color, amount: budget_category_actual_spending(bc), id: bc.id }
     end
 
+    uncategorized_bc = uncategorized_budget_category
+    uncategorized_spending = budget_category_actual_spending(uncategorized_bc)
+    if uncategorized_spending.positive?
+      segments.push({ color: uncategorized_bc.category.color, amount: uncategorized_spending, id: uncategorized_bc.id })
+    end
+
     if available_to_spend.positive?
       segments.push({ color: "var(--budget-unallocated-fill)", amount: available_to_spend, id: unused_segment_id })
     end
@@ -189,6 +198,21 @@ class Budget < ApplicationRecord
   end
 
   def budget_category_actual_spending(budget_category)
+    category = budget_category.category
+
+    if category.uncategorized? || category.other_investments?
+      predicate =
+        if category.uncategorized?
+          ->(ct) { ct.category.uncategorized? }
+        else
+          ->(ct) { ct.category.other_investments? }
+        end
+
+      expense = expense_totals.category_totals.select(&predicate).sum(&:total)
+      refund = income_totals.category_totals.select(&predicate).sum(&:total)
+      return [ expense - refund, 0 ].max
+    end
+
     cat_id = budget_category.category_id
     expense = expense_totals_by_category[cat_id]&.total || 0
     refund = income_totals_by_category[cat_id]&.total || 0

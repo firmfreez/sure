@@ -1,0 +1,82 @@
+---
+ru:
+  holdings:
+    cash:
+      brokerage_cash: Брокерская наличность
+    destroy:
+      success: Позиция удалена
+    update:
+      success: База стоимости сохранена.
+      error: Некорректная база стоимости.
+    unlock_cost_basis:
+      success: База стоимости разблокирована. Она может быть обновлена при следующей синхронизации.
+    remap_security:
+      success: Бумага успешно обновлена.
+      security_not_found: Не удалось найти выбранную бумагу.
+    reset_security:
+      success: Бумага сброшена к значению провайдера.
+    errors:
+      security_collision: "Нельзя заменить: у вас уже есть позиция по %{ticker} на %{date}."
+    cost_basis_sources:
+      manual: Задано пользователем
+      calculated: По сделкам
+      provider: От провайдера
+    cost_basis_cell:
+      unknown: "--"
+      set_cost_basis_header: "Установить базу стоимости для %{ticker} (%{qty} шт.)"
+      total_cost_basis_label: Общая база стоимости
+      or_per_share_label: "Или введите за штуку:"
+      per_share: за штуку
+      cancel: Отмена
+      save: Сохранить
+      overwrite_confirm_title: Перезаписать базу стоимости?
+      overwrite_confirm_body: "Это заменит текущую базу стоимости %{current}."
+    holding:
+      per_share: за штуку
+      shares: "%{qty} шт."
+      unknown: "--"
+      no_cost_basis: Нет базы стоимости
+    index:
+      average_cost: Средняя цена
+      holdings: Позиции
+      name: Название
+      new_holding: Новая операция
+      no_holdings: Нет позиций для отображения.
+      return: Общая доходность
+      weight: Доля
+    missing_price_tooltip:
+      description: По этой инвестиции нет данных, поэтому мы не смогли рассчитать доходность или стоимость.
+      missing_data: Нет данных
+    show:
+      avg_cost_label: Средняя цена
+      current_market_price_label: Текущая рыночная цена
+      delete: Удалить
+      delete_subtitle: Это удалит позицию и все связанные сделки по этому счету. Это действие нельзя отменить.
+      delete_title: Удалить позицию
+      edit_security: Редактировать бумагу
+      history: История
+      no_trade_history: Для этой позиции нет истории сделок.
+      overview: Обзор
+      portfolio_weight_label: Доля в портфеле
+      settings: Настройки
+      security_label: Бумага
+      originally: "было %{ticker}"
+      search_security: Найти бумагу
+      search_security_placeholder: Поиск по тикеру или названию
+      cancel: Отмена
+      remap_security: Сохранить
+      no_security_provider: Провайдер бумаг не настроен. Поиск недоступен.
+      security_remapped_label: Бумага заменена
+      provider_sent: "Провайдер прислал: %{ticker}"
+      reset_to_provider: Сбросить к провайдеру
+      reset_confirm_title: Сбросить бумагу к провайдеру?
+      reset_confirm_body: "Это заменит бумагу с %{current} на %{original} и перенесет все связанные сделки."
+      ticker_label: Тикер
+      trade_history_entry: "%{qty} шт. %{security} по %{price}"
+      total_return_label: Общая доходность
+      unknown: Неизвестно
+      cost_basis_locked_label: База стоимости заблокирована
+      cost_basis_locked_description: Вручную заданная база стоимости не будет изменяться синхронизацией.
+      unlock_cost_basis: Разблокировать
+      unlock_confirm_title: Разблокировать базу стоимости?
+      unlock_confirm_body: Это позволит обновлять базу стоимости при синхронизации или расчете по сделкам.

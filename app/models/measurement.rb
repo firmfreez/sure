@@ -15,6 +15,7 @@ class Measurement
   end
 
   def to_s
-    "#{@value.to_i} #{@unit}"
+    unit_label = I18n.t("measurement.units.#{unit}", default: unit)
+    "#{@value.to_i} #{unit_label}"
   end
 end

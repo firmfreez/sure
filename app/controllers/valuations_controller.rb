@@ -40,7 +40,13 @@ class ValuationsController < ApplicationController
     if result.success?
       respond_to do |format|
         format.html { redirect_back_or_to account_path(account), notice: "Account updated" }
-        format.turbo_stream { stream_redirect_back_or_to(account_path(account), notice: "Account updated") }
+        format.turbo_stream do
+          flash[:notice] = "Account updated"
+          render turbo_stream: [
+            turbo_stream.replace("modal", ""),
+            turbo_stream.action(:redirect, request.referer || account_path(account))
+          ]
+        end
       end
     else
       @error_message = result.error_message
@@ -72,7 +78,8 @@ class ValuationsController < ApplicationController
               partial: "valuations/header",
               locals: { entry: @entry }
             ),
-            turbo_stream.replace(@entry)
+            turbo_stream.replace(@entry),
+            turbo_stream.replace("modal", "")
           ]
         end
       end

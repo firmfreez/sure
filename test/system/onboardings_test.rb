@@ -7,6 +7,8 @@ class OnboardingsTest < ApplicationSystemTestCase
 
     # Reset onboarding state
     @user.update!(set_onboarding_preferences_at: nil)
+    @user.update!(locale: "en")
+    @family.update!(locale: "en")
 
     # Force English locale for tests
     I18n.locale = :en
@@ -20,7 +22,7 @@ class OnboardingsTest < ApplicationSystemTestCase
 
   test "can complete the full onboarding flow" do
     # Start at the main onboarding page
-    visit onboarding_path
+    visit onboarding_path(locale: "en")
 
     assert_text I18n.t("onboardings.show.title")
     assert_button I18n.t("onboardings.show.submit")
@@ -49,7 +51,7 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "preferences page renders chart without errors" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # This test specifically targets the Series model bug
     # The chart should render without throwing JavaScript errors
@@ -72,7 +74,7 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "can change currency and see preview update" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Change currency
     select "Euro (EUR)", from: "user_family_attributes_currency"
@@ -83,7 +85,7 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "can change date format and see preview update" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Change date format
     select "DD/MM/YYYY", from: "user_family_attributes_date_format"
@@ -93,7 +95,7 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "can change theme" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Change theme using value instead of label
     select_theme("dark")
@@ -103,7 +105,7 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "preferences form validation" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Clear required fields and try to submit
     select "", from: "user_family_attributes_locale"
@@ -114,7 +116,7 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "preferences form saves data correctly" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Fill out form with specific values
     select "Spanish (es)", from: "user_family_attributes_locale"
@@ -143,21 +145,21 @@ class OnboardingsTest < ApplicationSystemTestCase
     # Complete preferences first
     @user.update!(set_onboarding_preferences_at: Time.current)
 
-    visit goals_onboarding_path
+    visit goals_onboarding_path(locale: "en")
 
     assert_text I18n.t("onboardings.goals.title")
     assert_button I18n.t("onboardings.goals.submit")
   end
 
   test "trial page renders correctly" do
-    visit trial_onboarding_path
+    visit trial_onboarding_path(locale: "en")
 
     assert_text "Sure"
   end
 
   test "navigation between onboarding steps" do
     # Start at main onboarding
-    visit onboarding_path
+    visit onboarding_path(locale: "en")
     click_button I18n.t("onboardings.show.submit")
 
     # Should be at preferences
@@ -174,14 +176,14 @@ class OnboardingsTest < ApplicationSystemTestCase
   end
 
   test "onboarding nav shows correct steps" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Check that navigation shows current step
     assert_selector "ul.hidden.md\\:flex.items-center.gap-2"
   end
 
   test "logout option is available during onboarding" do
-    visit preferences_onboarding_path
+    visit preferences_onboarding_path(locale: "en")
 
     # Should have logout option (rendered as a button component)
     assert_text I18n.t("onboardings.logout.sign_out")
@@ -195,11 +197,11 @@ class OnboardingsTest < ApplicationSystemTestCase
     end
 
     def sign_in(user)
-      visit new_session_path
+      visit new_session_path(locale: "en")
       within %(form[action='#{sessions_path}']) do
-        fill_in I18n.t("sessions.new.email"), with: user.email
-        fill_in I18n.t("sessions.new.password"), with: user_password_test
-        click_on I18n.t("sessions.new.submit")
+        fill_in I18n.t("sessions.new.email", locale: :en), with: user.email
+        fill_in I18n.t("sessions.new.password", locale: :en), with: user_password_test
+        click_on I18n.t("sessions.new.submit", locale: :en)
       end
 
       # Wait for successful login

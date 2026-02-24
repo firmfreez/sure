@@ -29,10 +29,10 @@
                   action: "bulk-select#togglePageSelection",
                   checkbox_toggle_target: "selectionEntry"
                 } %>
-            <p>transaction</p>
+            <p><%= t(".transaction") %></p>
           </div>
 
-          <p class="col-span-2 md:block hidden"><%= t("transactions.form.category_label") %></p>
+          <p class="col-span-2 md:block hidden"><%= t("transactions.show.category_label") %></p>
           <p class="col-span-2 col-start-11 md:col-start-auto justify-self-end md:block"><%= t("transactions.show.amount") %></p>
         </div>
       <% end %>

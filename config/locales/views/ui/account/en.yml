@@ -1,0 +1,9 @@
+---
+en:
+  ui:
+    account:
+      chart:
+        total_value: Total value
+        holdings: Holdings
+        cash: Cash
+        no_data: No data available

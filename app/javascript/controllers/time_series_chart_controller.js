@@ -9,6 +9,7 @@ export default class extends Controller {
     strokeWidth: { type: Number, default: 2 },
     useLabels: { type: Boolean, default: true },
     useTooltip: { type: Boolean, default: true },
+    locale: String,
   };
 
   _d3SvgMemo = null;
@@ -200,6 +201,17 @@ export default class extends Controller {
   }
 
   _drawXAxisLabels() {
+    const locale =
+      this.localeValue ||
+      document.documentElement.lang ||
+      navigator.language ||
+      "en";
+    const axisFormatter = new Intl.DateTimeFormat(locale, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
     // Add ticks
     this._d3Group
       .append("g")
@@ -212,7 +224,7 @@ export default class extends Controller {
             this._normalDataPoints[this._normalDataPoints.length - 1].date,
           ])
           .tickSize(0)
-          .tickFormat(d3.timeFormat("%b %d, %Y")),
+          .tickFormat((d) => axisFormatter.format(d)),
       )
       .select(".domain")
       .remove();

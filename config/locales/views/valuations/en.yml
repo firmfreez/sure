@@ -15,7 +15,40 @@ en:
       value: value
     new:
       title: New balance
+      date: Date
+    confirm_create:
+      title: Confirm new balance
+      submit: Confirm
+    confirm_update:
+      title: Update balance
+      submit: Update
+    confirmation:
+      investment_intro:
+        set: "This will set the account value on %{date} to:"
+        update: "This will update the account value on %{date} to:"
+      total_account_value: Total account value
+      holdings_value: Holdings value
+      brokerage_cash: Brokerage cash
+      generic_intro:
+        set: "Set %{balance_label} on %{date} to %{amount}."
+        update: "Update %{balance_label} on %{date} to %{amount}."
+      balance_labels:
+        depository: account balance
+        credit_card: credit card balance
+        loan: loan balance
+        property: property value
+        vehicle: vehicle value
+        crypto: crypto balance
+        other_asset: asset value
+        other_liability: liability balance
+        default: balance
+      recalc_note: "All future transactions and balances will be recalculated based on this %{change_type}."
+      change_types:
+        change: change
+        update: update
     show:
+      account_value_on_date: Account value on date
+      update_value: Update value
       amount: Amount
       date_label: Date
       delete: Delete

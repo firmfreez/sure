@@ -1,6 +1,16 @@
 ---
 en:
   chats:
+    ai_greeting:
+      toggle: Show AI help
+      default_name: there
+      intro: "Hey %{name}! I'm an AI/large-language-model that can help with your finances. I have access to the web and your account data."
+      command_hint_html: "You can use %{command} to access commands"
+      questions_title: "Here's a few questions you can ask:"
+      questions:
+        evaluate_portfolio: Evaluate investment portfolio
+        spending_insights: Show spending insights
+        unusual_patterns: Find unusual patterns
     ai_consent:
       title: Enable AI Chats
       available_message: AI chat can answer financial questions and provide insights based on your data. To use this feature you'll need to explicitly enable it.

@@ -1,0 +1,54 @@
+---
+ru:
+  valuations:
+    form:
+      amount: Сумма
+      submit: Добавить обновление баланса
+    new:
+      title: Новый баланс
+      date: Дата
+    confirm_create:
+      title: Подтвердить новый баланс
+      submit: Подтвердить
+    confirm_update:
+      title: Обновить баланс
+      submit: Обновить
+    confirmation:
+      investment_intro:
+        set: "Это действие установит стоимость счета на %{date} до:"
+        update: "Это действие обновит стоимость счета на %{date} до:"
+      total_account_value: Общая стоимость счета
+      holdings_value: Стоимость активов
+      brokerage_cash: Брокерская наличность
+      generic_intro:
+        set: "Установить %{balance_label} на %{date} до %{amount}."
+        update: "Обновить %{balance_label} на %{date} до %{amount}."
+      balance_labels:
+        depository: баланс счета
+        credit_card: баланс кредитной карты
+        loan: остаток по займу
+        property: стоимость недвижимости
+        vehicle: стоимость транспорта
+        crypto: баланс криптовалюты
+        other_asset: стоимость актива
+        other_liability: баланс обязательств
+        default: баланс
+      recalc_note: "Все будущие транзакции и балансы будут пересчитаны на основе этого %{change_type}."
+      change_types:
+        change: изменения
+        update: обновления
+    show:
+      account_value_on_date: Стоимость счета на дату
+      update_value: Обновить значение
+      amount: Сумма
+      date_label: Дата
+      delete: Удалить
+      delete_subtitle: Это действие нельзя отменить
+      delete_title: Удалить запись
+      details: Детали
+      name_label: Название
+      name_placeholder: Введите название записи
+      note_label: Примечание
+      note_placeholder: Добавьте дополнительные детали об этой записи
+      overview: Обзор
+      settings: Настройки

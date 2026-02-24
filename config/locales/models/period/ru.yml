@@ -1,0 +1,54 @@
+---
+ru:
+  periods:
+    last_day:
+      label_short: "1д"
+      label: "Последний день"
+      comparison_label: "по сравнению со вчера"
+    current_week:
+      label_short: "НТ"
+      label: "Текущая неделя"
+      comparison_label: "по сравнению с началом недели"
+    last_7_days:
+      label_short: "7д"
+      label: "Последние 7 дней"
+      comparison_label: "по сравнению с прошлой неделей"
+    current_month:
+      label_short: "МТ"
+      label: "Текущий месяц"
+      comparison_label: "по сравнению с началом месяца"
+    last_month:
+      label_short: "ПМ"
+      label: "Прошлый месяц"
+      comparison_label: "по сравнению с прошлым месяцем"
+    last_30_days:
+      label_short: "30д"
+      label: "Последние 30 дней"
+      comparison_label: "по сравнению с последними 30 днями"
+    last_90_days:
+      label_short: "90д"
+      label: "Последние 90 дней"
+      comparison_label: "по сравнению с прошлым кварталом"
+    current_year:
+      label_short: "СГ"
+      label: "Текущий год"
+      comparison_label: "по сравнению с началом года"
+    last_365_days:
+      label_short: "365д"
+      label: "Последние 365 дней"
+      comparison_label: "по сравнению с годом назад"
+    last_5_years:
+      label_short: "5л"
+      label: "Последние 5 лет"
+      comparison_label: "по сравнению с 5 годами назад"
+    last_10_years:
+      label_short: "10л"
+      label: "Последние 10 лет"
+      comparison_label: "по сравнению с 10 годами назад"
+    all_time:
+      label_short: "Все"
+      label: "За всё время"
+      comparison_label: "по сравнению с началом"
+    custom:
+      label_short: "Свой"
+      label: "Произвольный период"

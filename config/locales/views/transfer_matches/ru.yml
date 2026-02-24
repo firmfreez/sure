@@ -1,0 +1,20 @@
+---
+ru:
+  transfer_matches:
+    new:
+      title: Сопоставить перевод или платеж
+      from_account: С какого счета
+      from_account_with_name: "С какого счета: %{name}"
+      to_account: На какой счет
+      to_account_with_name: "На какой счет: %{name}"
+      outflow_transaction: Исходящая транзакция
+      inflow_transaction: Входящая транзакция
+      create_transfer_match: Создать сопоставление перевода
+    matching_fields:
+      select_method: Выберите способ сопоставления транзакций.
+      match_existing_recommended: Сопоставить с существующей транзакцией (рекомендуется)
+      create_new_transaction: Создать новую транзакцию
+      matching_method: Способ сопоставления
+      matching_transaction: Транзакция для сопоставления
+      target_account: Целевой счет
+      no_matches: Не удалось найти транзакции для сопоставления из других счетов. Выберите счет, и мы создадим входящую транзакцию.

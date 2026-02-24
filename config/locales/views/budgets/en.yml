@@ -8,9 +8,17 @@ en:
       label: Categories
       amount: Amount
       edit: Edit
+    shared:
+      monthly_avg_short: "%{amount}/m avg"
     summary:
+      expected_income: Expected income
       income: Income
       expenses: Expenses
+      budgeted: Budgeted
+      earned: earned
+      spent: spent
+      left: left
+      over: over
     donut:
       spent: Spent
       of: "of %{amount}"
@@ -30,6 +38,12 @@ en:
     categories_edit:
       title: Edit your category budgets
       subtitle: Adjust category budgets to set spending limits. Unallocated funds will be automatically assigned as uncategorized.
+      allocation:
+        over_set: "> 100% set"
+        set: "%{percent} set"
+        left_to_allocate: left to allocate
+        budget_exceeded_by: "Budget exceeded by %{amount}"
+      confirm: Confirm
     no_categories:
       title: Oops!
       subtitle: You have not created or assigned any expense categories to your transactions yet.

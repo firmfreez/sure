@@ -26,7 +26,7 @@ class Transfer::Creator
     attr_reader :family, :source_account, :destination_account, :date, :amount
 
     def outflow_transaction
-      name = "#{name_prefix} to #{destination_account.name}"
+      name = transfer_name_to(destination_account.name)
       kind = outflow_transaction_kind
 
       Transaction.new(
@@ -47,7 +47,7 @@ class Transfer::Creator
     end
 
     def inflow_transaction
-      name = "#{name_prefix} from #{source_account.name}"
+      name = transfer_name_from(source_account.name)
 
       Transaction.new(
         kind: "funds_movement",
@@ -93,11 +93,19 @@ class Transfer::Creator
       source_account.investment? || source_account.crypto?
     end
 
+    def name_prefix_key
+      destination_account.liability? ? "payment" : "transfer"
+    end
+
+    def transfer_name_to(account_name)
+      I18n.t("models.transfer.#{name_prefix_key}_to", account: account_name, default: "#{name_prefix} to #{account_name}")
+    end
+
+    def transfer_name_from(account_name)
+      I18n.t("models.transfer.#{name_prefix_key}_from", account: account_name, default: "#{name_prefix} from #{account_name}")
+    end
+
     def name_prefix
-      if destination_account.liability?
-        "Payment"
-      else
-        "Transfer"
-      end
+      I18n.t("models.transfer.#{name_prefix_key}", default: name_prefix_key.titleize)
     end
 end

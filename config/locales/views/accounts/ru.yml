@@ -28,6 +28,7 @@ ru:
       institution_domain_placeholder: например, Chase.com
       notes_label: Примечания
       notes_placeholder: Храните дополнительную информацию, такую ​​как номера счетов, коды сортировки, IBAN, номера маршрутов и т. д.
+      submit: Сохранить счет
     index:
       accounts: Счета
       manual_accounts:
@@ -47,6 +48,13 @@ ru:
         title: Как бы вы хотели это добавить?
       title: Что бы вы хотели добавить?
     show:
+      tabs:
+        activity: Активность
+        overview: Обзор
+        holdings: Активы
+      activity_date:
+        end_of_day_balance_tooltip: Баланс на конец дня после всех транзакций и корректировок
+        no_balance_data: Нет данных о балансе за эту дату
       activity:
         amount: Количество
         balance: Баланс
@@ -56,7 +64,7 @@ ru:
         entry: вход
         filter: Фильтр
         new: Новый
-        new_activity: Новая деятельность
+        new_activity: Новая операция
         new_balance: Новый баланс
         new_trade: Новая сделка
         new_transaction: Новая транзакция
@@ -70,11 +78,70 @@ ru:
       chart:
         balance: Баланс
         owed: Сумма задолженности
+        total_account_value: Общая стоимость счета
+        holdings_value: Стоимость активов
+        cash_value: Денежные средства
+        estimated_value: "Оценочная стоимость"
+        debt_balance: Остаток долга
+        remaining_principal_balance: Остаток основного долга
+      reconciliation:
+        start_balance_label: Начальный баланс
+        start_balance_tooltip: Баланс счета на начало дня
+        net_cash_flow_label: Чистый денежный поток
+        net_cash_flow_tooltip: Суммарное изменение баланса от всех транзакций за день
+        end_balance_label: Баланс до корректировок
+        end_balance_tooltip: Рассчитанный баланс после всех транзакций
+        adjustments_label: Корректировки
+        adjustments_tooltip: Ручные сверки или другие корректировки
+        final_balance_label: Итоговый баланс
+        final_balance_tooltip: Итоговый баланс счета за день
+        cc_start_balance_tooltip: Сумма задолженности на начало дня
+        cc_charges_label: Начисления
+        cc_charges_tooltip: Новые начисления за день
+        cc_payments_label: Платежи
+        cc_payments_tooltip: Платежи по карте за день
+        cc_final_balance_tooltip: Итоговая задолженность за день
+        investment_start_balance_tooltip: Общая стоимость портфеля на начало дня
+        investment_brokerage_cash_label: Изменение брокерской наличности
+        investment_brokerage_cash_tooltip: Изменение наличности из-за пополнений, выводов и сделок
+        investment_holdings_trades_label: Изменение активов (покупки/продажи)
+        investment_holdings_trades_tooltip: Влияние покупок и продаж на активы
+        investment_holdings_market_label: Изменение активов (рыночные цены)
+        investment_holdings_market_tooltip: Изменение стоимости активов из-за движений рынка
+        investment_end_balance_tooltip: Рассчитанный баланс после всей активности
+        investment_final_balance_tooltip: Итоговая стоимость портфеля за день
+        loan_start_principal_label: Начальный долг
+        loan_start_principal_tooltip: Основной долг на начало дня
+        loan_net_principal_change_label: Изменение основного долга
+        loan_net_principal_change_tooltip: Погашение основного долга и новые заимствования за день
+        loan_end_principal_label: Долг до корректировок
+        loan_end_principal_tooltip: Рассчитанный основной долг после всех операций
+        loan_final_principal_label: Итоговый долг
+        loan_final_principal_tooltip: Итоговый основной долг за день
+        asset_start_value_label: Начальная стоимость
+        asset_start_value_tooltip: Стоимость актива на начало дня
+        asset_net_value_change_label: Изменение стоимости
+        asset_net_value_change_tooltip: Все изменения стоимости, включая улучшения и износ
+        asset_end_value_label: Стоимость до корректировок
+        asset_end_value_tooltip: Рассчитанная стоимость после всех изменений
+        asset_adjustments_tooltip: Ручные корректировки стоимости или оценки
+        asset_final_value_label: Итоговая стоимость
+        asset_final_value_tooltip: Итоговая стоимость актива за день
+        crypto_start_balance_tooltip: Стоимость криптоактивов на начало дня
+        crypto_buys_label: Покупки
+        crypto_buys_tooltip: Покупки криптовалюты за день
+        crypto_sells_label: Продажи
+        crypto_sells_tooltip: Продажи криптовалюты за день
+        crypto_market_changes_label: Рыночные изменения
+        crypto_market_changes_tooltip: Изменение стоимости из-за движения рынка
+        crypto_end_balance_tooltip: Рассчитанный баланс после всей активности
+        crypto_final_balance_tooltip: Итоговая стоимость криптоактивов за день
       menu:
         confirm_accept: Удалить "%{name}"
         confirm_body_html: <p>Удалив эту счет, вы сотрете историю ее стоимости, что повлияет на различные аспекты вашей учетной записи в целом. Это действие окажет непосредственное влияние на расчета вашего собственного капитала и графики учетной записи.</p><br /> <p>После удаления вы не сможете восстановить информацию об учетной записи, поскольку вам придется добавить ее как новую счет.</p>
         confirm_title: Удалить счет?
         edit: Редактировать
+        delete: Удалить счет
         import: Импорт транзакций
         import_trades: Импортные сделки
         import_transactions: Импорт транзакций
@@ -115,6 +182,7 @@ ru:
       tax_advantaged: Специальные налоговые льготы с условиями
     subtype_regions:
       us: Соединенные Штаты
+      ru: Россия
       uk: Великобритания
       ca: Канада
       au: Австралия

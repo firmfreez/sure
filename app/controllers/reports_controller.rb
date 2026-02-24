@@ -331,8 +331,11 @@ class ReportsController < ApplicationController
         income = Current.family.income_statement.income_totals(period: period).total
         expenses = Current.family.income_statement.expense_totals(period: period).total
 
+        abbr_month_names = I18n.t("date.abbr_month_names_standalone", default: [])
+        month_label = abbr_month_names[month_start.month].presence || I18n.l(month_start, format: "%b")
+
         trends << {
-          month: month_start.strftime("%b %Y"),
+          month: "#{month_label} #{month_start.year}",
           is_current_month: (month_start.month == Date.current.month && month_start.year == Date.current.year),
           income: income,
           expenses: expenses,

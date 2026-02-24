@@ -130,7 +130,7 @@
               <div>
                 <p class="text-sm font-medium text-primary"><%= item.aspsp_name || "Connected Bank" %></p>
                 <p class="text-xs text-secondary">
-                  Session expires: <%= item.session_expires_at&.strftime("%b %d, %Y") || "Unknown" %>
+                  Session expires: <%= item.session_expires_at ? l(item.session_expires_at.to_date, format: :long) : "Unknown" %>
                 </p>
               </div>
             <% elsif item.session_expired? %>

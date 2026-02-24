@@ -52,6 +52,12 @@ en:
       tab_transactions: Transactions
       tab_upcoming: Upcoming
       uncategorized: "(uncategorized)"
+      mark_recurring: Mark as Recurring
+      mark_recurring_subtitle: Track this as a recurring transaction. Amount variance is automatically calculated from past 6 months of similar transactions.
+      mark_recurring_title: Recurring Transaction
+      transfer_match_title: Transfer or Debt Payment?
+      transfer_match_subtitle: Transfers and payments are special types of transactions that indicate money movement between 2 accounts.
+      transfer_match_open: Open matcher
     activity_labels:
       buy: Buy
       sell: Sell
@@ -69,6 +75,9 @@ en:
     mark_recurring: Mark as Recurring
     mark_recurring_subtitle: Track this as a recurring transaction. Amount variance is automatically calculated from past 6 months of similar transactions.
     mark_recurring_title: Recurring Transaction
+    transfer_match_title: Transfer or Debt Payment?
+    transfer_match_subtitle: Transfers and payments are special types of transactions that indicate money movement between 2 accounts.
+    transfer_match_open: Open matcher
     potential_duplicate_title: Possible duplicate detected
     potential_duplicate_description: This pending transaction may be the same as the posted transaction below. If so, merge them to avoid double-counting.
     merge_duplicate: Yes, merge them

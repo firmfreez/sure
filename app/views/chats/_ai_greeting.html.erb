@@ -1,40 +1,38 @@
-<div class="flex items-start w-full gap-3 p-2">
-  <%= render "chats/ai_avatar" %>
+<details class="w-full">
+  <summary class="list-none cursor-pointer select-none inline-flex items-center gap-2 text-sm font-medium text-primary px-2 py-1.5 rounded-md hover:bg-surface-hover">
+    <%= icon("sparkles", size: "sm") %>
+    <%= t(".toggle") %>
+  </summary>
 
-  <div class="max-w-[85%] text-sm space-y-4 text-primary">
-    <p>Hey <%= Current.user&.first_name || "there" %>! I'm an AI/large-language-model that can help with your finances. I have access to the web and your account data.</p>
+  <div class="flex items-start w-full gap-3 p-2">
+    <%= render "chats/ai_avatar" %>
 
-    <p>
-      You can use <span class="bg-container border border-secondary px-1.5 py-0.5 rounded font-mono text-xs">/</span> to access commands
-    </p>
+    <div class="max-w-[85%] text-sm space-y-4 text-primary">
+      <% name = Current.user&.first_name.presence || t(".default_name") %>
+      <p><%= t(".intro", name: name) %></p>
 
-    <div class="space-y-3">
-      <p>Here's a few questions you can ask:</p>
+      <% command = content_tag(:span, "/", class: "bg-container border border-secondary px-1.5 py-0.5 rounded font-mono text-xs") %>
+      <p><%= t(".command_hint_html", command: command).html_safe %></p>
 
-      <% questions = [
-        {
-          icon: "chart-area",
-          text: "Evaluate investment portfolio"
-        },
-        {
-          icon: "wallet-minimal",
-          text: "Show spending insights"
-        },
-        {
-          icon: "alert-triangle",
-          text: "Find unusual patterns"
-        }
-      ] %>
+      <div class="space-y-3">
+        <p><%= t(".questions_title") %></p>
 
-      <div class="space-y-2.5">
-        <% questions.each do |question| %>
-          <button data-action="chat#submitSampleQuestion"
-                  data-chat-question-param="<%= question[:text] %>"
-                  class="w-fit flex items-center gap-2 border border-tertiary rounded-full py-1.5 px-2.5 hover:bg-gray-100">
-            <%= icon(question[:icon]) %> <%= question[:text] %>
-          </button>
-        <% end %>
+        <% questions = [
+          { icon: "chart-area", text: t(".questions.evaluate_portfolio") },
+          { icon: "wallet-minimal", text: t(".questions.spending_insights") },
+          { icon: "alert-triangle", text: t(".questions.unusual_patterns") }
+        ] %>
+
+        <div class="space-y-2.5">
+          <% questions.each do |question| %>
+            <button data-action="chat#submitSampleQuestion"
+                    data-chat-question-param="<%= question[:text] %>"
+                    class="w-fit flex items-center gap-2 border border-tertiary rounded-full py-1.5 px-2.5 hover:bg-gray-100">
+              <%= icon(question[:icon]) %> <%= question[:text] %>
+            </button>
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
-</div>
+</details>

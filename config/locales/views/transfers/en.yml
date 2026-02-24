@@ -18,6 +18,12 @@ en:
     new:
       title: New transfer
     show:
+      from: From
+      to: To
+      date: Date
+      amount: Amount
+      category_label: Category
+      uncategorized: Uncategorized
       delete: Remove transfer
       delete_subtitle: This removes the transfer.  It will not delete the underlying
         transactions.

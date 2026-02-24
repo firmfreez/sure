@@ -8,9 +8,11 @@ class PropertiesController < ApplicationController
   end
 
   def create
-    @account = Current.family.accounts.create!(
-      property_params.merge(currency: Current.family.currency, balance: 0, status: "draft")
-    )
+    attrs = property_params.merge(status: "draft")
+    attrs[:currency] ||= Current.family.currency
+    attrs[:balance] = 0 if attrs[:balance].nil?
+
+    @account = Current.family.accounts.create!(attrs)
 
     redirect_to balances_property_path(@account)
   end
@@ -95,6 +97,8 @@ class PropertiesController < ApplicationController
               :institution_name,
               :institution_domain,
               :notes,
+              :balance,
+              :currency,
               accountable_attributes: [ :id, :subtype, :year_built, :area_unit, :area_value ]
             )
     end

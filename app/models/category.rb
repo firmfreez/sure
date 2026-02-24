@@ -78,8 +78,8 @@ class Category < ApplicationRecord
       ]
     end
 
-    def bootstrap!
-      default_categories.each do |name, color, icon, classification|
+    def bootstrap!(locale: I18n.locale)
+      default_categories(locale: locale).each do |name, color, icon, classification|
         find_or_create_by!(name: name) do |category|
           category.color = color
           category.classification = classification
@@ -136,31 +136,35 @@ class Category < ApplicationRecord
     end
 
     private
-      def default_categories
+      def default_categories(locale: I18n.locale)
         [
-          [ "Income", "#22c55e", "circle-dollar-sign", "income" ],
-          [ "Food & Drink", "#f97316", "utensils", "expense" ],
-          [ "Groceries", "#407706", "shopping-bag", "expense" ],
-          [ "Shopping", "#3b82f6", "shopping-cart", "expense" ],
-          [ "Transportation", "#0ea5e9", "bus", "expense" ],
-          [ "Travel", "#2563eb", "plane", "expense" ],
-          [ "Entertainment", "#a855f7", "drama", "expense" ],
-          [ "Healthcare", "#4da568", "pill", "expense" ],
-          [ "Personal Care", "#14b8a6", "scissors", "expense" ],
-          [ "Home Improvement", "#d97706", "hammer", "expense" ],
-          [ "Mortgage / Rent", "#b45309", "home", "expense" ],
-          [ "Utilities", "#eab308", "lightbulb", "expense" ],
-          [ "Subscriptions", "#6366f1", "wifi", "expense" ],
-          [ "Insurance", "#0284c7", "shield", "expense" ],
-          [ "Sports & Fitness", "#10b981", "dumbbell", "expense" ],
-          [ "Gifts & Donations", "#61c9ea", "hand-helping", "expense" ],
-          [ "Taxes", "#dc2626", "landmark", "expense" ],
-          [ "Loan Payments", "#e11d48", "credit-card", "expense" ],
-          [ "Services", "#7c3aed", "briefcase", "expense" ],
-          [ "Fees", "#6b7280", "receipt", "expense" ],
-          [ "Savings & Investments", "#059669", "piggy-bank", "expense" ],
-          [ investment_contributions_name, "#0d9488", "trending-up", "expense" ]
+          [ t_default_category("income", locale), "#22c55e", "circle-dollar-sign", "income" ],
+          [ t_default_category("food_drink", locale), "#f97316", "utensils", "expense" ],
+          [ t_default_category("groceries", locale), "#407706", "shopping-bag", "expense" ],
+          [ t_default_category("shopping", locale), "#3b82f6", "shopping-cart", "expense" ],
+          [ t_default_category("transportation", locale), "#0ea5e9", "bus", "expense" ],
+          [ t_default_category("travel", locale), "#2563eb", "plane", "expense" ],
+          [ t_default_category("entertainment", locale), "#a855f7", "drama", "expense" ],
+          [ t_default_category("healthcare", locale), "#4da568", "pill", "expense" ],
+          [ t_default_category("personal_care", locale), "#14b8a6", "scissors", "expense" ],
+          [ t_default_category("home_improvement", locale), "#d97706", "hammer", "expense" ],
+          [ t_default_category("mortgage_rent", locale), "#b45309", "home", "expense" ],
+          [ t_default_category("utilities", locale), "#eab308", "lightbulb", "expense" ],
+          [ t_default_category("subscriptions", locale), "#6366f1", "wifi", "expense" ],
+          [ t_default_category("insurance", locale), "#0284c7", "shield", "expense" ],
+          [ t_default_category("sports_fitness", locale), "#10b981", "dumbbell", "expense" ],
+          [ t_default_category("gifts_donations", locale), "#61c9ea", "hand-helping", "expense" ],
+          [ t_default_category("taxes", locale), "#dc2626", "landmark", "expense" ],
+          [ t_default_category("loan_payments", locale), "#e11d48", "credit-card", "expense" ],
+          [ t_default_category("services", locale), "#7c3aed", "briefcase", "expense" ],
+          [ t_default_category("fees", locale), "#6b7280", "receipt", "expense" ],
+          [ t_default_category("savings_investments", locale), "#059669", "piggy-bank", "expense" ],
+          [ I18n.t(INVESTMENT_CONTRIBUTIONS_NAME_KEY, locale: locale), "#0d9488", "trending-up", "expense" ]
         ]
+      end
+
+      def t_default_category(key, locale)
+        I18n.t("models.category.defaults.#{key}", locale: locale)
       end
   end
 

@@ -1,0 +1,66 @@
+---
+ru:
+  properties:
+    actions:
+      next: Далее
+      save: Сохранить
+    dialog:
+      title: Введите данные недвижимости вручную
+    tabs:
+      overview: Обзор
+      value: Стоимость
+      address: Адрес
+    form:
+      name_label: Название
+      name_placeholder: Дом для отдыха
+      subtype_label: Тип недвижимости
+      subtype_prompt: Выберите тип
+      year_built_label: Год постройки (необязательно)
+      year_built_placeholder: "1990"
+      area_label: Площадь (необязательно)
+      area_placeholder: "1200"
+      area_unit_label: Единица площади
+      area_unit: Единица площади
+      area_units:
+        square_feet: Квадратные футы
+        square_meters: Квадратные метры
+      address_line1_label: Адрес (строка 1)
+      address_line1_placeholder: 123 Main Street
+      city_label: Город
+      city_placeholder: San Francisco
+      region_label: Штат/регион
+      region_placeholder: CA
+      postal_code_label: Почтовый индекс
+      postal_code_placeholder: "12345"
+      country_label: Страна
+      country_placeholder: USA
+      market_value_label: Оценочная рыночная стоимость
+      market_value_tooltip: Оценочная рыночная стоимость недвижимости. Обычно можно найти на сайтах вроде Zillow или Redfin, и это не точное значение.
+      market_value_placeholder: "0"
+    subtypes:
+      single_family_home:
+        short: Дом
+        long: Дом (на одну семью)
+      multi_family_home:
+        short: Многоквартирный дом
+        long: Многоквартирный дом
+      condominium:
+        short: Кондо
+        long: Кондоминиум
+      townhouse:
+        short: Таунхаус
+        long: Таунхаус
+      investment_property:
+        short: Инвест. недвижимость
+        long: Инвестиционная недвижимость
+      second_home:
+        short: Второй дом
+        long: Второй дом
+    overview:
+      living_area: Жилая площадь
+      market_value: Рыночная стоимость
+      purchase_price: Цена покупки
+      trend: Тренд
+      unknown: Неизвестно
+      year_built: Год постройки
+      edit_account_details: Редактировать детали счета

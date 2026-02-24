@@ -28,6 +28,7 @@ en:
       institution_domain_placeholder: e.g., chase.com
       notes_label: Notes
       notes_placeholder: Store additional information like account numbers, sort codes, IBAN, routing numbers, etc.
+      submit: Save account
     index:
       accounts: Accounts
       manual_accounts:
@@ -47,6 +48,13 @@ en:
         title: How would you like to add it?
       title: What would you like to add?
     show:
+      tabs:
+        activity: Activity
+        overview: Overview
+        holdings: Holdings
+      activity_date:
+        end_of_day_balance_tooltip: The end of day balance, after all transactions and adjustments
+        no_balance_data: No balance data available for this date
       activity:
         amount: Amount
         balance: Balance
@@ -70,6 +78,64 @@ en:
       chart:
         balance: Balance
         owed: Amount owed
+        total_account_value: Total account value
+        holdings_value: Holdings value
+        cash_value: Cash value
+        estimated_value: "Estimated %{type} value"
+        debt_balance: Debt balance
+        remaining_principal_balance: Remaining principal balance
+      reconciliation:
+        start_balance_label: Start balance
+        start_balance_tooltip: The account balance at the beginning of this day
+        net_cash_flow_label: Net cash flow
+        net_cash_flow_tooltip: Net change in balance from all transactions during the day
+        end_balance_label: End balance
+        end_balance_tooltip: The calculated balance after all transactions
+        adjustments_label: Adjustments
+        adjustments_tooltip: Manual reconciliations or other adjustments
+        final_balance_label: Final balance
+        final_balance_tooltip: The final account balance for the day
+        cc_start_balance_tooltip: The balance owed at the beginning of this day
+        cc_charges_label: Charges
+        cc_charges_tooltip: New charges made during the day
+        cc_payments_label: Payments
+        cc_payments_tooltip: Payments made to the card during the day
+        cc_final_balance_tooltip: The final balance owed for the day
+        investment_start_balance_tooltip: The total portfolio value at the beginning of this day
+        investment_brokerage_cash_label: Change in brokerage cash
+        investment_brokerage_cash_tooltip: Net change in cash from deposits, withdrawals, and trades
+        investment_holdings_trades_label: Change in holdings (buys/sells)
+        investment_holdings_trades_tooltip: Impact on holdings from buying and selling securities
+        investment_holdings_market_label: Change in holdings (market price activity)
+        investment_holdings_market_tooltip: Change in holdings value from market price movements
+        investment_end_balance_tooltip: The calculated balance after all activity
+        investment_final_balance_tooltip: The final portfolio value for the day
+        loan_start_principal_label: Start principal
+        loan_start_principal_tooltip: The principal balance at the beginning of this day
+        loan_net_principal_change_label: Net principal change
+        loan_net_principal_change_tooltip: Principal payments and new borrowing during the day
+        loan_end_principal_label: End principal
+        loan_end_principal_tooltip: The calculated principal after all transactions
+        loan_final_principal_label: Final principal
+        loan_final_principal_tooltip: The final principal balance for the day
+        asset_start_value_label: Start value
+        asset_start_value_tooltip: The asset value at the beginning of this day
+        asset_net_value_change_label: Net value change
+        asset_net_value_change_tooltip: All value changes including improvements and depreciation
+        asset_end_value_label: End value
+        asset_end_value_tooltip: The calculated value after all changes
+        asset_adjustments_tooltip: Manual value adjustments or appraisals
+        asset_final_value_label: Final value
+        asset_final_value_tooltip: The final asset value for the day
+        crypto_start_balance_tooltip: The crypto holdings value at the beginning of this day
+        crypto_buys_label: Buys
+        crypto_buys_tooltip: Crypto purchases during the day
+        crypto_sells_label: Sells
+        crypto_sells_tooltip: Crypto sales during the day
+        crypto_market_changes_label: Market changes
+        crypto_market_changes_tooltip: Value changes from market price movements
+        crypto_end_balance_tooltip: The calculated balance after all activity
+        crypto_final_balance_tooltip: The final crypto holdings value for the day
       menu:
         confirm_accept: Delete "%{name}"
         confirm_body_html: "<p>By deleting this account, you will erase its value
@@ -79,6 +145,7 @@ en:
           the account information because you'll need to add it as a new account.</p>"
         confirm_title: Delete account?
         edit: Edit
+        delete: Delete account
         import: Import transactions
         import_trades: Import trades
         import_transactions: Import transactions

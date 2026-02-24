@@ -28,6 +28,15 @@ zh-CN:
         not_applicable: 不适用
         original_principal: 原始本金
         remaining_principal: 剩余本金
-        term: 期限
+        total_term: 总期限
+        remaining_term: 剩余期限
+        total_payments: 总还款次数
+        remaining_payments: 剩余还款次数
         type: 类型
         unknown: 未知
+        month_count:
+          other: "%{count} 个月"
+        year_count:
+          other: "%{count} 年"
+        payment_count:
+          other: "%{count} 次还款"

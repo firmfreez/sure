@@ -1,11 +1,44 @@
 ---
 en:
   properties:
+    actions:
+      next: Next
+      save: Save
+    dialog:
+      title: Enter property manually
+    tabs:
+      overview: Overview
+      value: Value
+      address: Address
     edit:
       edit: Edit %{account}
     form:
+      name_label: Name
+      name_placeholder: Vacation home
+      subtype_label: Property type
+      subtype_prompt: Select type
+      year_built_label: Year Built (optional)
+      year_built_placeholder: "1990"
+      area_label: Area (optional)
+      area_placeholder: "1200"
+      area_unit_label: Area Unit
+      area_units:
+        square_feet: Square Feet
+        square_meters: Square Meters
       address_line1: Street address
       address_line1_placeholder: 123 Main St
+      address_line1_label: Address Line 1
+      city_label: City
+      city_placeholder: San Francisco
+      region_label: State/Region
+      region_placeholder: CA
+      postal_code_label: Postal Code
+      postal_code_placeholder: "12345"
+      country_label: Country
+      country_placeholder: USA
+      market_value_label: Estimated market value
+      market_value_tooltip: The estimated market value of your property. This number can often be found on sites like Zillow or Redfin, and is never an exact number.
+      market_value_placeholder: "0"
       area: Living area
       area_placeholder: '2000'
       area_unit: Unit of measurement

@@ -25,7 +25,8 @@ end %>
     data-controller="app-layout"
     data-app-layout-expanded-sidebar-class="<%= expanded_sidebar_class %>"
     data-app-layout-collapsed-sidebar-class="<%= collapsed_sidebar_class %>"
-    data-app-layout-user-id-value="<%= Current.user.id %>">
+    data-app-layout-user-id-value="<%= Current.user.id %>"
+    data-app-layout-base-path-value="<%= request.script_name.to_s.sub(%r{/+\z}, "") %>">
     <div
       class="hidden fixed inset-0 bg-surface z-20 h-full w-full pt-[calc(env(safe-area-inset-top)+0.75rem)] pr-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pl-3 overflow-y-auto transition-all duration-300"
       data-app-layout-target="mobileSidebar">
@@ -164,7 +165,8 @@ end %>
           <% end %>
         </div>
 
-        <% unless Current.user.ai_enabled? %>
+        <% show_ai_consent = !Current.user.ai_enabled? && page_active?(chats_path) %>
+        <% if show_ai_consent %>
           <div class="absolute backdrop-blur-lg inset-0 h-full w-full flex flex-col justify-center items-center pl-0.5 pr-4">
             <%= render "chats/ai_consent" %>
           </div>

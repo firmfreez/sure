@@ -12,9 +12,7 @@ class PropertiesEditTest < ApplicationSystemTestCase
   end
 
   test "can persist property subtype" do
-    click_link "[system test] Property Account"
-    find("[data-testid='account-menu']").click
-    click_on "Edit"
+    visit edit_property_path(@property_account)
     assert_selector "#account_accountable_attributes_subtype"
     assert_selector(
         "#account_accountable_attributes_subtype option[selected]",
@@ -60,10 +58,10 @@ class PropertiesEditTest < ApplicationSystemTestCase
       # Verify account was created and is now active
       assert_text account_name
 
-      created_account = Account.order(:created_at).last
-      assert_equal "active", created_account.status
-      assert_equal 500000, created_account.balance
-      assert_equal "123 Main St", created_account.property.address.line1
-      assert_equal "San Francisco", created_account.property.address.locality
+      @property_account = Account.order(:created_at).last
+      assert_equal "active", @property_account.status
+      assert_equal 500000, @property_account.balance
+      assert_equal "123 Main St", @property_account.property.address.line1
+      assert_equal "San Francisco", @property_account.property.address.locality
     end
 end

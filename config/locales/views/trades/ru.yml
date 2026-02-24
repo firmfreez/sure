@@ -1,0 +1,50 @@
+---
+ru:
+  trades:
+    form:
+      account: Счет для перевода (необязательно)
+      account_prompt: Найти счет
+      amount: Сумма
+      date: Дата
+      holding: Тикер
+      price: Цена за акцию
+      qty: Количество
+      submit: Добавить транзакцию
+      ticker_placeholder: AAPL
+      type: Тип
+      types:
+        buy: Покупка
+        sell: Продажа
+        deposit: Пополнение
+        withdrawal: Вывод
+        interest: Проценты
+    header:
+      buy: Покупка
+      current_market_price_label: Текущая рыночная цена
+      overview: Обзор
+      purchase_price_label: Цена покупки
+      purchase_qty_label: Количество покупки
+      sell: Продажа
+      symbol_label: Тикер
+      total_return_label: Нереализованная прибыль/убыток
+    new:
+      title: Новая транзакция
+    show:
+      additional: Дополнительно
+      buy: Покупка
+      category_label: Категория
+      cost_per_share_label: Цена за акцию
+      date_label: Дата
+      delete: Удалить
+      delete_subtitle: Это действие нельзя отменить
+      delete_title: Удалить сделку
+      details: Детали
+      exclude_subtitle: Эта сделка не будет включена в отчеты и расчеты
+      exclude_title: Исключить из аналитики
+      no_category: Без категории
+      note_label: Заметка
+      note_placeholder: Добавьте дополнительные заметки...
+      quantity_label: Количество
+      sell: Продажа
+      settings: Настройки
+      type_label: Тип

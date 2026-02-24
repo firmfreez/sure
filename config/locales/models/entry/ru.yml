@@ -1,0 +1,17 @@
+---
+ru:
+  activerecord:
+    attributes:
+      entry:
+        date: Дата
+        name: Название
+        notes: Заметки
+        amount: Сумма
+        currency: Валюта
+        account: Счет
+        account_id: Счет
+        entryable: Объект
+        entryable_id: Объект
+        entryable_type: Тип объекта
+        category: Категория
+        category_id: Категория

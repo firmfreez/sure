@@ -21,7 +21,7 @@
       <div class="flex items-center gap-2">
         <% if account.investment? %>
           <%= form.select :chart_view,
-            [["Total value", "balance"], ["Holdings", "holdings_balance"], ["Cash", "cash_balance"]],
+            [[t("ui.account.chart.total_value"), "balance"], [t("ui.account.chart.holdings"), "holdings_balance"], [t("ui.account.chart.cash"), "cash_balance"]],
             { selected: view },
             class: "bg-container border border-secondary rounded-lg text-sm pr-7 cursor-pointer text-primary focus:outline-hidden focus:ring-0",
             data: { "auto-submit-form-target": "auto" } %>
@@ -47,10 +47,11 @@
         id="lineChart"
         class="w-full h-full"
         data-controller="time-series-chart"
-        data-time-series-chart-data-value="<%= series.to_json %>"></div>
+        data-time-series-chart-data-value="<%= series.to_json %>"
+        data-time-series-chart-locale-value="<%= I18n.locale %>"></div>
       <% else %>
         <div class="w-full h-full flex items-center justify-center">
-          <p class="text-secondary text-sm">No data available</p>
+          <p class="text-secondary text-sm"><%= t("ui.account.chart.no_data") %></p>
         </div>
       <% end %>
     </div>

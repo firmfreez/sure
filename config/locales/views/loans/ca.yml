@@ -28,6 +28,18 @@ ca:
         not_applicable: No aplicable
         original_principal: Principal original
         remaining_principal: Principal pendent
-        term: Termini
+        total_term: Termini total
+        remaining_term: Termini restant
+        total_payments: Total de pagaments
+        remaining_payments: Pagaments restants
         type: Tipus
         unknown: Desconegut
+        month_count:
+          one: "%{count} mes"
+          other: "%{count} mesos"
+        year_count:
+          one: "%{count} any"
+          other: "%{count} anys"
+        payment_count:
+          one: "%{count} pagament"
+          other: "%{count} pagaments"

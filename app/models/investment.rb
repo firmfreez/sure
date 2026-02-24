@@ -23,6 +23,13 @@ class Investment < ApplicationRecord
     "ugma" => { short: "UGMA", long: "UGMA Custodial Account", region: "us", tax_treatment: :taxable },
     "utma" => { short: "UTMA", long: "UTMA Custodial Account", region: "us", tax_treatment: :taxable },
 
+    # === Russia ===
+    "brokerage_ru" => { short: "Brokerage", long: "Brokerage Account", region: "ru", tax_treatment: :taxable },
+    "iis" => { short: "IIS", long: "Individual Investment Account (IIS)", region: "ru", tax_treatment: :tax_advantaged },
+    "pif" => { short: "PIF", long: "Mutual Fund (PIF)", region: "ru", tax_treatment: :taxable },
+    "du" => { short: "DU", long: "Trust Management", region: "ru", tax_treatment: :taxable },
+    "npf" => { short: "NPF", long: "Non-State Pension Fund", region: "ru", tax_treatment: :tax_advantaged },
+
     # === United Kingdom ===
     "isa" => { short: "ISA", long: "Individual Savings Account", region: "uk", tax_treatment: :tax_exempt },
     "lisa" => { short: "LISA", long: "Lifetime ISA", region: "uk", tax_treatment: :tax_exempt },
@@ -78,6 +85,7 @@ class Investment < ApplicationRecord
     # Maps currency codes to regions for prioritizing user's likely region
     CURRENCY_REGION_MAP = {
       "USD" => "us",
+      "RUB" => "ru",
       "GBP" => "uk",
       "CAD" => "ca",
       "AUD" => "au",
@@ -92,12 +100,14 @@ class Investment < ApplicationRecord
       grouped = SUBTYPES.group_by { |_, v| v[:region] }
 
       # Build region order: user's region first (if known), then Generic, then others
-      other_regions = %w[us uk ca au eu] - [ user_region ].compact
+      other_regions = %w[us ru uk ca au eu] - [ user_region ].compact
       region_order = [ user_region, nil, *other_regions ].compact.uniq
 
       region_order.filter_map do |region|
         next unless grouped[region]
-        [ region_label_for(region), grouped[region].map { |k, v| [ v[:long], k ] } ]
+        [ region_label_for(region), grouped[region].map { |k, v|
+          [ subtype_label_for(k, format: :long) || v[:long], k ]
+        } ]
       end
     end
   end

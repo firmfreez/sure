@@ -20,5 +20,6 @@ en:
       label: Amount
     syncing_notice:
       syncing: Syncing accounts data...
+    submitting: Submitting...
     trend_change:
       no_change: "no change"

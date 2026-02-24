@@ -1,0 +1,10 @@
+---
+ru:
+  models:
+    transfer:
+      transfer: Перевод
+      payment: Платеж
+      transfer_to: "Перевод на %{account}"
+      transfer_from: "Перевод от %{account}"
+      payment_to: "Платеж в %{account}"
+      payment_from: "Платеж от %{account}"

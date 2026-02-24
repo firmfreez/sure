@@ -21,7 +21,7 @@ ru:
     dashboard:
       welcome: С возвращением, %{name}
       subtitle: Вот что происходит с вашими финансами
-      new: Новый
+      new: Новая транзакция
       drag_to_reorder: Перетащите, чтобы изменить порядок раздела
       toggle_section: Переключить видимость раздела
       net_worth_chart:
@@ -35,6 +35,13 @@ ru:
         title: Балансовый отчет
         no_items: '%{name} пока нет'
         add_accounts: Добавьте свои аккаунты %{name}, чтобы просмотреть полную информацию.
+        classifications:
+          asset: Активы
+          liability: Обязательства
+        table:
+          name: Название
+          weight: Доля
+          value: Стоимость
       cashflow_sankey:
         title: Денежный поток
         no_data_title: Нет данных о движении денежных средств за этот период времени

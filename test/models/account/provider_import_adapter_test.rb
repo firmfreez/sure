@@ -220,7 +220,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     security = securities(:aapl)
 
     # Use a date that doesn't conflict with fixtures (fixtures use today and 1.day.ago)
-    holding_date = Date.today - 2.days
+    holding_date = Date.current - 10.years
 
     assert_difference "investment_account.holdings.count", 1 do
       holding = adapter.import_holding(
@@ -230,7 +230,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "USD",
         date: holding_date,
         price: 150.00,
-        source: "plaid"
+        source: "plaid",
+        external_id: "plaid-holding-#{SecureRandom.hex(4)}"
       )
 
       assert_equal security.id, holding.security_id

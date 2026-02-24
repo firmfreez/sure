@@ -1,0 +1,20 @@
+---
+en:
+  models:
+    valuation:
+      names:
+        opening_anchor:
+          property: Original purchase price
+          loan: Original principal
+          investment: Opening account value
+          default: Opening balance
+        current_anchor:
+          property: Current market value
+          loan: Current loan balance
+          investment: Current account value
+          default: Current balance
+        recon:
+          property: Manual value update
+          loan: Manual principal update
+          investment: Manual value update
+          default: Manual balance update

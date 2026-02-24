@@ -8,9 +8,17 @@ ru:
       label: Категории
       amount: Сумма
       edit: Редактировать
+    shared:
+      monthly_avg_short: "%{amount}/м в среднем"
     summary:
+      expected_income: Ожидаемый доход
       income: Доходы
       expenses: Расходы
+      budgeted: Запланировано
+      earned: получено
+      spent: потрачено
+      left: осталось
+      over: превышение
     donut:
       spent: Потрачено
       of: "из %{amount}"
@@ -30,6 +38,12 @@ ru:
     categories_edit:
       title: Настройка бюджетов по категориям
       subtitle: Укажите лимиты по категориям. Нераспределенные средства будут автоматически отнесены к «Без категории».
+      allocation:
+        over_set: "> 100% распределено"
+        set: "%{percent} распределено"
+        left_to_allocate: осталось распределить
+        budget_exceeded_by: "Бюджет превышен на %{amount}"
+      confirm: Подтвердить
     no_categories:
       title: Упс!
       subtitle: У вас пока нет созданных или назначенных категорий расходов для транзакций.

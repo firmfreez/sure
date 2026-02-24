@@ -1,0 +1,9 @@
+---
+ru:
+  ui:
+    account:
+      chart:
+        total_value: Общая стоимость
+        holdings: Активы
+        cash: Наличные
+        no_data: Нет данных

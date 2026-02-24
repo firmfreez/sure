@@ -176,6 +176,13 @@ class AccountsController < ApplicationController
   end
 
   private
+    def set_breadcrumbs
+      @breadcrumbs = [
+        [ t("breadcrumbs.home", default: "Home"), root_path ],
+        [ t("breadcrumbs.accounts", default: "Accounts"), nil ]
+      ]
+    end
+
     def family
       Current.family
     end

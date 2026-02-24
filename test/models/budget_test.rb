@@ -199,6 +199,65 @@ class BudgetTest < ActiveSupport::TestCase
     assert_equal 150, spending_without_refund - spending_with_refund
   end
 
+  test "budget_category_actual_spending counts uncategorized expenses and refunds" do
+    family = families(:dylan_family)
+    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
+    account = accounts(:depository)
+
+    uncategorized_bc = budget.uncategorized_budget_category
+    baseline = budget.budget_category_actual_spending(uncategorized_bc)
+
+    Entry.create!(
+      account: account,
+      entryable: Transaction.create!(category: nil),
+      date: Date.current,
+      name: "Uncategorized test expense",
+      amount: 400,
+      currency: "USD"
+    )
+
+    Entry.create!(
+      account: account,
+      entryable: Transaction.create!(category: nil),
+      date: Date.current,
+      name: "Uncategorized test refund",
+      amount: -100,
+      currency: "USD"
+    )
+
+    budget = Budget.find(budget.id)
+    budget.sync_budget_categories
+    uncategorized_bc = budget.uncategorized_budget_category
+
+    assert_equal baseline + 300, budget.budget_category_actual_spending(uncategorized_bc)
+  end
+
+  test "to_donut_segments_json includes uncategorized spending" do
+    family = families(:dylan_family)
+    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
+    account = accounts(:depository)
+
+    budget.update!(budgeted_spending: 1000)
+    budget.budget_categories.first.update!(budgeted_spending: 500)
+
+    Entry.create!(
+      account: account,
+      entryable: Transaction.create!(category: nil),
+      date: Date.current,
+      name: "Uncategorized donut expense",
+      amount: 200,
+      currency: "USD"
+    )
+
+    budget = Budget.find(budget.id)
+    budget.sync_budget_categories
+
+    uncategorized_bc = budget.uncategorized_budget_category
+    segments = budget.to_donut_segments_json
+
+    assert segments.any? { |segment| segment[:id] == uncategorized_bc.id && segment[:amount] == 200 }
+  end
+
   test "previous_budget_param returns param when date is valid" do
     budget = Budget.create!(
       family: @family,

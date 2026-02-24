@@ -72,9 +72,11 @@ class Transfer < ApplicationRecord
   def name
     acc = to_account
     if payment?
-      acc ? "Payment to #{acc.name}" : "Payment"
+      return I18n.t("models.transfer.payment", default: "Payment") unless acc
+      I18n.t("models.transfer.payment_to", account: acc.name, default: "Payment to #{acc.name}")
     else
-      acc ? "Transfer to #{acc.name}" : "Transfer"
+      return I18n.t("models.transfer.transfer", default: "Transfer") unless acc
+      I18n.t("models.transfer.transfer_to", account: acc.name, default: "Transfer to #{acc.name}")
     end
   end
 

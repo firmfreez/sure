@@ -1,0 +1,16 @@
+---
+en:
+  budget_categories:
+    show:
+      category_label: Category
+      overview_title: Overview
+      recent_transactions_title: Recent Transactions
+      spending_for_month: "%{month} spending"
+      status_label: Status
+      budgeted_label: Budgeted
+      monthly_average_spending: Monthly average spending
+      monthly_median_spending: Monthly median spending
+      overspent: overspent
+      left: left
+      view_all_category_transactions: View all category transactions
+      no_transactions: No transactions found for this budget period.

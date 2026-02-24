@@ -1,0 +1,16 @@
+---
+ru:
+  budget_categories:
+    show:
+      category_label: Категория
+      overview_title: Обзор
+      recent_transactions_title: Недавние транзакции
+      spending_for_month: "Расходы за %{month}"
+      status_label: Статус
+      budgeted_label: Запланировано
+      monthly_average_spending: Средние расходы за месяц
+      monthly_median_spending: Медианные расходы за месяц
+      overspent: перерасход
+      left: осталось
+      view_all_category_transactions: Посмотреть все транзакции категории
+      no_transactions: Нет транзакций за этот бюджетный период.

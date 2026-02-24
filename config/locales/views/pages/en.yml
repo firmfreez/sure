@@ -21,7 +21,7 @@ en:
     dashboard:
       welcome: "Welcome back, %{name}"
       subtitle: "Here's what's happening with your finances"
-      new: "New"
+      new: "New transaction"
       drag_to_reorder: "Drag to reorder section"
       toggle_section: "Toggle section visibility"
       net_worth_chart:
@@ -35,6 +35,13 @@ en:
         title: "Balance Sheet"
         no_items: "No %{name} yet"
         add_accounts: "Add your %{name} accounts to see a full breakdown"
+        classifications:
+          asset: Assets
+          liability: Liabilities
+        table:
+          name: Name
+          weight: Weight
+          value: Value
       cashflow_sankey:
         title: "Cashflow"
         no_data_title: "No cash flow data for this time period"

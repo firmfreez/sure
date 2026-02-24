@@ -93,6 +93,10 @@ class Account < ApplicationRecord
         manager = Account::OpeningBalanceManager.new(account)
         result = manager.set_opening_balance(balance: initial_balance || account.balance)
         raise result.error if result.error
+
+        if !account.linked? && initial_balance.present? && account.balance.present? && account.balance != initial_balance
+          account.set_current_balance(account.balance)
+        end
       end
 
       # Skip initial sync for linked accounts - the provider sync will handle balance creation

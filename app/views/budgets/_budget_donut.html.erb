@@ -62,6 +62,31 @@
       </div>
     <% end %>
 
+    <% uncategorized_bc = budget.uncategorized_budget_category %>
+    <% if uncategorized_bc.actual_spending.positive? %>
+      <div id="segment_<%= uncategorized_bc.id %>" class="hidden">
+        <div class="flex flex-col gap-2 items-center">
+          <div class="flex items-center gap-3">
+            <div class="w-1 h-3 rounded-xl" style="background-color: <%= uncategorized_bc.category.color %>"></div>
+            <p class="text-sm text-secondary"><%= uncategorized_bc.category.name %></p>
+          </div>
+
+          <p class="text-3xl font-medium <%= uncategorized_bc.available_to_spend.negative? ? "text-red-500" : "text-primary" %>">
+            <%= format_money(uncategorized_bc.actual_spending_money) %>
+          </p>
+
+          <%= render DS::Link.new(
+            text: t("budgets.donut.of", amount: uncategorized_bc.budgeted_spending_money.format(precision: 0)),
+            variant: "secondary",
+            icon: "pencil",
+            icon_position: "right",
+            size: "sm",
+            href: budget_budget_categories_path(budget)
+          ) %>
+        </div>
+      </div>
+    <% end %>
+
     <div id="segment_unused" class="hidden">
       <p class="text-sm text-secondary text-center mb-2"><%= t("budgets.donut.unused") %></p>
 

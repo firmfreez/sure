@@ -3,6 +3,7 @@ en:
   breadcrumbs:
     budgets: Budgets
     dashboard: Dashboard
+    accounts: Accounts
     exports: Exports
     home: Home
     imports: Imports

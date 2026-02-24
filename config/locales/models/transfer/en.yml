@@ -1,5 +1,13 @@
 ---
 en:
+  models:
+    transfer:
+      transfer: Transfer
+      payment: Payment
+      transfer_to: "Transfer to %{account}"
+      transfer_from: "Transfer from %{account}"
+      payment_to: "Payment to %{account}"
+      payment_from: "Payment from %{account}"
   activerecord:
     errors:
       models:

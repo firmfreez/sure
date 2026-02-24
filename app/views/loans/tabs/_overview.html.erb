@@ -27,26 +27,58 @@
     <% end %>
   <% end %>
 
-  <%= summary_card title: t(".term") do %>
+  <%= summary_card title: t(".total_term") do %>
     <% if account.loan.term_months.present? %>
       <% if account.loan.term_months < 12 %>
-        <%= pluralize(account.loan.term_months, "month") %>
+        <%= t(".month_count", count: account.loan.term_months) %>
       <% else %>
-        <%= pluralize(account.loan.term_months / 12, "year") %>
+        <%= t(".year_count", count: account.loan.term_months / 12) %>
       <% end %>
     <% else %>
       <%= t(".unknown") %>
     <% end %>
   <% end %>
 
+  <%= summary_card title: t(".remaining_term") do %>
+    <% if account.loan.remaining_term_months.present? %>
+      <% if account.loan.remaining_term_months < 12 %>
+        <%= t(".month_count", count: account.loan.remaining_term_months) %>
+      <% else %>
+        <%= t(".year_count", count: account.loan.remaining_term_months / 12) %>
+      <% end %>
+    <% else %>
+      <%= t(".unknown") %>
+    <% end %>
+  <% end %>
+
+  <%= summary_card title: t(".total_payments") do %>
+    <% if account.loan.term_months.present? %>
+      <%= t(".payment_count", count: account.loan.term_months) %>
+    <% else %>
+      <%= t(".unknown") %>
+    <% end %>
+  <% end %>
+
+  <%= summary_card title: t(".remaining_payments") do %>
+    <% if account.loan.remaining_term_months.present? %>
+      <%= t(".payment_count", count: account.loan.remaining_term_months) %>
+    <% else %>
+      <%= t(".unknown") %>
+    <% end %>
+  <% end %>
+
   <%= summary_card title: t(".type") do %>
-    <%= account.loan.rate_type&.titleize || t(".unknown") %>
+    <% if account.loan.rate_type.present? %>
+      <%= t(".rate_types.#{account.loan.rate_type}") %>
+    <% else %>
+      <%= t(".unknown") %>
+    <% end %>
   <% end %>
 </div>
 
 <div class="flex justify-center py-8">
   <%= render DS::Link.new(
-    text: "Edit loan details",
+    text: t(".edit_loan_details"),
     variant: "ghost",
     href: edit_loan_path(account),
     frame: :modal

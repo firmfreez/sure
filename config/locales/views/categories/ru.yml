@@ -7,15 +7,27 @@ ru:
       delete: Удалить категорию
       edit: Редактировать категорию
     create:
-      success: Категория создана
+      success: Категория успешно создана
     destroy:
-      success: Категория удалена
+      success: Категория успешно удалена
     edit:
       edit: Редактировать категорию
     form:
+      auto_adjust: автонастройка.
+      classification_label: Классификация
+      classifications:
+        income: Доход
+        expense: Расход
+      color: Цвет
+      contrast_warning: "Слишком низкий контраст, выберите более темный цвет или"
+      icon: Иконка
+      name_label: Название
+      parent_label: Родительская категория (необязательно)
       placeholder: Название категории
+      submit: Создать категорию
+      unassigned: (без родителя)
     index:
-      bootstrap: Использовать стандартные (рекомендуется)
+      bootstrap: Использовать значения по умолчанию (рекомендуется)
       categories: Категории
       categories_expenses: Категории расходов
       categories_incomes: Категории доходов
@@ -26,7 +38,7 @@ ru:
     new:
       new_category: Новая категория
     update:
-      success: Категория обновлена
+      success: Категория успешно обновлена
   category:
     dropdowns:
       show:

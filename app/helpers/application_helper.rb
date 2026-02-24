@@ -74,6 +74,22 @@ module ApplicationHelper
     end
   end
 
+  def format_month_year(object, abbreviated: false)
+    return nil unless object
+
+    date = object.to_date
+    month_names_key = abbreviated ? "date.abbr_month_names_standalone" : "date.month_names_standalone"
+    month_names = I18n.t(month_names_key, default: [])
+    month_name = month_names[date.month].presence || I18n.l(date, format: (abbreviated ? "%b" : "%B"))
+
+    "#{month_name} #{date.year}"
+  end
+
+  def enable_banking_callback_url
+    path = ingress_prefixed_path(callback_enable_banking_items_path)
+    "#{request.base_url}#{path}"
+  end
+
 
   def family_moniker
     Current.family&.moniker_label || "Family"
@@ -94,7 +110,8 @@ module ApplicationHelper
   def format_money(number_or_money, options = {})
     return nil unless number_or_money
 
-    Money.new(number_or_money).format(options)
+    money = number_or_money.is_a?(Money) ? number_or_money : Money.new(number_or_money)
+    money.format(options)
   end
 
   def totals_by_currency(collection:, money_method:, separator: " | ", negate: false)

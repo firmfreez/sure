@@ -1,0 +1,51 @@
+---
+ru:
+  loans:
+    new:
+      title: Новый займ
+    edit:
+      edit: Редактировать %{account}
+    form:
+      initial_balance: Изначальный остаток долга
+      interest_rate: Процентная ставка
+      interest_rate_placeholder: Введите годовую ставку
+      rate_type: Тип ставки
+      rate_types:
+        fixed: Фиксированная
+        variable: Плавающая
+        adjustable: Регулируемая
+      term_months: Срок (в месяцах)
+      term_months_placeholder: Введите срок в месяцах
+    tabs:
+      overview:
+        original_principal: Изначальный долг
+        remaining_principal: Оставшийся долг
+        interest_rate: Процентная ставка
+        monthly_payment: Ежемесячный платёж
+        total_term: Общий срок
+        remaining_term: Остался срок
+        total_payments: Сколько всего платежей
+        remaining_payments: Сколько осталось платежей
+        type: Тип
+        unknown: Неизвестно
+        not_applicable: Неприменимо
+        month_count:
+          one: "%{count} месяц"
+          few: "%{count} месяца"
+          many: "%{count} месяцев"
+          other: "%{count} месяцев"
+        year_count:
+          one: "%{count} год"
+          few: "%{count} года"
+          many: "%{count} лет"
+          other: "%{count} лет"
+        payment_count:
+          one: "%{count} платёж"
+          few: "%{count} платежа"
+          many: "%{count} платежей"
+          other: "%{count} платежей"
+        rate_types:
+          fixed: Фиксированная
+          variable: Плавающая
+          adjustable: Регулируемая
+        edit_loan_details: Редактировать детали займа

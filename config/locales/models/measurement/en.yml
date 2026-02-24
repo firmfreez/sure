@@ -1,0 +1,8 @@
+---
+en:
+  measurement:
+    units:
+      sqft: sq ft
+      sqm: sq m
+      mi: mi
+      km: km

@@ -19,39 +19,36 @@ class Valuation::Name
     attr_reader :valuation_kind, :accountable_type
 
     def opening_anchor_name
-      case accountable_type
-      when "Property", "Vehicle"
-        "Original purchase price"
-      when "Loan"
-        "Original principal"
-      when "Investment", "Crypto", "OtherAsset"
-        "Opening account value"
-      else
-        "Opening balance"
-      end
+      I18n.t(
+        "models.valuation.names.opening_anchor.#{accountable_type_key}",
+        default: I18n.t("models.valuation.names.opening_anchor.default", default: "Opening balance")
+      )
     end
 
     def current_anchor_name
-      case accountable_type
-      when "Property", "Vehicle"
-        "Current market value"
-      when "Loan"
-        "Current loan balance"
-      when "Investment", "Crypto", "OtherAsset"
-        "Current account value"
-      else
-        "Current balance"
-      end
+      I18n.t(
+        "models.valuation.names.current_anchor.#{accountable_type_key}",
+        default: I18n.t("models.valuation.names.current_anchor.default", default: "Current balance")
+      )
     end
 
     def recon_name
+      I18n.t(
+        "models.valuation.names.recon.#{accountable_type_key}",
+        default: I18n.t("models.valuation.names.recon.default", default: "Manual balance update")
+      )
+    end
+
+    def accountable_type_key
       case accountable_type
-      when "Property", "Investment", "Vehicle", "Crypto", "OtherAsset"
-        "Manual value update"
+      when "Property", "Vehicle"
+        "property"
       when "Loan"
-        "Manual principal update"
+        "loan"
+      when "Investment", "Crypto", "OtherAsset"
+        "investment"
       else
-        "Manual balance update"
+        "default"
       end
     end
 end

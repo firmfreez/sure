@@ -122,7 +122,7 @@ class AccountsTest < ApplicationSystemTestCase
 
       yield if block_given?
 
-      click_button "Create Account"
+      click_button I18n.t("accounts.form.submit")
 
       within_testid("account-sidebar-tabs") do
         click_on "All"
@@ -154,7 +154,7 @@ class AccountsTest < ApplicationSystemTestCase
       fill_in "Institution name", with: updated_institution_name
       fill_in "Institution domain", with: updated_institution_domain
       fill_in "Notes", with: updated_notes
-      click_button "Update Account"
+      click_button I18n.t("accounts.form.submit")
       assert_selector "h2", text: "Updated account name"
 
       created_account.reload

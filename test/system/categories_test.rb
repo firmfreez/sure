@@ -9,7 +9,7 @@ class CategoriesTest < ApplicationSystemTestCase
     visit categories_url
     click_link I18n.t("categories.new.new_category")
     fill_in "Name", with: "My Shiny New Category"
-    click_button "Create Category"
+    click_button I18n.t("categories.form.submit")
 
     visit categories_url
     assert_text "My Shiny New Category"
@@ -19,7 +19,7 @@ class CategoriesTest < ApplicationSystemTestCase
     visit categories_url
     click_link I18n.t("categories.new.new_category")
     fill_in "Name", with: categories(:food_and_drink).name
-    click_button "Create Category"
+    click_button I18n.t("categories.form.submit")
 
     assert_text "Name has already been taken"
   end

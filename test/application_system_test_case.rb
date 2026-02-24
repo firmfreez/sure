@@ -10,7 +10,10 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   private
 
     def sign_in(user)
-      visit new_session_path
+      user.update!(locale: "en") if user.respond_to?(:locale)
+      user.family&.update!(locale: "en")
+
+      visit new_session_path(locale: "en")
       within %(form[action='#{sessions_path}']) do
         fill_in "Email", with: user.email
         fill_in "Password", with: user_password_test

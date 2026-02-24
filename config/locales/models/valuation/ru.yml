@@ -1,0 +1,20 @@
+---
+ru:
+  models:
+    valuation:
+      names:
+        opening_anchor:
+          property: Исходная цена покупки
+          loan: Исходный основной долг
+          investment: Исходная стоимость счета
+          default: Начальный баланс
+        current_anchor:
+          property: Текущая рыночная стоимость
+          loan: Текущий баланс займа
+          investment: Текущая стоимость счета
+          default: Текущий баланс
+        recon:
+          property: Ручное обновление стоимости
+          loan: Ручное обновление основного долга
+          investment: Ручное обновление стоимости
+          default: Ручное обновление баланса
