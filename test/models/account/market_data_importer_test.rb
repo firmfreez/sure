@@ -19,6 +19,10 @@ class Account::MarketDataImporterTest < ActiveSupport::TestCase
     @provider = mock("provider")
     Provider::Registry.any_instance
                       .stubs(:get_provider)
+                      .with(:yahoo_finance)
+                      .returns(@provider)
+    Provider::Registry.any_instance
+                      .stubs(:get_provider)
                       .with(:twelve_data)
                       .returns(@provider)
   end
@@ -149,7 +153,7 @@ class Account::MarketDataImporterTest < ActiveSupport::TestCase
                    start_date: expected_start_date,
                    end_date: end_date)
              .returns(provider_error_response(
-               Provider::TwelveData::Error.new("Invalid symbol", details: { code: 400, message: "Invalid symbol" })
+               Provider::YahooFinance::Error.new("Invalid symbol")
              ))
 
     @provider.stubs(:fetch_security_info)
@@ -192,7 +196,7 @@ class Account::MarketDataImporterTest < ActiveSupport::TestCase
                    start_date: expected_start_date,
                    end_date: end_date)
              .returns(provider_error_response(
-               Provider::TwelveData::Error.new("Rate limit exceeded", details: { code: 429, message: "Rate limit exceeded" })
+               Provider::YahooFinance::Error.new("Rate limit exceeded")
              ))
 
     @provider.expects(:fetch_exchange_rates)
@@ -201,7 +205,7 @@ class Account::MarketDataImporterTest < ActiveSupport::TestCase
                    start_date: expected_start_date,
                    end_date: end_date)
              .returns(provider_error_response(
-               Provider::TwelveData::Error.new("Rate limit exceeded", details: { code: 429, message: "Rate limit exceeded" })
+               Provider::YahooFinance::Error.new("Rate limit exceeded")
              ))
 
     before = ExchangeRate.count

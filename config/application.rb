@@ -45,6 +45,10 @@ module Sure
     config.x.ui = ActiveSupport::OrderedOptions.new
     default_layout = ENV.fetch("DEFAULT_UI_LAYOUT", "dashboard")
     config.x.ui.default_layout = default_layout.in?(%w[dashboard intro]) ? default_layout : "dashboard"
+    # Apply Home Assistant ingress prefix to routes/redirects when present.
+    require_relative "../app/middleware/home_assistant_ingress_prefixer"
+    config.middleware.use HomeAssistantIngressPrefixer
+
     # Handle OmniAuth/OIDC errors gracefully (must be before OmniAuth middleware)
     require_relative "../app/middleware/omniauth_error_handler"
     config.middleware.use OmniauthErrorHandler

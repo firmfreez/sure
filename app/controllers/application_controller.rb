@@ -18,6 +18,17 @@ class ApplicationController < ActionController::Base
   helper_method :demo_config, :demo_host_match?, :show_demo_warning?
 
   private
+    def verified_request?
+      return true if home_assistant_ingress_request?
+
+      super
+    end
+
+    def home_assistant_ingress_request?
+      request.headers["X-Hass-Source"] == "core.ingress" ||
+        request.headers["X-Ingress-Path"].present?
+    end
+
     def accept_pending_invitation_for(user)
       return false if user.blank?
 
