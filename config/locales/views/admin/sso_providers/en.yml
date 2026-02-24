@@ -5,11 +5,18 @@ en:
     sso_providers:
       index:
         title: "SSO Providers"
-        description: "Manage single sign-on authentication providers for your instance"
+        description: "Manage single sign-on authentication providers for your instance."
+        note: "Changes to SSO providers require a server restart to take effect. Alternatively, enable the AUTH_PROVIDERS_SOURCE=db feature flag to load providers from the database dynamically."
         add_provider: "Add Provider"
         no_providers_title: "No SSO Providers"
         no_providers_message: "Get started by adding your first SSO provider."
-        note: "Changes to SSO providers require a server restart to take effect. Alternatively, enable the AUTH_PROVIDERS_SOURCE=db feature flag to load providers from the database dynamically."
+        configured_title: "Configured Providers"
+        configuration_mode_title: "Configuration Mode"
+        db_providers_title: "Database-backed providers"
+        db_providers_subtitle: "Load providers from database instead of YAML config"
+        enabled: "Enabled"
+        disabled: "Disabled"
+        db_providers_hint_html: "Set <code class=\"bg-surface px-1 py-0.5 rounded text-xs\">AUTH_PROVIDERS_SOURCE=db</code> to enable database-backed providers. This allows changes without server restarts."
         table:
           name: "Name"
           strategy: "Strategy"

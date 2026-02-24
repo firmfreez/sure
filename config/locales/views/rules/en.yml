@@ -1,6 +1,72 @@
 ---
 en:
   rules:
+    index:
+      title: Rules
+      ai_cost_warning: AI-enabled rule actions will cost money. Be sure to filter as narrowly as possible to avoid unnecessary costs.
+      list_title: Rules
+      sort_by: "Sort by:"
+      sort:
+        name: Name
+        updated_at: Updated At
+      toggle_sort_direction: Toggle sort direction
+      empty_title: No rules yet
+      empty_subtitle: Set up rules to perform actions to your transactions and other data on every account sync.
+    new_rule: New rule
+    destroy_all:
+      button: Delete all rules
+      resource_name: all rules
+    form:
+      rule_name: Rule name (optional)
+      rule_name_placeholder: Enter a name for this rule
+      if: IF
+      then: THEN
+      for: FOR
+      to: TO
+      and: and
+      all: all
+      any: any
+      match: match
+      of_the_following_conditions: of the following conditions
+      add_condition: Add condition
+      add_condition_group: Add condition group
+      add_action: Add action
+      all_past_future: "All past and future %{resource_type}"
+      starting_from: Starting from
+      back_to_rules: Back to rules
+      new_rule_title: "New %{resource_type} rule"
+      edit_rule_title: "Edit %{resource_type} rule"
+      edit_rule_title_named: "Edit %{resource_type} rule \"%{name}\""
+      submit_create: Create rule
+      submit_update: Save rule
+    condition_filters:
+      transaction_name:
+        label: Transaction name
+      transaction_amount:
+        label: Transaction amount
+      transaction_type:
+        label: Transaction type
+        income: Income
+        expense: Expense
+        transfer: Transfer
+        equal_to: Equal to
+      transaction_merchant:
+        label: Transaction merchant
+      transaction_category:
+        label: Transaction category
+      transaction_details:
+        label: Transaction details
+      transaction_notes:
+        label: Transaction notes
+    operators:
+      contains: Contains
+      equal_to: Equal to
+      is_empty: Is empty
+      greater_than: Greater than
+      greater_or_equal: Greater or equal to
+      less_than: Less than
+      less_or_equal: Less than or equal to
+      is_equal: Is equal to
     no_action: No Action
     no_condition: No condition
     actions:
@@ -44,9 +110,30 @@ en:
       confirm_body: Are you sure you want to reset the AI cache? This will allow AI rules to re-process all transactions. This may incur additional API costs.
       confirm_button: Reset Cache
       success: AI cache is being cleared. This may take a few moments.
-    condition_filters:
-      transaction_type:
-        income: Income
-        expense: Expense
-        transfer: Transfer
-        equal_to: Equal to
+    resource_types:
+      transaction: transaction
+    resource_types_plural:
+      transaction: transactions
+    action_executors:
+      set_transaction_category:
+        label: Set transaction category
+      set_transaction_merchant:
+        label: Set transaction merchant
+      set_transaction_tags:
+        label: Add transaction tag
+      set_transaction_name:
+        label: Set transaction name
+      set_as_transfer_or_payment:
+        label: Mark as transfer or payment
+      set_investment_activity_label:
+        label: Set investment activity label
+      exclude_transaction:
+        label: Exclude from budgeting and reports
+      auto_detect_merchants:
+        label: Auto-detect merchants
+        ai_cost: Auto-detect merchants with AI ($$)
+      auto_categorize:
+        label: Auto-categorize transactions with AI
+        cost_unavailable: "(cost: N/A)"
+        cost_estimate: "(~$%{cost} per 20 transactions)"
+        no_provider: (no LLM provider configured)

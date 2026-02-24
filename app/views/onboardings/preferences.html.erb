@@ -23,7 +23,7 @@
           <p class="text-sm">
             <span class="text-green-500 font-medium">+<%= format_money(Money.new(78.90, params[:currency] || @user.family.currency)) %></span>
             <span class="text-green-500 font-medium">(+<%= format_money(Money.new(6.39, params[:currency] || @user.family.currency)) %>)</span>
-            <span class="text-secondary">as of <%= format_date(Date.parse("2024-10-23"), :default, format_code: params[:date_format] || @user.family.date_format) %></span>
+            <span class="text-secondary"><%= t(".as_of") %> <%= format_date(Date.parse("2024-10-23"), :default, format_code: params[:date_format] || @user.family.date_format) %></span>
           </p>
         </div>
 
@@ -64,6 +64,7 @@
     <p class="text-secondary text-xs mb-4"><%= t(".preview") %></p>
 
     <%= styled_form_with model: @user, data: { turbo: false } do |form| %>
+      <%= form.hidden_field :locale, value: params[:locale] || @user.locale || @user.family&.locale || I18n.locale %>
       <%= form.hidden_field :set_onboarding_preferences_at, value: Time.current %>
       <%= form.hidden_field :redirect_to, value: "goals" %>
 
@@ -76,7 +77,7 @@
 
           <%= family_form.select :locale,
                                  language_options,
-                                 { label: t(".locale"), required: true, selected: params[:locale] || @user.locale || I18n.locale },
+                                 { label: t(".locale"), required: true, selected: params[:locale] || @user.family&.locale || @user.locale || I18n.locale },
                                  { data: { action: "onboarding#setLocale" } } %>
 
           <%= family_form.select :currency,

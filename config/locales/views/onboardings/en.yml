@@ -29,6 +29,7 @@ en:
       title: Configure your preferences
       subtitle: Let's configure your preferences.
       example: Example account
+      as_of: as of
       preview: Preview how data displays based on preferences.
       color_theme: Color theme
       theme_system: System

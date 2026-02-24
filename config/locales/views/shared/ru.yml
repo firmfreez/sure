@@ -1,0 +1,24 @@
+---
+ru:
+  shared:
+    confirm_dialog:
+      body: Это действие нельзя отменить.
+      confirm: Подтвердить
+      title: Вы уверены?
+      resource_delete:
+        title: "Удалить %{resource}?"
+        body: "Вы уверены, что хотите удалить %{resource}? Это действие нельзя отменить."
+        confirm: "Удалить %{resource}"
+      resources:
+        import: Импорт
+    confirm_modal:
+      accept: Подтверждать
+      body_html: <p>Вы не сможете отменить это решение</p>
+      cancel: Отмена
+      title: Вы уверены?
+    money_field:
+      label: Количество
+    syncing_notice:
+      syncing: Синхронизация данных аккаунтов...
+    trend_change:
+      no_change: без изменений

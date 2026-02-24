@@ -8,7 +8,7 @@ class LocalizeTest < ActionDispatch::IntegrationTest
   end
 
   test "falls back to English when Accept-Language is unsupported" do
-    get new_session_url, headers: { "Accept-Language" => "ru-RU,ru;q=0.9" }
+    get new_session_url, headers: { "Accept-Language" => "ja-JP,ja;q=0.9" }
     assert_response :success
     assert_select "button", text: /Log in/i
   end
@@ -24,7 +24,7 @@ class LocalizeTest < ActionDispatch::IntegrationTest
   test "falls back to family locale when Accept-Language is unsupported" do
     sign_in users(:family_admin)
 
-    get preferences_onboarding_url, headers: { "Accept-Language" => "ru-RU,ru;q=0.9" }
+    get preferences_onboarding_url, headers: { "Accept-Language" => "ja-JP,ja;q=0.9" }
     assert_response :success
     assert_select "h1", text: /Configure your preferences/i
   end

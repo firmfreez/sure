@@ -1,0 +1,122 @@
+---
+ru:
+  admin:
+    unauthorized: У вас нет доступа к этой области.
+    sso_providers:
+      index:
+        title: SSO‑провайдеры
+        description: Управляйте провайдерами аутентификации единого входа для вашего экземпляра
+        add_provider: Добавить провайдера
+        no_providers_title: Нет SSO‑провайдеров
+        no_providers_message: Начните с добавления своего первого SSO‑провайдера.
+        note: Чтобы изменения в SSO‑провайдерах вступили в силу, требуется перезагрузка сервера. Альтернативно, включите функциональный флаг AUTH_PROVIDERS_SOURCE=db для динамической загрузки провайдеров из базы данных.
+        configured_title: Настроенные провайдеры
+        configuration_mode_title: Режим конфигурации
+        db_providers_title: Провайдеры из базы данных
+        db_providers_subtitle: Загружать провайдеров из базы вместо YAML‑конфига
+        enabled: Включено
+        disabled: Выключено
+        db_providers_hint_html: "Укажите <code class=\"bg-surface px-1 py-0.5 rounded text-xs\">AUTH_PROVIDERS_SOURCE=db</code>, чтобы включить провайдеров из базы. Это позволит применять изменения без перезапуска сервера."
+        table:
+          name: Имя
+          strategy: Стратегия
+          status: Статус
+          issuer: Эмитент
+          actions: Действия
+          enabled: Включено
+          disabled: Неполноценный
+        legacy_providers_title: Провайдеры, настроенные через окружение
+        legacy_providers_notice: Эти провайдеры настраиваются через переменные окружения или YAML и не управляются через этот интерфейс. Чтобы управлять ими здесь, включите AUTH_PROVIDERS_SOURCE=db и создайте их заново в интерфейсе.
+        env_configured: Конверт/YAML
+      new:
+        title: Добавить провайдера единого входа
+        description: Настройка нового провайдера аутентификации единого входа
+      edit:
+        title: Изменить провайдера единого входа
+        description: Обновить конфигурацию для %{label}
+      create:
+        success: Провайдер единого входа успешно создан.
+      update:
+        success: Провайдер единого входа успешно обновлен.
+      destroy:
+        success: Провайдер единого входа успешно удален.
+        confirm: Вы уверены, что хотите удалить этого провайдера? Это действие невозможно отменить.
+      toggle:
+        success_enabled: Провайдер единого входа был успешно включен.
+        success_disabled: Провайдер единого входа был успешно отключен.
+        confirm_enable: Вы уверены, что хотите включить этого провайдера?
+        confirm_disable: Вы уверены, что хотите отключить этого провайдера?
+      form:
+        basic_information: Основная информация
+        oauth_configuration: Конфигурация OAuth/OIDC
+        strategy_label: Стратегия
+        strategy_help: Используемая стратегия аутентификации
+        name_label: Имя
+        name_placeholder: например, openid_connect, keycloak, authentik
+        name_help: Уникальный идентификатор (только строчные буквы, цифры и подчеркивания)
+        label_label: Этикетка
+        label_placeholder: например, Войти с помощью Keycloak
+        label_help: Текст кнопки, отображаемый пользователям
+        icon_label: Икона
+        icon_placeholder: например, ключ, Google, GitHub
+        icon_help: Название значка Люцида (необязательно)
+        enabled_label: Включить этого провайдера
+        enabled_help: Пользователи могут войти в систему с помощью этого провайдера, если он включен.
+        issuer_label: Эмитент
+        issuer_placeholder: https://accounts.google.com
+        issuer_help: URL-адрес эмитента OIDC (проверит конечную точку .well-known/openid-configuration)
+        client_id_label: Идентификатор клиента
+        client_id_placeholder: идентификатор вашего клиента
+        client_id_help: Идентификатор клиента OAuth от вашего провайдера удостоверений
+        client_secret_label: Секрет клиента
+        client_secret_placeholder_new: секрет вашего клиента
+        client_secret_placeholder_existing: •••••••••••••••
+        client_secret_help: Секрет клиента OAuth (зашифрованный в базе данных)
+        client_secret_help_existing: ' - оставьте пустым, чтобы сохранить существующее'
+        redirect_uri_label: URI перенаправления
+        redirect_uri_placeholder: https://yourdomain.com/auth/openid_connect/callback
+        redirect_uri_help: URL-адрес обратного вызова для настройки в вашем провайдере удостоверений
+        copy_button: Копировать
+        cancel: Отмена
+        submit: Сохранить провайдера
+        errors_title: 'Ошибка %{count} запретила сохранение этого провайдера:'
+        provisioning_title: Предоставление пользователей
+        default_role_label: Роль по умолчанию для новых пользователей
+        default_role_help: Роль, назначенная пользователям, созданным посредством подготовки учетной записи единого входа по принципу «точно в срок» (JIT). По умолчанию — Член.
+        role_guest: Гость
+        role_member: Член
+        role_admin: Админ
+        role_super_admin: Суперадминистратор
+        role_mapping_title: Сопоставление групп и ролей (необязательно)
+        role_mapping_help: Сопоставьте группы/заявления IdP с ролями приложения. Пользователям назначается роль с наивысшим соответствием. Оставьте пустым, чтобы использовать роль по умолчанию, указанную выше.
+        super_admin_groups: Группы суперадминистраторов
+        admin_groups: Группы администраторов
+        guest_groups: Гостевые группы
+        member_groups: Группы участников
+        groups_help: Список имен групп IdP, разделенных запятыми. Используйте *, чтобы сопоставить все группы.
+        advanced_title: Расширенные настройки OIDC
+        scopes_label: Пользовательские области
+        scopes_help: Список областей OIDC, разделенный пробелами. Оставьте пустым для значений по умолчанию (профиль электронной почты openid). Добавьте «группы», чтобы получить групповые заявки.
+        prompt_label: Запрос аутентификации
+        prompt_default: По умолчанию (решает IdP)
+        prompt_login: Принудительный вход (повторная аутентификация)
+        prompt_consent: Принудительное согласие (повторная авторизация)
+        prompt_select_account: Выбор учетной записи (выбрать счет)
+        prompt_none: Без запроса (тихая аутентификация)
+        prompt_help: Управляет тем, как IdP запрашивает пользователя во время аутентификации.
+        test_connection: Тестовое соединение
+        saml_configuration: SAML-конфигурация
+        idp_metadata_url: URL-адрес метаданных провайдера удостоверений
+        idp_metadata_url_help: URL-адрес метаданных SAML вашего провайдера удостоверений. Если указано, другие параметры SAML будут настроены автоматически.
+        manual_saml_config: Ручная настройка (если не используется URL-адрес метаданных)
+        manual_saml_help: Используйте эти настройки только в том случае, если ваш провайдер удостоверений не предоставляет URL-адрес метаданных.
+        idp_sso_url: URL единого входа провайдера идентификационной информации
+        idp_slo_url: URL-адрес IdP SLO (необязательно)
+        idp_certificate: Сертификат удостоверения личности
+        idp_certificate_help: Сертификат X.509 в формате PEM. Требуется, если не используется URL-адрес метаданных.
+        idp_cert_fingerprint: Отпечаток сертификата (альтернативный вариант)
+        name_id_format: Формат NameID
+        name_id_email: Адрес электронной почты (по умолчанию)
+        name_id_persistent: Настойчивый
+        name_id_transient: Переходный процесс
+        name_id_unspecified: Не указано

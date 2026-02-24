@@ -1,6 +1,38 @@
 ---
 en:
   budgets:
+    header:
+      today: Today
+    categories:
+      title: Categories
+      label: Categories
+      amount: Amount
+      edit: Edit
+    summary:
+      income: Income
+      expenses: Expenses
+    donut:
+      spent: Spent
+      of: "of %{amount}"
+      new_budget: New budget
+      unused: Unused
+    nav:
+      setup: Setup
+      categories: Categories
+    edit:
+      title: Setup your budget
+      subtitle: Enter your monthly earnings and planned spending below to setup your budget.
+      budgeted_spending: Budgeted spending
+      expected_income: Expected income
+      autosuggest_title: Autosuggest income & spending budget
+      autosuggest_hint: This will be based on transaction history. AI can make mistakes, verify before continuing.
+      submit: Continue
+    categories_edit:
+      title: Edit your category budgets
+      subtitle: Adjust category budgets to set spending limits. Unallocated funds will be automatically assigned as uncategorized.
+    no_categories:
+      title: Oops!
+      subtitle: You have not created or assigned any expense categories to your transactions yet.
     name:
       custom_range: "%{start} - %{end_date}"
       month_year: "%{month}"

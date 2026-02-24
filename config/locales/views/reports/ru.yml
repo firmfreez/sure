@@ -1,0 +1,224 @@
+---
+ru:
+  reports:
+    index:
+      title: Отчёты
+      subtitle: Полная картина вашего финансового здоровья
+      export: Экспорт CSV
+      print_report: Печать отчёта
+      drag_to_reorder: "Перетащите, чтобы изменить порядок раздела"
+      toggle_section: "Переключить видимость раздела"
+      periods:
+        monthly: Месяц
+        quarterly: Квартал
+        ytd: С начала года
+        last_6_months: Последние 6 месяцев
+        custom: Произвольный период
+      date_range:
+        from: С
+        to: По
+      showing_period: "Показаны данные с %{start} по %{end}"
+    invalid_date_range: "Дата окончания не может быть раньше даты начала. Даты были переставлены."
+    summary:
+      total_income: Общий доход
+      total_expenses: Общие расходы
+      net_savings: Чистые накопления
+      budget_performance: Выполнение бюджета
+      vs_previous: по сравнению с предыдущим периодом
+      income_minus_expenses: Доходы минус расходы
+      of_budget_used: бюджета использовано
+      no_budget_data: Нет данных по бюджету за этот период
+    budget_performance:
+      title: Выполнение бюджета
+      spent: Потрачено
+      budgeted: Запланировано
+      remaining: Осталось
+      over_by: Превышение на
+      shared: общее
+      suggested_daily: "Рекомендуется %{amount} в день на %{days} оставшихся дней"
+      no_budgets: Нет категорий бюджета за этот месяц
+      status:
+        good: В норме
+        warning: Близко к лимиту
+        over: Превышен
+    trends:
+      title: Тренды и инсайты
+      monthly_breakdown: Помесячная разбивка
+      month: Месяц
+      income: Доход
+      expenses: Расходы
+      net: Итог
+      savings_rate: Норма сбережений
+      current: текущий
+      avg_monthly_income: Средний доход в месяц
+      avg_monthly_expenses: Средние расходы в месяц
+      avg_monthly_savings: Средние сбережения в месяц
+      no_data: Нет данных по трендам
+      spending_patterns: Паттерны расходов
+      weekday_spending: Расходы в будни
+      weekend_spending: Расходы в выходные
+      total: Всего
+      avg_per_transaction: Среднее за транзакцию
+      transactions: Транзакции
+      insight_title: Инсайт
+      insight_higher_weekend: "В выходные вы тратите на %{percent}% больше за транзакцию, чем в будни"
+      insight_higher_weekday: "В будни вы тратите на %{percent}% больше за транзакцию, чем в выходные"
+      insight_similar: "Ваши расходы за транзакцию схожи в будни и выходные"
+      no_spending_data: Нет данных о расходах за этот период
+    empty_state:
+      title: Данные отсутствуют
+      description: Начните отслеживать финансы, добавив транзакции или подключив счета, чтобы видеть отчёты
+      add_transaction: Добавить транзакцию
+      add_account: Добавить счёт
+    transactions_breakdown:
+      title: Разбивка активности
+      no_transactions: Нет активности за выбранный период и фильтры
+      filters:
+        title: Фильтры
+        category: Категория
+        account: Счёт
+        tag: Тег
+        amount_min: Мин. сумма
+        amount_max: Макс. сумма
+        date_range: Диапазон дат
+        all_categories: Все категории
+        all_accounts: Все счета
+        all_tags: Все теги
+        apply: Применить фильтры
+        clear: Сбросить фильтры
+      sort:
+        label: Сортировать по
+        date_desc: Дата (сначала новые)
+        amount_desc: Сумма (по убыванию)
+        amount_asc: Сумма (по возрастанию)
+      export:
+        label: Экспорт
+        csv: CSV
+        excel: Excel
+        pdf: PDF
+        google_sheets: Открыть в Google Sheets
+      table:
+        category: Категория
+        amount: Сумма
+        type: Тип
+        expense: Расходы
+        income: Доходы
+        uncategorized: Без категории
+        entries:
+          one: "%{count} запись"
+          other: "%{count} записей"
+        percentage: "% от итога"
+      pagination:
+        showing:
+          one: Показана %{count} запись
+          other: Показано %{count} записей
+        previous: Назад
+        next: Далее
+    net_worth:
+      title: Чистая стоимость
+      current_net_worth: Текущая чистая стоимость
+      period_change: Изменение за период
+      assets_vs_liabilities: Активы и обязательства
+      total_assets: Активы
+      total_liabilities: Обязательства
+      no_assets: Нет активов
+      no_liabilities: Нет обязательств
+    investment_performance:
+      title: Эффективность инвестиций
+      portfolio_value: Стоимость портфеля
+      total_return: Общая доходность
+      contributions: Взносы за период
+      withdrawals: Выводы за период
+      top_holdings: Топ-активы
+      holding: Актив
+      weight: Доля
+      value: Стоимость
+      return: Доходность
+      accounts: Инвестсчета
+      gains_by_tax_treatment: Прибыль по налоговому режиму
+      unrealized_gains: Нереализованная прибыль
+      realized_gains: Реализованная прибыль
+      total_gains: Общая прибыль
+      taxable_realized_note: Эти доходы могут облагаться налогом
+      no_data: "-"
+      view_details: Подробнее
+      holdings_count:
+        one: "%{count} актив"
+        other: "%{count} активов"
+      sells_count:
+        one: "%{count} продажа"
+        other: "%{count} продаж"
+      holdings: Активы
+      sell_trades: Продажи
+      and_more: "+ ещё %{count}"
+    investment_flows:
+      title: Потоки инвестиций
+      description: Отслеживайте поступления и выводы средств по инвестсчетам
+      contributions: Взносы
+      withdrawals: Выводы
+      net_flow: Чистый поток
+    google_sheets_instructions:
+      title_with_key: "✅ Скопируйте URL для Google Sheets"
+      title_no_key: "⚠️ Требуется API ключ"
+      ready: Ваш URL CSV (с API ключом) готов.
+      steps: "Чтобы импортировать в Google Sheets:\n1. Создайте новый Google Sheet\n2. В ячейку A1 вставьте формулу ниже\n3. Нажмите Enter"
+      security_warning: "Этот URL содержит ваш API ключ. Храните его в безопасности!"
+      need_key: Чтобы импортировать данные в Google Sheets, нужен API ключ.
+      step1: "Перейдите в Settings → API Keys"
+      step2: "Создайте новый API ключ с правами \"read\""
+      step3: Скопируйте API ключ
+      step4: "Добавьте его к URL так: ?api_key=YOUR_KEY"
+      example: Пример
+      then_use: Затем используйте полный URL с =IMPORTDATA() в Google Sheets.
+      open_sheets: Открыть Google Sheets
+      go_to_api_keys: Перейти к API ключам
+      close: Понятно
+    print:
+      document_title: Финансовый отчёт
+      title: Финансовый отчёт
+      generated_on: "Сформирован %{date}"
+      summary:
+        title: Сводка
+        income: Доходы
+        expenses: Расходы
+        net_savings: Чистые накопления
+        budget: Бюджет
+        vs_prior: "%{percent}% к прошлому"
+        of_income: "%{percent}% от дохода"
+        used: использовано
+      net_worth:
+        title: Чистая стоимость
+        current_balance: Текущий баланс
+        this_period: за период
+        assets: Активы
+        liabilities: Обязательства
+        no_liabilities: Нет обязательств
+      trends:
+        title: Месячные тренды
+        month: Месяц
+        income: Доходы
+        expenses: Расходы
+        net: Итог
+        savings_rate: Норма сбережений
+        average: Среднее
+        current_month_note: "* Текущий месяц (неполные данные)"
+      investments:
+        title: Инвестиции
+        portfolio_value: Стоимость портфеля
+        total_return: Общая доходность
+        contributions: Взносы
+        withdrawals: Выводы
+        this_period: за период
+        top_holdings: Топ-активы
+        holding: Актив
+        weight: Доля
+        value: Стоимость
+        return: Доходность
+      spending:
+        title: Расходы по категориям
+        income: Доходы
+        expenses: Расходы
+        category: Категория
+        amount: Сумма
+        percent: "%"
+        more_categories: "+ ещё %{count} категорий"

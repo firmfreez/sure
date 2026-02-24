@@ -1,0 +1,20 @@
+---
+ru:
+  breadcrumbs:
+    budgets: Бюджеты
+    categories: Категории
+    dashboard: Дашборд
+    exports: Экспорт
+    family_merchants: Мерчанты
+    home: Главная
+    imports: Импорт
+    intro: Введение
+    recurring_transactions: Регулярные
+    reports: Отчеты
+    rules: Правила
+    sso_providers: SSO-провайдеры
+    tags: Теги
+    transactions: Транзакции
+    users: Пользователи
+    admin/sso_providers: SSO-провайдеры
+    pages: Страницы

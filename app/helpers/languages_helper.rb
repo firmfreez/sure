@@ -156,6 +156,7 @@ module LanguagesHelper
   # Locales with complete/extensive translations
   SUPPORTED_LOCALES = [
     "en",   # English - 71 translation files
+    "ru",   # Russian - 70+ translation files
     "fr",   # French - 61 translation files
     "de",   # German - 62 translation files
     "es",   # Spanish - 61 translation files

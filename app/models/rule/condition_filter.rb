@@ -4,9 +4,22 @@ class Rule::ConditionFilter
   TYPES = [ "text", "number", "select" ]
 
   OPERATORS_MAP = {
-    "text" => [ [ "Contains", "like" ], [ "Equal to", "=" ], [ "Is empty", "is_null" ] ],
-    "number" => [ [ "Greater than", ">" ], [ "Greater or equal to", ">=" ], [ "Less than", "<" ], [ "Less than or equal to", "<=" ], [ "Is equal to", "=" ] ],
-    "select" => [ [ "Equal to", "=" ], [ "Is empty", "is_null" ] ]
+    "text" => [
+      [ I18n.t("rules.operators.contains"), "like" ],
+      [ I18n.t("rules.operators.equal_to"), "=" ],
+      [ I18n.t("rules.operators.is_empty"), "is_null" ]
+    ],
+    "number" => [
+      [ I18n.t("rules.operators.greater_than"), ">" ],
+      [ I18n.t("rules.operators.greater_or_equal"), ">=" ],
+      [ I18n.t("rules.operators.less_than"), "<" ],
+      [ I18n.t("rules.operators.less_or_equal"), "<=" ],
+      [ I18n.t("rules.operators.is_equal"), "=" ]
+    ],
+    "select" => [
+      [ I18n.t("rules.operators.equal_to"), "=" ],
+      [ I18n.t("rules.operators.is_empty"), "is_null" ]
+    ]
   }
 
   def initialize(rule)
@@ -27,7 +40,7 @@ class Rule::ConditionFilter
   end
 
   def label
-    key.humanize
+    I18n.t("rules.condition_filters.#{key}.label", default: key.humanize)
   end
 
   def options

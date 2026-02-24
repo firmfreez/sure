@@ -1,0 +1,42 @@
+---
+ru:
+  budgets:
+    header:
+      today: Сегодня
+    categories:
+      title: Категории
+      label: Категории
+      amount: Сумма
+      edit: Редактировать
+    summary:
+      income: Доходы
+      expenses: Расходы
+    donut:
+      spent: Потрачено
+      of: "из %{amount}"
+      new_budget: Новый бюджет
+      unused: Остаток
+    nav:
+      setup: Настройка
+      categories: Категории
+    edit:
+      title: Настройте бюджет
+      subtitle: Укажите ожидаемый доход и планируемые расходы, чтобы настроить бюджет.
+      budgeted_spending: Планируемые расходы
+      expected_income: Ожидаемый доход
+      autosuggest_title: Подсказать доход и расходы
+      autosuggest_hint: Это будет основано на истории транзакций. ИИ может ошибаться — проверьте перед продолжением.
+      submit: Продолжить
+    categories_edit:
+      title: Настройка бюджетов по категориям
+      subtitle: Укажите лимиты по категориям. Нераспределенные средства будут автоматически отнесены к «Без категории».
+    no_categories:
+      title: Упс!
+      subtitle: У вас пока нет созданных или назначенных категорий расходов для транзакций.
+    name:
+      custom_range: '%{start} - %{end_date}'
+      month_year: '%{month}'
+    show:
+      tabs:
+        actual: Действительный
+        budgeted: Запланированный в бюджете

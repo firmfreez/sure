@@ -3,6 +3,7 @@ class TransactionsController < ApplicationController
 
   before_action :set_entry_for_unlock, only: :unlock
   before_action :store_params!, only: :index
+  before_action :set_breadcrumbs
 
   def new
     super
@@ -310,6 +311,13 @@ class TransactionsController < ApplicationController
     def set_entry_for_unlock
       transaction = Current.family.transactions.find(params[:id])
       @entry = transaction.entry
+    end
+
+    def set_breadcrumbs
+      @breadcrumbs = [
+        [ t("breadcrumbs.home", default: "Home"), root_path ],
+        [ t("breadcrumbs.transactions", default: "Transactions"), nil ]
+      ]
     end
 
     def needs_rule_notification?(transaction)
