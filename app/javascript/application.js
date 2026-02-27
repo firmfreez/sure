@@ -2,7 +2,20 @@
 import "@hotwired/turbo-rails";
 import "controllers";
 
+function closeOpenDialogs() {
+  document.querySelectorAll("dialog[open]").forEach((dialog) => {
+    if (typeof dialog.close === "function") dialog.close();
+  });
+
+  // Clear frame content so modal/drawer disappears immediately before navigation finishes.
+  ["modal", "drawer"].forEach((frameId) => {
+    const frame = document.getElementById(frameId);
+    if (frame) frame.innerHTML = "";
+  });
+}
+
 Turbo.StreamActions.redirect = function () {
+  closeOpenDialogs();
   // Use "replace" to avoid adding form submission to browser history
   Turbo.visit(this.target, { action: "replace" });
 };

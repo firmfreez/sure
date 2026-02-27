@@ -10,14 +10,20 @@ en:
       edit: Edit tag
     form:
       placeholder: Tag name
+      create_submit: Create tag
+      update_submit: Update tag
     index:
       empty: No tags yet
       new: New tag
       tags: Tags
+      delete_all: Delete all
+      all_tags_resource: all tags
     new:
       new: New tag
     tag:
       delete: Delete
       edit: Edit
+    destroy_all:
+      deleted_all: All tags deleted
     update:
       updated: Tag updated

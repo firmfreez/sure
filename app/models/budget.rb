@@ -58,6 +58,7 @@ class Budget < ApplicationRecord
           b.currency = family.currency
         end
 
+        budget.ensure_currency_consistency!
         budget.sync_budget_categories
 
         budget
@@ -97,6 +98,13 @@ class Budget < ApplicationRecord
 
     # Remove old categories
     budget_categories.where(category_id: categories_to_remove).destroy_all if categories_to_remove.any?
+  end
+
+  def ensure_currency_consistency!
+    return if currency == family.currency
+
+    update!(currency: family.currency)
+    budget_categories.update_all(currency: family.currency)
   end
 
   def uncategorized_budget_category

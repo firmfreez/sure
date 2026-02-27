@@ -14,7 +14,12 @@ module StreamExtensions
       flash[:notice] = notice if notice.present?
       flash[:alert] = alert if alert.present?
 
-      redirect_target_url = redirect_back ? request.referer : path
+      redirect_target_url = if redirect_back
+        request.referer.presence || path
+      else
+        path
+      end
+
       render turbo_stream: turbo_stream.action(:redirect, redirect_target_url)
     end
 end

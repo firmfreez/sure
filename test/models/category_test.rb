@@ -40,4 +40,67 @@ class CategoryTest < ActiveSupport::TestCase
     assert names.all? { |name| name.is_a?(String) }
     assert_equal names, names.uniq  # No duplicates
   end
+
+  test "allows same subcategory name under different parents" do
+    parent_one = @family.categories.create!(
+      name: "Gifts",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "gift"
+    )
+    parent_two = @family.categories.create!(
+      name: "Holidays",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "party-popper"
+    )
+
+    first = @family.categories.create!(
+      name: "Birthday",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "cake",
+      parent: parent_one
+    )
+
+    second = @family.categories.new(
+      name: "Birthday",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "cake",
+      parent: parent_two
+    )
+
+    assert second.valid?
+    assert second.save
+    assert_not_equal first.parent_id, second.parent_id
+  end
+
+  test "does not allow same subcategory name under same parent" do
+    parent = @family.categories.create!(
+      name: "Gifts",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "gift"
+    )
+
+    @family.categories.create!(
+      name: "Birthday",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "cake",
+      parent: parent
+    )
+
+    duplicate = @family.categories.new(
+      name: "Birthday",
+      color: "#61c9ea",
+      classification: "expense",
+      lucide_icon: "cake",
+      parent: parent
+    )
+
+    assert_not duplicate.valid?
+    assert_includes duplicate.errors[:name], "has already been taken"
+  end
 end

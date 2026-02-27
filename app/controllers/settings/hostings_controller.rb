@@ -7,7 +7,7 @@ class Settings::HostingsController < ApplicationController
 
   def show
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("settings.settings_nav.self_hosting_label"), nil ]
     ]
 

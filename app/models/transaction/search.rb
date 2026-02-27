@@ -11,7 +11,7 @@ class Transaction::Search
   attribute :account_ids, array: true
   attribute :start_date, :string
   attribute :end_date, :string
-  attribute :categories, array: true
+  attribute :category_ids, array: true
   attribute :merchants, array: true
   attribute :tags, array: true
   attribute :active_accounts_only, :boolean, default: true
@@ -29,7 +29,7 @@ class Transaction::Search
       query = family.transactions
 
       query = apply_active_accounts_filter(query, active_accounts_only)
-      query = apply_category_filter(query, categories)
+      query = apply_category_filter(query, category_ids)
       query = apply_type_filter(query, types)
       query = apply_status_filter(query, status)
       query = apply_merchant_filter(query, merchants)
@@ -74,6 +74,7 @@ class Transaction::Search
                     ])
                   )
                   .take
+        result ||= Struct.new(:expense_total, :income_total, :transactions_count).new(0, 0, 0)
 
         Totals.new(
           count: result.transactions_count.to_i,
@@ -105,44 +106,36 @@ class Transaction::Search
     end
 
 
-    def apply_category_filter(query, categories)
-      return query unless categories.present?
+    def apply_category_filter(query, category_ids)
+      category_filter_requested = category_ids.present?
+      selected_ids, include_uncategorized = normalized_category_filter(category_ids)
+      return category_filter_requested ? query.none : query if selected_ids.blank? && !include_uncategorized
 
-      # Check for "Uncategorized" in any supported locale (handles URL params in different languages)
-      all_uncategorized_names = Category.all_uncategorized_names
-      include_uncategorized = (categories & all_uncategorized_names).any?
-      real_categories = categories - all_uncategorized_names
+      expanded_ids = selected_ids + family.categories.where(parent_id: selected_ids).pluck(:id)
+      expanded_ids = expanded_ids.uniq
 
-      # Get parent category IDs for the given category names
-      parent_category_ids = family.categories.where(name: real_categories).pluck(:id)
-
-      uncategorized_condition = "categories.id IS NULL AND transactions.kind NOT IN (?)"
-
-      # Build condition based on whether parent_category_ids is empty
-      if parent_category_ids.empty?
-        if include_uncategorized
-          query = query.left_joins(:category).where(
-            "categories.name IN (?) OR (#{uncategorized_condition})",
-            real_categories.presence || [], Transaction::TRANSFER_KINDS
+      if include_uncategorized
+        if expanded_ids.present?
+          query.left_joins(:category).where(
+            "categories.id IN (?) OR (categories.id IS NULL AND transactions.kind NOT IN (?))",
+            expanded_ids, Transaction::TRANSFER_KINDS
           )
         else
-          query = query.left_joins(:category).where(categories: { name: real_categories })
+          query.left_joins(:category).where(
+            "categories.id IS NULL AND transactions.kind NOT IN (?)",
+            Transaction::TRANSFER_KINDS
+          )
         end
       else
-        if include_uncategorized
-          query = query.left_joins(:category).where(
-            "categories.name IN (?) OR categories.parent_id IN (?) OR (#{uncategorized_condition})",
-            real_categories, parent_category_ids, Transaction::TRANSFER_KINDS
-          )
-        else
-          query = query.left_joins(:category).where(
-            "categories.name IN (?) OR categories.parent_id IN (?)",
-            real_categories, parent_category_ids
-          )
-        end
+        query.where(category_id: expanded_ids)
       end
+    end
 
-      query
+    def normalized_category_filter(category_ids)
+      ids = Array(category_ids).map(&:to_s).reject(&:blank?)
+      include_uncategorized = ids.delete(Category::UNCATEGORIZED_FILTER_TOKEN).present?
+
+      [ ids.uniq, include_uncategorized ]
     end
 
     def apply_type_filter(query, types)

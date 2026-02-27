@@ -178,8 +178,8 @@ class AccountsController < ApplicationController
   private
     def set_breadcrumbs
       @breadcrumbs = [
-        [ t("breadcrumbs.home", default: "Home"), root_path ],
-        [ t("breadcrumbs.accounts", default: "Accounts"), nil ]
+        [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+        [ breadcrumb_t("breadcrumbs.accounts", default: "Accounts"), nil ]
       ]
     end
 

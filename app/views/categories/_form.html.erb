@@ -68,7 +68,7 @@
         <%= f.text_field :name, placeholder: t(".placeholder"), required: true, autofocus: true, label: t(".name_label"), data: { color_avatar_target: "name" } %>
         <% unless category.parent? %>
           <%= f.select :parent_id,
-                       categories.pluck(:name, :id),
+                       categories.map { |c| [c.name_with_parent, c.id] },
                        { include_blank: t(".unassigned"), label: t(".parent_label") },
                        disabled: category.parent?,
                        data: { action: "change->category#handleParentChange" } %>

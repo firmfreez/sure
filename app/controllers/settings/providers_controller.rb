@@ -5,7 +5,7 @@ class Settings::ProvidersController < ApplicationController
 
   def show
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("settings.settings_nav.providers_label"), nil ]
     ]
 

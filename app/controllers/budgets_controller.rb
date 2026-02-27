@@ -28,8 +28,8 @@ class BudgetsController < ApplicationController
   private
     def set_breadcrumbs
       @breadcrumbs = [
-        [ t("breadcrumbs.home", default: "Home"), root_path ],
-        [ t("breadcrumbs.budgets", default: "Budgets"), nil ]
+        [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+        [ breadcrumb_t("breadcrumbs.budgets", default: "Budgets"), nil ]
       ]
     end
 

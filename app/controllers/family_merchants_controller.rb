@@ -3,8 +3,8 @@ class FamilyMerchantsController < ApplicationController
 
   def index
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
-      [ t("breadcrumbs.family_merchants", default: "Merchants"), nil ]
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.family_merchants", default: "Merchants"), nil ]
     ]
 
     # Show all merchants for this family

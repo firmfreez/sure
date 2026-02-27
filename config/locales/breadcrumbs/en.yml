@@ -1,12 +1,22 @@
 ---
 en:
   breadcrumbs:
+    admin/sso_providers: SSO Providers
     budgets: Budgets
+    categories: Categories
+    chats: Chats
     dashboard: Dashboard
     accounts: Accounts
     exports: Exports
+    family_merchants: Merchants
     home: Home
     imports: Imports
     intro: Intro
+    pages: Pages
+    recurring_transactions: Recurring Transactions
     reports: Reports
+    rules: Rules
+    sso_providers: SSO Providers
+    tags: Tags
     transactions: Transactions
+    users: Users

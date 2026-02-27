@@ -25,6 +25,24 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "turbo_stream create falls back to path when referer is missing" do
+    post transfers_url,
+         params: {
+           transfer: {
+             from_account_id: accounts(:depository).id,
+             to_account_id: accounts(:credit_card).id,
+             date: Date.current,
+             amount: 100,
+             name: "Turbo transfer"
+           }
+         },
+         headers: { "Accept" => Mime[:turbo_stream].to_s }
+
+    assert_response :success
+    assert_equal Mime[:turbo_stream].to_s, response.media_type
+    assert_includes response.body, %(turbo-stream action="redirect" target="#{transactions_path}")
+  end
+
   test "soft deletes transfer" do
     assert_difference -> { Transfer.count }, -1 do
       delete transfer_url(transfers(:one))

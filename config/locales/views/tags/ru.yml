@@ -10,14 +10,20 @@ ru:
       edit: Редактировать тег
     form:
       placeholder: Название тега
+      create_submit: Создать тег
+      update_submit: Обновить тег
     index:
       empty: Тегов пока нет
       new: Новый тег
       tags: Теги
+      delete_all: Удалить все
+      all_tags_resource: все теги
     new:
       new: Новый тег
     tag:
       delete: Удалить
       edit: Редактировать
+    destroy_all:
+      deleted_all: Все теги удалены
     update:
       updated: Тег обновлен

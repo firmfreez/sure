@@ -26,7 +26,7 @@
         </div>
 
         <div class="text-subdued text-3xl mb-2">
-          <span><%= format_money Money.new(0, budget.currency || budget.family.currency) %></span>
+          <span><%= format_money Money.new(0, budget.family.currency || budget.currency) %></span>
         </div>
 
         <%= render DS::Link.new(

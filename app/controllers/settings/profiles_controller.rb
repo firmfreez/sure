@@ -6,7 +6,7 @@ class Settings::ProfilesController < ApplicationController
     @users = Current.family.users.order(:created_at)
     @pending_invitations = Current.family.invitations.pending
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("settings.settings_nav.profile_label"), nil ]
     ]
   end

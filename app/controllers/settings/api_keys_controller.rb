@@ -7,7 +7,7 @@ class Settings::ApiKeysController < ApplicationController
 
   def show
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("settings.settings_nav.api_key_label"), nil ]
     ]
     @current_api_key = @api_key

@@ -18,10 +18,34 @@ export default class extends Controller {
     this.keyboardGrabbedElement = null;
     this.holdTimer = null;
     this.holdActivated = false;
+
+    this.handleViewportChange = this.handleViewportChange.bind(this);
+    this.mobileMediaQuery = window.matchMedia("(max-width: 1023px)");
+    this.mobileMediaQuery.addEventListener("change", this.handleViewportChange);
+    this.handleViewportChange();
+  }
+
+  disconnect() {
+    this.cancelHold();
+    if (this.mobileMediaQuery) {
+      this.mobileMediaQuery.removeEventListener("change", this.handleViewportChange);
+    }
+  }
+
+  handleViewportChange() {
+    this.sectionTargets.forEach((section) => {
+      section.setAttribute("draggable", this.isMobileViewport() ? "false" : "true");
+    });
+  }
+
+  isMobileViewport() {
+    return this.mobileMediaQuery?.matches;
   }
 
   // ===== Mouse Drag Events =====
   dragStart(event) {
+    if (this.isMobileViewport()) return;
+
     this.draggedElement = event.currentTarget;
     this.draggedElement.classList.add("opacity-50");
     this.draggedElement.setAttribute("aria-grabbed", "true");
@@ -29,12 +53,16 @@ export default class extends Controller {
   }
 
   dragEnd(event) {
+    if (this.isMobileViewport()) return;
+
     event.currentTarget.classList.remove("opacity-50");
     event.currentTarget.setAttribute("aria-grabbed", "false");
     this.clearPlaceholders();
   }
 
   dragOver(event) {
+    if (this.isMobileViewport()) return;
+
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
 
@@ -51,6 +79,8 @@ export default class extends Controller {
   }
 
   drop(event) {
+    if (this.isMobileViewport()) return;
+
     event.preventDefault();
     event.stopPropagation();
 
@@ -72,6 +102,8 @@ export default class extends Controller {
   // to prevent accidental touches.
 
   touchStart(event) {
+    if (this.isMobileViewport()) return;
+
     // Find the parent section element from the handle
     const section = event.currentTarget.closest(
       "[data-dashboard-sortable-target='section']",
@@ -110,6 +142,8 @@ export default class extends Controller {
   }
 
   touchMove(event) {
+    if (this.isMobileViewport()) return;
+
     if (!this.holdActivated || !this.isTouching || !this.draggedElement) return;
 
     event.preventDefault();
@@ -127,6 +161,8 @@ export default class extends Controller {
   }
 
   touchEnd() {
+    if (this.isMobileViewport()) return;
+
     this.cancelHold();
 
     if (!this.holdActivated || !this.isTouching || !this.draggedElement) {
@@ -167,6 +203,8 @@ export default class extends Controller {
 
   // ===== Keyboard Navigation =====
   handleKeyDown(event) {
+    if (this.isMobileViewport()) return;
+
     const currentSection = event.currentTarget;
 
     switch (event.key) {

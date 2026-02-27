@@ -35,6 +35,33 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_enqueued_with(job: SyncJob)
   end
 
+  test "turbo_stream create falls back to account path when referer is missing" do
+    post transactions_url,
+         params: {
+           entry: {
+             account_id: @entry.account_id,
+             name: "Turbo transaction",
+             date: Date.current,
+             currency: "USD",
+             amount: 100,
+             nature: "inflow",
+             entryable_type: @entry.entryable_type,
+             entryable_attributes: {
+               tag_ids: [ Tag.first.id ],
+               category_id: Category.first.id,
+               merchant_id: Merchant.first.id
+             }
+           }
+         },
+         headers: { "Accept" => Mime[:turbo_stream].to_s }
+
+    created_entry = Entry.order(:created_at).last
+
+    assert_response :success
+    assert_equal Mime[:turbo_stream].to_s, response.media_type
+    assert_includes response.body, %(turbo-stream action="redirect" target="#{account_path(created_entry.account)}")
+  end
+
   test "updates with transaction details" do
     assert_no_difference [ "Entry.count", "Transaction.count" ] do
       patch transaction_url(@entry), params: {
@@ -177,17 +204,18 @@ end
 
     create_transaction(account: account, amount: 100, category: category)
 
-    search = Transaction::Search.new(family, filters: { "categories" => [ "Food" ], "types" => [ "expense" ] })
+    expected_filters = { "category_ids" => [ category.id ], "types" => [ "expense" ] }
+    search = Transaction::Search.new(family, filters: expected_filters)
     totals = OpenStruct.new(
       count: 1,
       expense_money: Money.new(10000, "USD"),
       income_money: Money.new(0, "USD")
     )
 
-    Transaction::Search.expects(:new).with(family, filters: { "categories" => [ "Food" ], "types" => [ "expense" ] }).returns(search)
+    Transaction::Search.expects(:new).with(family, filters: expected_filters).returns(search)
     search.expects(:totals).once.returns(totals)
 
-    get transactions_url(q: { categories: [ "Food" ], types: [ "expense" ] })
+    get transactions_url(q: { category_ids: [ category.id ], types: [ "expense" ] })
     assert_response :success
   end
 

@@ -1,14 +1,14 @@
 module CategoriesHelper
   def transfer_category
     Category.new \
-      name: "Transfer",
+      name: I18n.t("models.transfer.transfer", default: "Transfer"),
       color: Category::TRANSFER_COLOR,
       lucide_icon: "arrow-right-left"
   end
 
   def payment_category
     Category.new \
-      name: "Payment",
+      name: I18n.t("models.transfer.payment", default: "Payment"),
       color: Category::PAYMENT_COLOR,
       lucide_icon: "arrow-right"
   end
@@ -20,6 +20,6 @@ module CategoriesHelper
   end
 
   def family_categories
-    [ Category.uncategorized ].concat(Current.family.categories.alphabetically)
+    [ Category.uncategorized ].concat(Current.family.categories.alphabetically_by_hierarchy)
   end
 end

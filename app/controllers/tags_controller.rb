@@ -36,10 +36,16 @@ class TagsController < ApplicationController
 
   def destroy_all
     Current.family.tags.destroy_all
-    redirect_back_or_to tags_path, notice: "All tags deleted"
+    redirect_back_or_to tags_path, notice: t(".deleted_all")
   end
 
   private
+    def set_breadcrumbs
+      @breadcrumbs = [
+        [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+        [ breadcrumb_t("breadcrumbs.tags", default: t("tags.index.tags", default: "Tags")), nil ]
+      ]
+    end
 
     def set_tag
       @tag = Current.family.tags.find(params[:id])

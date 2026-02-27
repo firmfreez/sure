@@ -20,6 +20,12 @@ module TransactionsHelper
     transaction_search_filters[0]
   end
 
+  def transaction_category_filter_label(value)
+    return Category.uncategorized_name if value.to_s == Category::UNCATEGORIZED_FILTER_TOKEN
+
+    Current.family.categories.find_by(id: value)&.name_with_parent || value
+  end
+
   # ---- Transaction extra details helpers ----
   # Returns a structured hash describing extra details for a transaction.
   # Input can be a Transaction or an Entry (responds_to :transaction).

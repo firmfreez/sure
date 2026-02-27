@@ -23,8 +23,8 @@ class FamilyExportsController < ApplicationController
   def index
     @pagy, @exports = pagy(Current.family.family_exports.ordered, limit: safe_per_page)
     @breadcrumbs = [
-      [ t("breadcrumbs.home"), root_path ],
-      [ t("breadcrumbs.exports"), family_exports_path ]
+      [ breadcrumb_t("breadcrumbs.home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.exports"), family_exports_path ]
     ]
     render layout: "settings"
   end

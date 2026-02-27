@@ -25,15 +25,15 @@ class PagesController < ApplicationController
     @dashboard_sections = build_dashboard_sections
 
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
-      [ t("breadcrumbs.dashboard", default: "Dashboard"), nil ]
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.dashboard", default: "Dashboard"), nil ]
     ]
   end
 
   def intro
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), chats_path ],
-      [ t("breadcrumbs.intro", default: "Intro"), nil ]
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), chats_path ],
+      [ breadcrumb_t("breadcrumbs.intro", default: "Intro"), nil ]
     ]
   end
 
@@ -48,7 +48,7 @@ class PagesController < ApplicationController
   def changelog
     @release_notes = github_provider.fetch_latest_release_notes
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("pages.changelog.title", default: "Changelog"), nil ]
     ]
 
@@ -68,7 +68,7 @@ class PagesController < ApplicationController
 
   def feedback
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("pages.feedback.title", default: "Feedback"), nil ]
     ]
     render layout: "settings"

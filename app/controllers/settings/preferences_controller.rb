@@ -4,7 +4,7 @@ class Settings::PreferencesController < ApplicationController
   def show
     @user = Current.user
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
       [ t("settings.settings_nav.preferences_label"), nil ]
     ]
   end

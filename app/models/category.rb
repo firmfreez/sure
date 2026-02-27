@@ -9,7 +9,7 @@ class Category < ApplicationRecord
   belongs_to :parent, class_name: "Category", optional: true
 
   validates :name, :color, :lucide_icon, :family, presence: true
-  validates :name, uniqueness: { scope: :family_id }
+  validates :name, uniqueness: { scope: [ :family_id, :parent_id ] }
 
   validate :category_level_limit
   validate :nested_category_matches_parent_classification
@@ -34,6 +34,7 @@ class Category < ApplicationRecord
   TRANSFER_COLOR = "#444CE7"
   PAYMENT_COLOR = "#db5a54"
   TRADE_COLOR = "#e99537"
+  UNCATEGORIZED_FILTER_TOKEN = "__uncategorized__"
 
   # Category name keys for i18n
   UNCATEGORIZED_NAME_KEY = "models.category.uncategorized"
@@ -190,7 +191,7 @@ class Category < ApplicationRecord
   end
 
   def name_with_parent
-    subcategory? ? "#{parent.name} > #{name}" : name
+    subcategory? ? "#{parent.name} / #{name}" : name
   end
 
   # Predicate: is this the synthetic "Uncategorized" category?

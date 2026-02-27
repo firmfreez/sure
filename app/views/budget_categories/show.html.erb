@@ -124,7 +124,7 @@
               variant: "outline",
               full_width: true,
               href: transactions_path(q: {
-                categories: [@budget_category.name],
+                category_ids: [@budget_category.id],
                 start_date: @budget.start_date,
                 end_date: @budget.end_date
               }),

@@ -6,17 +6,21 @@
   </div>
   <div class="my-2" id="list" data-list-filter-target="list">
     <% family_categories.each do |category| %>
-      <div class="filterable-item flex items-center gap-2 p-2" data-filter-name="<%= category.name %>">
-        <%= form.check_box :categories,
+      <% display_name = category.respond_to?(:name_with_parent) ? category.name_with_parent : category.name %>
+      <% display_category = category.dup %>
+      <% display_category.name = display_name %>
+      <% filter_value = category.persisted? ? category.id : Category::UNCATEGORIZED_FILTER_TOKEN %>
+      <div class="filterable-item flex items-center gap-2 p-2" data-filter-name="<%= display_name %>">
+        <%= form.check_box :category_ids,
                            {
                              multiple: true,
-                             checked: @q[:categories]&.include?(category.name),
+                             checked: @q[:category_ids]&.map(&:to_s)&.include?(filter_value.to_s),
                              class: "checkbox checkbox--light"
                            },
-                           category.name,
+                           filter_value,
                            nil %>
-        <%= form.label :categories, category.name, value: category.name, class: "text-sm text-primary cursor-pointer" do %>
-          <%= render partial: "categories/badge", locals: { category: category } %>
+        <%= form.label :category_ids, filter_value, value: filter_value, class: "text-sm text-primary cursor-pointer" do %>
+          <%= render partial: "categories/badge", locals: { category: display_category } %>
         <% end %>
       </div>
     <% end %>

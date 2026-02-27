@@ -19,7 +19,7 @@
 
     <section>
       <%= hidden_field_tag :tag_id, params[:tag_id] %>
-      <%= f.submit %>
+      <%= f.submit tag.persisted? ? t(".update_submit") : t(".create_submit") %>
     </section>
   <% end %>
 </div>

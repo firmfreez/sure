@@ -220,14 +220,14 @@ export default class extends Controller {
 
   // Handles click on segment (optional, controlled by enableClick value)
   #handleClick(segment) {
-    if (!segment.name || !this.startDateValue || !this.endDateValue) return;
+    if (!segment?.id || !this.startDateValue || !this.endDateValue) return;
 
-    const segmentName = encodeURIComponent(segment.name);
-    const startDate = this.startDateValue;
-    const endDate = this.endDateValue;
+    const params = new URLSearchParams();
+    params.append("q[category_ids][]", segment.id);
+    params.append("q[start_date]", this.startDateValue);
+    params.append("q[end_date]", this.endDateValue);
 
-    const url = `/transactions?q[categories][]=${segmentName}&q[start_date]=${startDate}&q[end_date]=${endDate}`;
-    window.location.href = url;
+    window.location.href = `/transactions?${params.toString()}`;
   }
 
   // Public methods for external highlighting (e.g., from category list hover)

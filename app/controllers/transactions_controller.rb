@@ -7,8 +7,8 @@ class TransactionsController < ApplicationController
 
   def new
     super
-    @income_categories = Current.family.categories.incomes.alphabetically
-    @expense_categories = Current.family.categories.expenses.alphabetically
+    @income_categories = Current.family.categories.incomes.alphabetically_by_hierarchy
+    @expense_categories = Current.family.categories.expenses.alphabetically_by_hierarchy
   end
 
   def index
@@ -315,8 +315,8 @@ class TransactionsController < ApplicationController
 
     def set_breadcrumbs
       @breadcrumbs = [
-        [ t("breadcrumbs.home", default: "Home"), root_path ],
-        [ t("breadcrumbs.transactions", default: "Transactions"), nil ]
+        [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+        [ breadcrumb_t("breadcrumbs.transactions", default: "Transactions"), nil ]
       ]
     end
 
@@ -354,10 +354,11 @@ class TransactionsController < ApplicationController
                 :start_date, :end_date, :search, :amount,
                 :amount_operator, :active_accounts_only,
                 accounts: [], account_ids: [],
-                categories: [], merchants: [], types: [], tags: [], status: []
+                category_ids: [], merchants: [], types: [], tags: [], status: []
               )
               .to_h
               .compact_blank
+      cleaned_params["category_ids"] = Array(cleaned_params["category_ids"]).map(&:to_s).reject(&:blank?).uniq if cleaned_params["category_ids"].present?
 
       cleaned_params.delete(:amount_operator) unless cleaned_params[:amount].present?
 

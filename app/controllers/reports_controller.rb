@@ -13,8 +13,8 @@ class ReportsController < ApplicationController
     @reports_sections = build_reports_sections
 
     @breadcrumbs = [
-      [ t("breadcrumbs.home", default: "Home"), root_path ],
-      [ t("breadcrumbs.reports", default: "Reports"), nil ]
+      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
+      [ breadcrumb_t("breadcrumbs.reports", default: "Reports"), nil ]
     ]
   end
 

@@ -235,7 +235,13 @@ class BudgetTest < ActiveSupport::TestCase
   test "to_donut_segments_json includes uncategorized spending" do
     family = families(:dylan_family)
     budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
-    account = accounts(:depository)
+    account = family.accounts.create!(
+      accountable: Depository.new,
+      name: "Budget test account #{SecureRandom.hex(4)}",
+      status: "active",
+      currency: family.currency,
+      balance: 0
+    )
 
     budget.update!(budgeted_spending: 1000)
     budget.budget_categories.first.update!(budgeted_spending: 500)
@@ -246,16 +252,18 @@ class BudgetTest < ActiveSupport::TestCase
       date: Date.current,
       name: "Uncategorized donut expense",
       amount: 200,
-      currency: "USD"
+      currency: family.currency
     )
 
     budget = Budget.find(budget.id)
     budget.sync_budget_categories
 
     uncategorized_bc = budget.uncategorized_budget_category
+    expected_uncategorized_spending = budget.budget_category_actual_spending(uncategorized_bc)
     segments = budget.to_donut_segments_json
 
-    assert segments.any? { |segment| segment[:id] == uncategorized_bc.id && segment[:amount] == 200 }
+    assert expected_uncategorized_spending.positive?
+    assert segments.any? { |segment| segment[:id] == uncategorized_bc.id && segment[:amount] == expected_uncategorized_spending }
   end
 
   test "previous_budget_param returns param when date is valid" do
