@@ -129,7 +129,9 @@ class Budget < ApplicationRecord
         end_date: I18n.l(end_date, format: "%b %d, %Y")
       )
     else
-      month_name = I18n.t("date.month_names_standalone")[start_date.month]
+      month_names = I18n.t("date.month_names_standalone", default: [])
+      month_index = month_names.first.nil? ? start_date.month : start_date.month - 1
+      month_name = month_names[month_index].presence || I18n.l(start_date, format: "%B")
       I18n.t("budgets.name.month_year", month: "#{month_name} #{start_date.year}")
     end
   end

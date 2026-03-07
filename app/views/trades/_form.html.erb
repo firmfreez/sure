@@ -3,6 +3,8 @@
 <% type = params[:type] || "buy" %>
 
 <%= styled_form_with url: trades_path(account_id: account&.id), scope: :model, data: { controller: "trade-form" } do |form| %>
+  <%= hidden_field_tag :return_to, @return_to || params[:return_to] %>
+
   <div class="space-y-4">
     <% if model.errors.any? %>
       <%= render "shared/form_errors", model: model %>
@@ -19,7 +21,7 @@
       { label: t(".type"), selected: type },
       { data: {
           action: "trade-form#changeType",
-          trade_form_url_param: new_trade_path(account_id: account&.id),
+          trade_form_url_param: new_trade_path(account_id: account&.id, return_to: @return_to || params[:return_to]),
           trade_form_key_param: "type",
         }} %>
 

@@ -2,6 +2,10 @@
 ru:
   transactions:
     unknown_name: Неизвестная транзакция
+    create:
+      success: Транзакция создана
+    update:
+      success: Транзакция обновлена
     form:
       account: Счет
       account_prompt: Выберите счет

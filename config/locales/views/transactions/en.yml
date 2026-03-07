@@ -2,6 +2,10 @@
 en:
   transactions:
     unknown_name: Unknown transaction
+    create:
+      success: Transaction created
+    update:
+      success: Transaction updated
     form:
       account: Account
       account_prompt: Select an Account

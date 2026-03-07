@@ -243,8 +243,11 @@ class BudgetTest < ActiveSupport::TestCase
       balance: 0
     )
 
-    budget.update!(budgeted_spending: 1000)
+    # Make allocations deterministic for this test so donut segments are rendered
+    # from real category data rather than the fallback "unused" segment.
+    budget.budget_categories.update_all(budgeted_spending: 0)
     budget.budget_categories.first.update!(budgeted_spending: 500)
+    budget.update!(budgeted_spending: 1000)
 
     Entry.create!(
       account: account,
@@ -263,7 +266,9 @@ class BudgetTest < ActiveSupport::TestCase
     segments = budget.to_donut_segments_json
 
     assert expected_uncategorized_spending.positive?
-    assert segments.any? { |segment| segment[:id] == uncategorized_bc.id && segment[:amount] == expected_uncategorized_spending }
+    uncategorized_segment = segments.find { |segment| segment[:id].to_s == uncategorized_bc.id.to_s }
+    assert uncategorized_segment.present?, "Expected uncategorized segment id=#{uncategorized_bc.id.inspect}, got: #{segments.inspect}"
+    assert_equal expected_uncategorized_spending, uncategorized_segment[:amount]
   end
 
   test "previous_budget_param returns param when date is valid" do

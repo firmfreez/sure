@@ -7,6 +7,7 @@ class TransactionsController < ApplicationController
 
   def new
     super
+    @return_to = safe_return_to_path || safe_referer_path
     @income_categories = Current.family.categories.incomes.alphabetically_by_hierarchy
     @expense_categories = Current.family.categories.expenses.alphabetically_by_hierarchy
   end
@@ -66,18 +67,20 @@ class TransactionsController < ApplicationController
   def create
     account = Current.family.accounts.find(params.dig(:entry, :account_id))
     @entry = account.entries.new(entry_params)
+    redirect_path = safe_return_to_path || safe_referer_path || account_path(account)
 
     if @entry.save
       @entry.sync_account_later
+      materialize_account_balance_now(@entry.account)
       @entry.lock_saved_attributes!
       @entry.mark_user_modified!
       @entry.transaction.lock_attr!(:tag_ids) if @entry.transaction.tags.any?
 
-      flash[:notice] = "Transaction created"
+      flash[:notice] = t("transactions.create.success", default: t("entries.create.success"))
 
       respond_to do |format|
-        format.html { redirect_back_or_to account_path(@entry.account) }
-        format.turbo_stream { stream_redirect_back_or_to(account_path(@entry.account)) }
+        format.html { redirect_to redirect_path }
+        format.turbo_stream { stream_redirect_to(redirect_path) }
       end
     else
       render :new, status: :unprocessable_entity
@@ -100,12 +103,13 @@ class TransactionsController < ApplicationController
       @entry.mark_user_modified!
       @entry.transaction.lock_attr!(:tag_ids) if @entry.transaction.tags.any?
       @entry.sync_account_later
+      materialize_account_balance_now(@entry.account)
 
       # Reload to ensure fresh state for turbo stream rendering
       @entry.reload
 
       respond_to do |format|
-        format.html { redirect_back_or_to account_path(@entry.account), notice: "Transaction updated" }
+        format.html { redirect_back_or_to account_path(@entry.account), notice: t("transactions.update.success", default: t("entries.update.success")) }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.replace(
@@ -313,6 +317,16 @@ class TransactionsController < ApplicationController
       @entry = transaction.entry
     end
 
+    # Keep account balances fresh immediately for the response path.
+    # We still enqueue async sync for full recalculation/market data workflows.
+    def materialize_account_balance_now(account)
+      strategy = account.linked? ? :reverse : :forward
+      Balance::Materializer.new(account, strategy: strategy).materialize_balances
+      account.reload
+    rescue StandardError => e
+      Rails.logger.warn("TransactionsController immediate balance materialization failed for account #{account.id}: #{e.class} - #{e.message}")
+    end
+
     def set_breadcrumbs
       @breadcrumbs = [
         [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
@@ -346,6 +360,38 @@ class TransactionsController < ApplicationController
       end
 
       entry_params
+    end
+
+    def safe_return_to_path
+      sanitize_path(params[:return_to])
+    end
+
+    def safe_referer_path
+      sanitize_path(request.referer)
+    end
+
+    def sanitize_path(value)
+      return nil if value.blank?
+
+      raw_value = value.to_s
+
+      begin
+        uri = URI.parse(raw_value)
+      rescue URI::InvalidURIError
+        return nil
+      end
+
+      if uri.host.present?
+        return nil unless uri.host == request.host
+
+        path = uri.path.presence || "/"
+        query = uri.query.present? ? "?#{uri.query}" : ""
+        "#{path}#{query}"
+      else
+        return nil unless raw_value.start_with?("/")
+
+        raw_value
+      end
     end
 
     def search_params

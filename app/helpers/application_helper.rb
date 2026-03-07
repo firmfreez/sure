@@ -80,7 +80,8 @@ module ApplicationHelper
     date = object.to_date
     month_names_key = abbreviated ? "date.abbr_month_names_standalone" : "date.month_names_standalone"
     month_names = I18n.t(month_names_key, default: [])
-    month_name = month_names[date.month].presence || I18n.l(date, format: (abbreviated ? "%b" : "%B"))
+    month_index = month_names.first.nil? ? date.month : date.month - 1
+    month_name = month_names[month_index].presence || I18n.l(date, format: (abbreviated ? "%b" : "%B"))
 
     "#{month_name} #{date.year}"
   end
