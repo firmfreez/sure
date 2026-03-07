@@ -1,12 +1,17 @@
 <%# locals: (entry:, income_categories:, expense_categories:) %>
 
 <%= styled_form_with model: entry, url: transactions_path, class: "space-y-4" do |f| %>
+  <%= hidden_field_tag :return_to, @return_to || params[:return_to] %>
+
   <% if entry.errors.any? %>
     <%= render "shared/form_errors", model: entry %>
   <% end %>
 
   <section>
-    <%= render "shared/transaction_type_tabs", active_tab: params[:nature] == "inflow" ? "income" : "expense", account_id: params[:account_id] %>
+    <%= render "shared/transaction_type_tabs",
+               active_tab: params[:nature] == "inflow" ? "income" : "expense",
+               account_id: params[:account_id],
+               return_to: @return_to || params[:return_to] %>
 
     <%= f.hidden_field :nature, value: params[:nature] || "outflow" %>
     <%= f.hidden_field :entryable_type, value: "Transaction" %>

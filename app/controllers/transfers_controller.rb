@@ -5,6 +5,7 @@ class TransfersController < ApplicationController
 
   def new
     @transfer = Transfer.new
+    @return_to = safe_return_to_path || safe_referer_path
     @from_account_id = params[:from_account_id]
   end
 
@@ -21,11 +22,13 @@ class TransfersController < ApplicationController
       amount: transfer_params[:amount].to_d
     ).create
 
+    redirect_path = safe_return_to_path || safe_referer_path || transactions_path
+
     if @transfer.persisted?
       success_message = "Transfer created"
       respond_to do |format|
-        format.html { redirect_back_or_to transactions_path, notice: success_message }
-        format.turbo_stream { stream_redirect_back_or_to transactions_path, notice: success_message }
+        format.html { redirect_to redirect_path, notice: success_message }
+        format.turbo_stream { stream_redirect_to redirect_path, notice: success_message }
       end
     else
       render :new, status: :unprocessable_entity
@@ -64,6 +67,38 @@ class TransfersController < ApplicationController
 
     def transfer_update_params
       params.require(:transfer).permit(:notes, :status, :category_id)
+    end
+
+    def safe_return_to_path
+      sanitize_path(params[:return_to])
+    end
+
+    def safe_referer_path
+      sanitize_path(request.referer)
+    end
+
+    def sanitize_path(value)
+      return nil if value.blank?
+
+      raw_value = value.to_s
+
+      begin
+        uri = URI.parse(raw_value)
+      rescue URI::InvalidURIError
+        return nil
+      end
+
+      if uri.host.present?
+        return nil unless uri.host == request.host
+
+        path = uri.path.presence || "/"
+        query = uri.query.present? ? "?#{uri.query}" : ""
+        "#{path}#{query}"
+      else
+        return nil unless raw_value.start_with?("/")
+
+        raw_value
+      end
     end
 
     def update_transfer_status

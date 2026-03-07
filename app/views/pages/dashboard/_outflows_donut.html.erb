@@ -22,7 +22,8 @@
           data-donut-chart-hover-extension-value="3"
           data-donut-chart-enable-click-value="true"
           data-donut-chart-start-date-value="<%= period.date_range.first %>"
-          data-donut-chart-end-date-value="<%= period.date_range.last %>">
+          data-donut-chart-end-date-value="<%= period.date_range.last %>"
+          data-donut-chart-base-path-value="<%= request.script_name.to_s.sub(%r{/+\z}, "") %>">
           <div data-donut-chart-target="chartContainer" class="absolute inset-0 pointer-events-none"></div>
 
           <div data-donut-chart-target="contentContainer" class="flex justify-center items-center h-full">

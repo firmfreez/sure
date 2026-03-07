@@ -6,6 +6,7 @@ class TradesController < ApplicationController
   # Defaults to a buy trade
   def new
     @account = Current.family.accounts.find_by(id: params[:account_id])
+    @return_to = safe_return_to_path || safe_referer_path
     @model = Current.family.entries.new(
       account: @account,
       currency: @account ? @account.currency : Current.family.currency,
@@ -17,6 +18,7 @@ class TradesController < ApplicationController
   def create
     @account = Current.family.accounts.find(params[:account_id])
     @model = Trade::CreateForm.new(create_params.merge(account: @account)).create
+    redirect_path = safe_return_to_path || safe_referer_path || account_path(@account)
 
     if @model.persisted?
       # Mark manually created entries as user-modified to protect from sync
@@ -28,8 +30,8 @@ class TradesController < ApplicationController
       flash[:notice] = t("entries.create.success")
 
       respond_to do |format|
-        format.html { redirect_back_or_to account_path(@account) }
-        format.turbo_stream { stream_redirect_back_or_to account_path(@account) }
+        format.html { redirect_to redirect_path }
+        format.turbo_stream { stream_redirect_to redirect_path }
       end
     else
       render :new, status: :unprocessable_entity
@@ -92,6 +94,38 @@ class TradesController < ApplicationController
       params.require(:model).permit(
         :date, :amount, :currency, :qty, :price, :ticker, :manual_ticker, :type, :transfer_account_id
       )
+    end
+
+    def safe_return_to_path
+      sanitize_path(params[:return_to])
+    end
+
+    def safe_referer_path
+      sanitize_path(request.referer)
+    end
+
+    def sanitize_path(value)
+      return nil if value.blank?
+
+      raw_value = value.to_s
+
+      begin
+        uri = URI.parse(raw_value)
+      rescue URI::InvalidURIError
+        return nil
+      end
+
+      if uri.host.present?
+        return nil unless uri.host == request.host
+
+        path = uri.path.presence || "/"
+        query = uri.query.present? ? "?#{uri.query}" : ""
+        "#{path}#{query}"
+      else
+        return nil unless raw_value.start_with?("/")
+
+        raw_value
+      end
     end
 
     def update_entry_params
