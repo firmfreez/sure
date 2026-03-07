@@ -15,6 +15,7 @@ export default class extends Controller {
     enableClick: { type: Boolean, default: false },
     startDate: String,
     endDate: String,
+    basePath: { type: String, default: "" },
   };
 
   #viewBoxSize = 100;
@@ -227,7 +228,10 @@ export default class extends Controller {
     params.append("q[start_date]", this.startDateValue);
     params.append("q[end_date]", this.endDateValue);
 
-    window.location.href = `/transactions?${params.toString()}`;
+    const basePath = (this.basePathValue || "").replace(/\/+$/, "");
+    const transactionsPath = basePath ? `${basePath}/transactions` : "/transactions";
+
+    window.location.href = `${transactionsPath}?${params.toString()}`;
   }
 
   // Public methods for external highlighting (e.g., from category list hover)

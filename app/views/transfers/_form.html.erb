@@ -1,4 +1,6 @@
 <%= styled_form_with model: transfer, class: "space-y-4", data: { turbo_frame: "_top", controller: "transfer-form" } do |f| %>
+  <%= hidden_field_tag :return_to, @return_to || params[:return_to] %>
+
   <% if transfer.errors.present? %>
     <div class="text-destructive flex items-center gap-2">
       <%= icon "circle-alert", size: "sm" %>
@@ -21,7 +23,10 @@
 
   <% if show_type_tabs %>
     <section>
-      <%= render "shared/transaction_type_tabs", active_tab: "transfer" %>
+      <%= render "shared/transaction_type_tabs",
+                 active_tab: "transfer",
+                 account_id: @from_account_id || params[:from_account_id],
+                 return_to: @return_to || params[:return_to] %>
     </section>
   <% end %>
 

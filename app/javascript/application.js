@@ -16,8 +16,20 @@ function closeOpenDialogs() {
 
 Turbo.StreamActions.redirect = function () {
   closeOpenDialogs();
+  const targetUrl = new URL(this.target, window.location.origin);
+  const currentUrl = new URL(window.location.href);
+
+  if (
+    targetUrl.pathname === currentUrl.pathname &&
+    targetUrl.search === currentUrl.search &&
+    targetUrl.hash === currentUrl.hash
+  ) {
+    window.location.reload();
+    return;
+  }
+
   // Use "replace" to avoid adding form submission to browser history
-  Turbo.visit(this.target, { action: "replace" });
+  Turbo.visit(targetUrl.toString(), { action: "replace" });
 };
 
 // Register service worker for PWA offline support

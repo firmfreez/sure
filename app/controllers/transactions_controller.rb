@@ -7,6 +7,7 @@ class TransactionsController < ApplicationController
 
   def new
     super
+    @return_to = safe_return_to_path || safe_referer_path
     @income_categories = Current.family.categories.incomes.alphabetically_by_hierarchy
     @expense_categories = Current.family.categories.expenses.alphabetically_by_hierarchy
   end
@@ -66,6 +67,7 @@ class TransactionsController < ApplicationController
   def create
     account = Current.family.accounts.find(params.dig(:entry, :account_id))
     @entry = account.entries.new(entry_params)
+    redirect_path = safe_return_to_path || safe_referer_path || account_path(account)
 
     if @entry.save
       @entry.sync_account_later
@@ -76,8 +78,8 @@ class TransactionsController < ApplicationController
       flash[:notice] = "Transaction created"
 
       respond_to do |format|
-        format.html { redirect_back_or_to account_path(@entry.account) }
-        format.turbo_stream { stream_redirect_back_or_to(account_path(@entry.account)) }
+        format.html { redirect_to redirect_path }
+        format.turbo_stream { stream_redirect_to(redirect_path) }
       end
     else
       render :new, status: :unprocessable_entity
@@ -346,6 +348,38 @@ class TransactionsController < ApplicationController
       end
 
       entry_params
+    end
+
+    def safe_return_to_path
+      sanitize_path(params[:return_to])
+    end
+
+    def safe_referer_path
+      sanitize_path(request.referer)
+    end
+
+    def sanitize_path(value)
+      return nil if value.blank?
+
+      raw_value = value.to_s
+
+      begin
+        uri = URI.parse(raw_value)
+      rescue URI::InvalidURIError
+        return nil
+      end
+
+      if uri.host.present?
+        return nil unless uri.host == request.host
+
+        path = uri.path.presence || "/"
+        query = uri.query.present? ? "?#{uri.query}" : ""
+        "#{path}#{query}"
+      else
+        return nil unless raw_value.start_with?("/")
+
+        raw_value
+      end
     end
 
     def search_params
