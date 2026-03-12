@@ -218,9 +218,7 @@ class Budget < ApplicationRecord
           ->(ct) { ct.category.other_investments? }
         end
 
-      expense = expense_totals.category_totals.select(&predicate).sum(&:total)
-      refund = income_totals.category_totals.select(&predicate).sum(&:total)
-      return [ expense - refund, 0 ].max
+      return expense_totals.category_totals.select(&predicate).sum(&:total)
     end
 
     cat_id = budget_category.category_id
@@ -306,7 +304,7 @@ class Budget < ApplicationRecord
       expense_category_ids = budget_categories.map(&:category_id).to_set
       income_totals.category_totals
         .reject { |ct| ct.category.subcategory? }
-        .select { |ct| expense_category_ids.include?(ct.category.id) || ct.category.uncategorized? }
+        .select { |ct| expense_category_ids.include?(ct.category.id) }
         .sum(&:total)
     end
 

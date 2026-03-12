@@ -157,7 +157,7 @@ class BudgetTest < ActiveSupport::TestCase
     )
   end
 
-  test "actual_spending subtracts uncategorized refunds" do
+  test "actual_spending does not subtract uncategorized income" do
     family = families(:dylan_family)
     budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
     account = accounts(:depository)
@@ -177,7 +177,7 @@ class BudgetTest < ActiveSupport::TestCase
       account: account,
       entryable: Transaction.create!(category: nil),
       date: Date.current,
-      name: "Uncategorized refund",
+      name: "Uncategorized income",
       amount: -150,
       currency: "USD"
     )
@@ -185,21 +185,16 @@ class BudgetTest < ActiveSupport::TestCase
     budget = Budget.find(budget.id)
     budget.sync_budget_categories
 
-    # The uncategorized refund should reduce overall actual_spending
-    # Other fixtures may contribute spending, so check that the net
-    # uncategorized amount (400 - 150 = 250) is reflected by comparing
-    # with and without the refund rather than asserting an exact total.
-    spending_with_refund = budget.actual_spending
+    spending_with_income = budget.actual_spending
 
-    # Remove the refund and check spending increases
-    Entry.find_by(name: "Uncategorized refund").destroy!
+    Entry.find_by(name: "Uncategorized income").destroy!
     budget = Budget.find(budget.id)
-    spending_without_refund = budget.actual_spending
+    spending_without_income = budget.actual_spending
 
-    assert_equal 150, spending_without_refund - spending_with_refund
+    assert_equal spending_without_income, spending_with_income
   end
 
-  test "budget_category_actual_spending counts uncategorized expenses and refunds" do
+  test "budget_category_actual_spending ignores uncategorized income" do
     family = families(:dylan_family)
     budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
     account = accounts(:depository)
@@ -220,7 +215,7 @@ class BudgetTest < ActiveSupport::TestCase
       account: account,
       entryable: Transaction.create!(category: nil),
       date: Date.current,
-      name: "Uncategorized test refund",
+      name: "Uncategorized test income",
       amount: -100,
       currency: "USD"
     )
@@ -229,7 +224,7 @@ class BudgetTest < ActiveSupport::TestCase
     budget.sync_budget_categories
     uncategorized_bc = budget.uncategorized_budget_category
 
-    assert_equal baseline + 300, budget.budget_category_actual_spending(uncategorized_bc)
+    assert_equal baseline + 400, budget.budget_category_actual_spending(uncategorized_bc)
   end
 
   test "to_donut_segments_json includes uncategorized spending" do
