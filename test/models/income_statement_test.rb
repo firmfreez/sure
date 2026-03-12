@@ -54,6 +54,30 @@ class IncomeStatementTest < ActiveSupport::TestCase
     assert_equal 200 + 300 + 400, income_statement.expense_totals(period: Period.last_30_days).total
   end
 
+  test "reparenting a category invalidates cached expense rollups" do
+    family = Family.create!(name: "Cache Test Family", currency: "USD")
+    parent_a = family.categories.create!(name: "A", classification: "expense", color: "#FF5733", lucide_icon: "receipt")
+    category_b = family.categories.create!(name: "B", classification: "expense", color: "#33FF57", lucide_icon: "shopping-bag")
+    account = family.accounts.create!(name: "Checking 2", currency: family.currency, balance: 1000, status: "active", accountable: Depository.new)
+
+    create_transaction(account: account, amount: 250, category: category_b)
+
+    income_statement = IncomeStatement.new(family)
+    expense_totals_before = income_statement.expense_totals(period: Period.last_30_days)
+    assert_equal 250, expense_totals_before.total
+    assert_equal 250, expense_totals_before.category_totals.find { |ct| ct.category.id == category_b.id }.total
+
+    travel_to 2.seconds.from_now do
+      category_b.update!(parent: parent_a)
+    end
+
+    expense_totals_after = IncomeStatement.new(family.reload).expense_totals(period: Period.last_30_days)
+
+    assert_equal 250, expense_totals_after.total
+    assert_equal 250, expense_totals_after.category_totals.find { |ct| ct.category.id == parent_a.id }.total
+    assert_equal 250, expense_totals_after.category_totals.find { |ct| ct.category.id == category_b.id }.total
+  end
+
   test "calculates median income" do
     income_statement = IncomeStatement.new(@family)
     assert_equal 1000, income_statement.income_totals(period: Period.last_30_days).total

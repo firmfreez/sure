@@ -173,7 +173,13 @@ class PagesController < ApplicationController
       total_expense = expense_totals.total.to_f.round(2)
 
       # Central Cash Flow node
-      cash_flow_idx = add_node.call("cash_flow_node", "Cash Flow", total_income, 100.0, "var(--color-success)")
+      cash_flow_idx = add_node.call(
+        "cash_flow_node",
+        t("pages.dashboard.cashflow_sankey.nodes.flow", default: "Cash Flow"),
+        total_income,
+        100.0,
+        "var(--color-success)"
+      )
 
       # Process income categories (flow: subcategory -> parent -> cash_flow)
       process_category_totals(
@@ -203,7 +209,13 @@ class PagesController < ApplicationController
       net = (total_income - total_expense).round(2)
       if net.positive?
         percentage = total_income.zero? ? 0 : (net / total_income * 100).round(1)
-        idx = add_node.call("surplus_node", "Surplus", net, percentage, "var(--color-success)")
+        idx = add_node.call(
+          "surplus_node",
+          t("pages.dashboard.cashflow_sankey.nodes.surplus", default: "Surplus"),
+          net,
+          percentage,
+          "var(--color-success)"
+        )
         links << { source: cash_flow_idx, target: idx, value: net, color: "var(--color-success)", percentage: percentage }
       end
 

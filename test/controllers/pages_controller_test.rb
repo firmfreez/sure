@@ -43,6 +43,17 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-controller='sankey-chart']"
   end
 
+  test "dashboard localizes sankey node labels" do
+    @user.update!(locale: "ru")
+    create_transaction(account: @family.accounts.first, name: "Salary", amount: -1000, category: categories(:income))
+
+    get root_path
+
+    assert_response :ok
+    assert_includes response.body, "Поток"
+    assert_includes response.body, "Остаток"
+  end
+
   test "changelog" do
     VCR.use_cassette("git_repository_provider/fetch_latest_release_notes") do
       get changelog_path

@@ -246,7 +246,11 @@ class BudgetTest < ActiveSupport::TestCase
     # Make allocations deterministic for this test so donut segments are rendered
     # from real category data rather than the fallback "unused" segment.
     budget.budget_categories.update_all(budgeted_spending: 0)
-    budget.budget_categories.first.update!(budgeted_spending: 500)
+    budget.budget_categories
+      .joins(:category)
+      .where(categories: { parent_id: nil })
+      .first
+      .update!(budgeted_spending: 500)
     budget.update!(budgeted_spending: 1000)
 
     Entry.create!(

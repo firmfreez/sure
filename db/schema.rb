@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_27_190005) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_12_081000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -1541,7 +1541,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_27_190005) do
   add_foreign_key "merchants", "families"
   add_foreign_key "mercury_accounts", "mercury_items"
   add_foreign_key "mercury_items", "families"
-  add_foreign_key "messages", "chats"
+  add_foreign_key "messages", "chats", on_delete: :cascade
   add_foreign_key "mobile_devices", "users"
   add_foreign_key "oauth_access_grants", "oauth_applications", column: "application_id"
   add_foreign_key "oauth_access_tokens", "oauth_applications", column: "application_id"
@@ -1569,7 +1569,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_27_190005) do
   add_foreign_key "syncs", "syncs", column: "parent_id"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tags", "families"
-  add_foreign_key "tool_calls", "messages"
+  add_foreign_key "tool_calls", "messages", on_delete: :cascade
   add_foreign_key "trades", "securities"
   add_foreign_key "transactions", "categories", on_delete: :nullify
   add_foreign_key "transactions", "merchants"

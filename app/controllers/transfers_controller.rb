@@ -25,7 +25,10 @@ class TransfersController < ApplicationController
     redirect_path = safe_return_to_path || safe_referer_path || transactions_path
 
     if @transfer.persisted?
-      success_message = "Transfer created"
+      materialize_account_balance_now(@transfer.from_account)
+      materialize_account_balance_now(@transfer.to_account)
+
+      success_message = t(".success")
       respond_to do |format|
         format.html { redirect_to redirect_path, notice: success_message }
         format.turbo_stream { stream_redirect_to redirect_path, notice: success_message }
@@ -48,7 +51,13 @@ class TransfersController < ApplicationController
   end
 
   def destroy
-    @transfer.destroy!
+    from_account = @transfer.from_account
+    to_account = @transfer.to_account
+
+    @transfer.destroy_with_entries!
+    materialize_account_balance_now(from_account)
+    materialize_account_balance_now(to_account)
+
     redirect_back_or_to transactions_url, notice: t(".success")
   end
 
@@ -112,5 +121,17 @@ class TransfersController < ApplicationController
     def update_transfer_details
       @transfer.outflow_transaction.update!(category_id: transfer_update_params[:category_id])
       @transfer.update!(notes: transfer_update_params[:notes])
+    end
+
+    # Keep account balances fresh immediately for the response path.
+    # We still enqueue async sync for full recalculation workflows.
+    def materialize_account_balance_now(account)
+      return unless account
+
+      strategy = account.linked? ? :reverse : :forward
+      Balance::Materializer.new(account, strategy: strategy).materialize_balances
+      account.reload
+    rescue StandardError => e
+      Rails.logger.warn("TransfersController immediate balance materialization failed for account #{account.id}: #{e.class} - #{e.message}")
     end
 end

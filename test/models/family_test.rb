@@ -178,6 +178,19 @@ class FamilyTest < ActiveSupport::TestCase
     assert_includes family.available_merchants, new_merchant
   end
 
+  test "entries_cache_version uses the latest timestamp across entries and categories" do
+    family = families(:dylan_family)
+    family.remove_instance_variable(:@entries_cache_version) if family.instance_variable_defined?(:@entries_cache_version)
+
+    entry_scope = stub(maximum: 2.minutes.ago)
+    category_scope = stub(maximum: 1.minute.ago)
+
+    family.stubs(:entries).returns(entry_scope)
+    family.stubs(:categories).returns(category_scope)
+
+    assert_equal 1.minute.ago.to_i, family.entries_cache_version
+  end
+
   test "upload_document stores provided metadata on family document" do
     family = families(:dylan_family)
     family.update!(vector_store_id: nil)

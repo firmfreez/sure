@@ -35,12 +35,24 @@ class Transfer < ApplicationRecord
     end
   end
 
-  # Once transfer is destroyed, we need to mark the denormalized kind fields on the transactions
+  # Unlinks the transfer but keeps the underlying transactions as standalone entries.
   def destroy!
     Transfer.transaction do
       inflow_transaction.update!(kind: "standard")
       outflow_transaction.update!(kind: "standard")
       super
+    end
+  end
+
+  # Permanently deletes the transfer and both underlying transaction entries.
+  def destroy_with_entries!
+    Transfer.transaction do
+      inflow_entry = inflow_transaction.entry
+      outflow_entry = outflow_transaction.entry
+
+      delete
+      inflow_entry.destroy!
+      outflow_entry.destroy!
     end
   end
 

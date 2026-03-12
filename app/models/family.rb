@@ -260,10 +260,12 @@ class Family < ApplicationRecord
     ].compact.join("_")
   end
 
-  # Used for invalidating entry related aggregation queries
+  # Used for invalidating entry related aggregation queries.
+  # Category changes also affect these aggregates because parent_id/classification
+  # determine how transaction totals roll up in dashboards and budgets.
   def entries_cache_version
     @entries_cache_version ||= begin
-      ts = entries.maximum(:updated_at)
+      ts = [ entries.maximum(:updated_at), categories.maximum(:updated_at) ].compact.max
       ts.present? ? ts.to_i : 0
     end
   end
