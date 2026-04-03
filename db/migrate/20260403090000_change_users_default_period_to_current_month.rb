@@ -1,4 +1,4 @@
-class ChangeUsersDefaultPeriodToCurrentMonth < ActiveRecord::Migration[8.0]
+class ChangeUsersDefaultPeriodToCurrentMonth < ActiveRecord::Migration[7.2]
   def up
     change_column_default :users, :default_period, from: "last_30_days", to: "current_month"
 
