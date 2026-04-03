@@ -270,6 +270,43 @@ class BudgetTest < ActiveSupport::TestCase
     assert_equal expected_uncategorized_spending, uncategorized_segment[:amount]
   end
 
+  test "category_avg_monthly_expense includes subcategory averages for parent categories" do
+    family = families(:dylan_family)
+    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
+
+    parent = Category.create!(
+      name: "Transport Avg #{Time.now.to_f}",
+      family: family,
+      color: "#6471eb",
+      classification: "expense"
+    )
+
+    fuel = Category.create!(
+      name: "Fuel Avg #{Time.now.to_f}",
+      family: family,
+      parent: parent,
+      classification: "expense"
+    )
+
+    parking = Category.create!(
+      name: "Parking Avg #{Time.now.to_f}",
+      family: family,
+      parent: parent,
+      classification: "expense"
+    )
+
+    income_statement = mock
+    budget.stubs(:income_statement).returns(income_statement)
+
+    income_statement.stubs(:avg_expense).with(category: parent).returns(577)
+    income_statement.stubs(:avg_expense).with(category: fuel).returns(4549)
+    income_statement.stubs(:avg_expense).with(category: parking).returns(4000)
+
+    assert_equal 9126, budget.category_avg_monthly_expense(parent)
+    assert_equal 4549, budget.category_avg_monthly_expense(fuel)
+    assert_equal 4000, budget.category_avg_monthly_expense(parking)
+  end
+
   test "previous_budget_param returns param when date is valid" do
     budget = Budget.create!(
       family: @family,

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_12_081000) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_03_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -1451,7 +1451,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_081000) do
     t.boolean "otp_required", default: false, null: false
     t.string "otp_backup_codes", default: [], array: true
     t.boolean "show_sidebar", default: true
-    t.string "default_period", default: "last_30_days", null: false
+    t.string "default_period", default: "current_month", null: false
     t.uuid "last_viewed_chat_id"
     t.boolean "show_ai_sidebar", default: false
     t.boolean "ai_enabled", default: false, null: false

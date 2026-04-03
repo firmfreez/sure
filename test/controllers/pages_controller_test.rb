@@ -14,6 +14,13 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
   end
 
+  test "dashboard defaults to current month period" do
+    get root_path
+
+    assert_response :ok
+    assert_select "select[name='period'] option[value='current_month'][selected='selected']", minimum: 1
+  end
+
   test "intro page requires guest role" do
     get intro_path
 

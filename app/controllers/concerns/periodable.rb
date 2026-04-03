@@ -17,6 +17,6 @@ module Periodable
         Period.from_key(period_key)
       end
     rescue Period::InvalidKeyError
-      @period = Period.last_30_days
+      @period = Period.current_month_for(Current.family)
     end
 end
