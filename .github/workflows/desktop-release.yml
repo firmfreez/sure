@@ -30,13 +30,13 @@ jobs:
             echo "::error::.sure-version is empty or unreadable"
             exit 1
           fi
-          if [ "$VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::.sure-version ($VERSION) does not match release tag (v$TAG_VERSION)"
+          if [ "$VERSION" != "$TAG_VERSION" ] && [[ ! "$TAG_VERSION" =~ ^${VERSION}-ha(-[0-9]+)?$ ]]; then
+            echo "::error::.sure-version ($VERSION) does not match release tag (v$TAG_VERSION), including an optional HA suffix"
             exit 1
           fi
-          echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$' \
-            || { echo "::error::invalid version '$VERSION'"; exit 1; }
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "$TAG_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$' \
+            || { echo "::error::invalid version '$TAG_VERSION'"; exit 1; }
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Stamp desktop version for the build
         env:
