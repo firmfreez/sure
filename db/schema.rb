@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_18_060353) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_20_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -410,7 +410,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_18_060353) do
     t.string "lucide_icon", default: "shapes", null: false
     t.datetime "last_used_at"
     t.index ["family_id", "last_used_at"], name: "index_categories_on_family_id_and_last_used_at"
-    t.index ["family_id", "name"], name: "index_categories_on_family_id_and_name", unique: true
+    t.index ["family_id", "name"], name: "idx_categories_unique_root_name_per_family", unique: true, where: "(parent_id IS NULL)"
+    t.index ["family_id", "parent_id", "name"], name: "idx_categories_unique_subcategory_name_per_parent", unique: true, where: "(parent_id IS NOT NULL)"
     t.index ["family_id"], name: "index_categories_on_family_id"
   end
 
@@ -2243,9 +2244,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_18_060353) do
     t.boolean "otp_required", default: false, null: false
     t.string "otp_backup_codes", default: [], array: true
     t.boolean "show_sidebar", default: true
-    t.string "default_period", default: "last_30_days", null: false
+    t.string "default_period", default: "current_month", null: false
     t.uuid "last_viewed_chat_id"
-    t.boolean "show_ai_sidebar", default: true
+    t.boolean "show_ai_sidebar", default: false
     t.boolean "ai_enabled", default: false, null: false
     t.string "theme", default: "system"
     t.boolean "rule_prompts_disabled", default: false
@@ -2422,7 +2423,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_18_060353) do
   add_foreign_key "merchants", "families"
   add_foreign_key "mercury_accounts", "mercury_items"
   add_foreign_key "mercury_items", "families"
-  add_foreign_key "messages", "chats"
+  add_foreign_key "messages", "chats", on_delete: :cascade
   add_foreign_key "mobile_devices", "users"
   add_foreign_key "notification_deliveries", "rules", on_delete: :cascade
   add_foreign_key "notification_deliveries", "transactions", on_delete: :cascade
@@ -2460,7 +2461,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_18_060353) do
   add_foreign_key "syncs", "syncs", column: "parent_id"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tags", "families"
-  add_foreign_key "tool_calls", "messages"
+  add_foreign_key "tool_calls", "messages", on_delete: :cascade
   add_foreign_key "trades", "securities"
   add_foreign_key "trading212_accounts", "trading212_items"
   add_foreign_key "trading212_items", "families"
