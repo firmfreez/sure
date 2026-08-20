@@ -7,7 +7,7 @@ en:
       investment_contributions: Investment Contributions
       defaults:
         income: Income
-        food_drink: Food & Drink
+        food_and_drink: Food & Drink
         groceries: Groceries
         shopping: Shopping
         transportation: Transportation
@@ -20,10 +20,10 @@ en:
         utilities: Utilities
         subscriptions: Subscriptions
         insurance: Insurance
-        sports_fitness: Sports & Fitness
-        gifts_donations: Gifts & Donations
+        sports_and_fitness: Sports & Fitness
+        gifts_and_donations: Gifts & Donations
         taxes: Taxes
         loan_payments: Loan Payments
         services: Services
         fees: Fees
-        savings_investments: Savings & Investments
+        savings_and_investments: Savings & Investments

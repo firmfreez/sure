@@ -7,9 +7,9 @@ class ChatsTest < ApplicationSystemTestCase
   end
 
   test "sidebar shows consent if ai is disabled for user" do
-    @user.update!(ai_enabled: false, show_ai_sidebar: true)
+    @user.update!(ai_enabled: false)
 
-    visit chats_path
+    visit root_path
 
     within "#chat-container" do
       assert_selector "h3", text: "Enable AI Chats"
@@ -18,7 +18,7 @@ class ChatsTest < ApplicationSystemTestCase
 
   test "sidebar shows index when enabled and chats are empty" do
     with_env_overrides OPENAI_ACCESS_TOKEN: "test-token" do
-      @user.update!(ai_enabled: true, show_ai_sidebar: true)
+      @user.update!(ai_enabled: true)
       @user.chats.destroy_all
 
       visit root_url
@@ -31,25 +31,30 @@ class ChatsTest < ApplicationSystemTestCase
 
   test "sidebar shows last viewed chat" do
     with_env_overrides OPENAI_ACCESS_TOKEN: "test-token" do
-      @user.update!(ai_enabled: true, show_ai_sidebar: true)
+      @user.update!(ai_enabled: true)
+      chat_title = @user.chats.first.title
 
       visit root_url
 
-      click_on @user.chats.first.title
+      click_on chat_title
+
+      # Wait for the chat to actually load before refreshing
+      within "#chat-container" do
+        assert_selector "h1", text: chat_title
+      end
 
       # Page refresh
       visit root_url
 
       # After page refresh, we're still on the last chat we were viewing
       within "#chat-container" do
-        assert_selector "h1", text: @user.chats.first.title
+        assert_selector "h1", text: chat_title
       end
     end
   end
 
   test "create chat and navigate chats sidebar" do
     with_env_overrides OPENAI_ACCESS_TOKEN: "test-token" do
-      @user.update!(show_ai_sidebar: true)
       @user.chats.destroy_all
 
       visit root_url

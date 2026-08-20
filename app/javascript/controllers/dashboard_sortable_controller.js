@@ -3,9 +3,9 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
   static targets = ["section", "handle"];
 
-  // Short delay to prevent accidental touches on the grip handle
+  // Hold delay to require deliberate press-and-hold before activating drag mode
   static values = {
-    holdDelay: { type: Number, default: 150 },
+    holdDelay: { type: Number, default: 800 },
   };
 
   connect() {
@@ -18,33 +18,17 @@ export default class extends Controller {
     this.keyboardGrabbedElement = null;
     this.holdTimer = null;
     this.holdActivated = false;
-
-    this.handleViewportChange = this.handleViewportChange.bind(this);
-    this.mobileMediaQuery = window.matchMedia("(max-width: 1023px)");
-    this.mobileMediaQuery.addEventListener("change", this.handleViewportChange);
-    this.handleViewportChange();
-  }
-
-  disconnect() {
-    this.cancelHold();
-    if (this.mobileMediaQuery) {
-      this.mobileMediaQuery.removeEventListener("change", this.handleViewportChange);
-    }
-  }
-
-  handleViewportChange() {
-    this.sectionTargets.forEach((section) => {
-      section.setAttribute("draggable", this.isMobileViewport() ? "false" : "true");
-    });
-  }
-
-  isMobileViewport() {
-    return this.mobileMediaQuery?.matches;
   }
 
   // ===== Mouse Drag Events =====
   dragStart(event) {
-    if (this.isMobileViewport()) return;
+    // If a touch interaction is in progress, cancel native drag —
+    // use touch events with hold delay instead.
+    // This avoids blocking mouse/trackpad drag on touch-capable laptops.
+    if (this.isTouching || this.pendingSection) {
+      event.preventDefault();
+      return;
+    }
 
     this.draggedElement = event.currentTarget;
     this.draggedElement.classList.add("opacity-50");
@@ -53,16 +37,12 @@ export default class extends Controller {
   }
 
   dragEnd(event) {
-    if (this.isMobileViewport()) return;
-
     event.currentTarget.classList.remove("opacity-50");
     event.currentTarget.setAttribute("aria-grabbed", "false");
     this.clearPlaceholders();
   }
 
   dragOver(event) {
-    if (this.isMobileViewport()) return;
-
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
 
@@ -79,8 +59,6 @@ export default class extends Controller {
   }
 
   drop(event) {
-    if (this.isMobileViewport()) return;
-
     event.preventDefault();
     event.stopPropagation();
 
@@ -102,8 +80,6 @@ export default class extends Controller {
   // to prevent accidental touches.
 
   touchStart(event) {
-    if (this.isMobileViewport()) return;
-
     // Find the parent section element from the handle
     const section = event.currentTarget.closest(
       "[data-dashboard-sortable-target='section']",
@@ -119,6 +95,10 @@ export default class extends Controller {
     this.currentTouchX = this.touchStartX;
     this.currentTouchY = this.touchStartY;
     this.holdActivated = false;
+
+    // Prevent text selection while waiting for hold to activate
+    section.style.userSelect = "none";
+    section.style.webkitUserSelect = "none";
 
     // Start hold timer
     this.holdTimer = setTimeout(() => {
@@ -142,13 +122,25 @@ export default class extends Controller {
   }
 
   touchMove(event) {
-    if (this.isMobileViewport()) return;
+    const touchX = event.touches[0].clientX;
+    const touchY = event.touches[0].clientY;
 
-    if (!this.holdActivated || !this.isTouching || !this.draggedElement) return;
+    // If hold hasn't activated yet, cancel if user moves too far (scrolling or swiping)
+    // Uses Euclidean distance to catch diagonal gestures too
+    if (!this.holdActivated) {
+      const dx = touchX - this.touchStartX;
+      const dy = touchY - this.touchStartY;
+      if (dx * dx + dy * dy > 100) { // 10px radius
+        this.cancelHold();
+      }
+      return;
+    }
+
+    if (!this.isTouching || !this.draggedElement) return;
 
     event.preventDefault();
-    this.currentTouchX = event.touches[0].clientX;
-    this.currentTouchY = event.touches[0].clientY;
+    this.currentTouchX = touchX;
+    this.currentTouchY = touchY;
 
     const afterElement = this.getDragAfterElement(this.currentTouchX, this.currentTouchY);
     this.clearPlaceholders();
@@ -161,8 +153,6 @@ export default class extends Controller {
   }
 
   touchEnd() {
-    if (this.isMobileViewport()) return;
-
     this.cancelHold();
 
     if (!this.holdActivated || !this.isTouching || !this.draggedElement) {
@@ -195,6 +185,16 @@ export default class extends Controller {
   }
 
   resetTouchState() {
+    // Restore text selection
+    if (this.pendingSection) {
+      this.pendingSection.style.userSelect = "";
+      this.pendingSection.style.webkitUserSelect = "";
+    }
+    if (this.draggedElement) {
+      this.draggedElement.style.userSelect = "";
+      this.draggedElement.style.webkitUserSelect = "";
+    }
+
     this.isTouching = false;
     this.draggedElement = null;
     this.pendingSection = null;
@@ -203,8 +203,6 @@ export default class extends Controller {
 
   // ===== Keyboard Navigation =====
   handleKeyDown(event) {
-    if (this.isMobileViewport()) return;
-
     const currentSection = event.currentTarget;
 
     switch (event.key) {

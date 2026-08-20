@@ -45,23 +45,28 @@ module Api
         user.family = family
         user.role = User.role_for_new_family_creator
 
-        if user.save
-          # Claim invite code if provided
-          InviteCode.claim!(params[:invite_code]) if params[:invite_code].present?
-
-          # Create device and OAuth token
-          begin
+        # Atomic: user creation, invite-code claim, and device/token issuance
+        # either all commit or none do. Without this, a post-commit device
+        # failure (e.g., racing uniqueness) would leave the user/invite/family
+        # committed while the client got a 422 "Failed to register device".
+        token_response = nil
+        begin
+          ActiveRecord::Base.transaction do
+            unless user.save
+              render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+              raise ActiveRecord::Rollback
+            end
+            InviteCode.claim!(params[:invite_code]) if params[:invite_code].present?
             device = MobileDevice.upsert_device!(user, device_params)
             token_response = device.issue_token!
-          rescue ActiveRecord::RecordInvalid => e
-            render json: { error: "Failed to register device: #{e.message}" }, status: :unprocessable_entity
-            return
           end
-
-          render json: token_response.merge(user: mobile_user_payload(user)), status: :created
-        else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+        rescue ActiveRecord::RecordInvalid => e
+          Rails.logger.error("[Auth] Device registration failed: #{e.class} - #{e.message}")
+          render json: { error: "Failed to register device" }, status: :unprocessable_entity
+          return
         end
+
+        render json: token_response.merge(user: mobile_user_payload(user)), status: :created if token_response
       end
 
       def login
@@ -90,7 +95,8 @@ module Api
             device = MobileDevice.upsert_device!(user, device_params)
             token_response = device.issue_token!
           rescue ActiveRecord::RecordInvalid => e
-            render json: { error: "Failed to register device: #{e.message}" }, status: :unprocessable_entity
+            Rails.logger.error("[Auth] Device registration failed: #{e.message}")
+            render json: { error: "Failed to register device" }, status: :unprocessable_entity
             return
           end
 
@@ -138,6 +144,119 @@ module Api
             ai_enabled: cached[:user_ai_enabled]
           }
         }
+      end
+
+      def sso_link
+        linking_code = params[:linking_code]
+        cached = validate_linking_code(linking_code)
+        return unless cached
+
+        user = User.authenticate_by(email: params[:email], password: params[:password])
+
+        unless user
+          render json: { error: "Invalid email or password" }, status: :unauthorized
+          return
+        end
+
+        if user.otp_required?
+          render json: { error: "MFA users should sign in with email and password", mfa_required: true }, status: :unauthorized
+          return
+        end
+
+        # Atomically claim the code before creating the identity
+        return render json: { error: "Linking code is invalid or expired" }, status: :unauthorized unless consume_linking_code!(linking_code)
+
+        OidcIdentity.create_from_omniauth(build_omniauth_hash(cached), user)
+
+        SsoAuditLog.log_link!(
+          user: user,
+          provider: cached[:provider],
+          request: request
+        )
+
+        issue_mobile_tokens(user, cached[:device_info])
+      end
+
+      def sso_create_account
+        linking_code = params[:linking_code]
+        cached = validate_linking_code(linking_code)
+        return unless cached
+
+        email = cached[:email]
+
+        # Check for a pending invitation for this email
+        invitation = Invitation.pending.find_by(email: email)
+
+        unless invitation.present? || cached[:allow_account_creation]
+          render json: { error: "SSO account creation is disabled. Please contact an administrator." }, status: :forbidden
+          return
+        end
+
+        # Atomically claim the code before creating the user
+        return render json: { error: "Linking code is invalid or expired" }, status: :unauthorized unless consume_linking_code!(linking_code)
+
+        user = User.new(
+          email: email,
+          first_name: params[:first_name].presence || cached[:first_name],
+          last_name: params[:last_name].presence || cached[:last_name],
+          skip_password_validation: true
+        )
+
+        if invitation.present?
+          # Accept the pending invitation: join the existing family
+          user.family_id = invitation.family_id
+          user.role = invitation.role
+        else
+          user.family = Family.new
+
+          # New family creators must be able to administer their own family.
+          # Lower provider defaults are promoted to admin by role_for_new_family_creator,
+          # while intentional super_admin defaults remain supported.
+          provider_config = Rails.configuration.x.auth.sso_providers&.find { |p| p[:name] == cached[:provider] }
+          provider_default_role = provider_config&.dig(:settings, :default_role)
+          user.role = User.role_for_new_family_creator(fallback_role: provider_default_role || :admin)
+        end
+
+        identity = nil
+        account_created = false
+
+        begin
+          account_created = ActiveRecord::Base.transaction do
+            unless user.save
+              raise ActiveRecord::Rollback
+            end
+
+            # Mark invitation as accepted if one was used
+            invitation&.update!(accepted_at: Time.current)
+
+            # Joining an existing family via invitation must honor the family's
+            # default sharing policy, matching Invitation#accept_for, so a mobile
+            # SSO invitee sees the accounts the family shares by default.
+            user.family.auto_share_existing_accounts_with(user) if invitation.present?
+
+            identity = OidcIdentity.create_from_omniauth(build_omniauth_hash(cached), user)
+            true
+          end
+        rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
+          # Expected persistence failures (e.g. a duplicate identity) roll the
+          # whole onboarding back and return the error response. Unexpected
+          # errors propagate so they surface instead of being hidden.
+          user.errors.add(:base, e.message)
+        end
+
+        if account_created
+          if identity&.persisted?
+            SsoAuditLog.log_jit_account_created!(
+              user: user,
+              provider: cached[:provider],
+              request: request
+            )
+          end
+
+          issue_mobile_tokens(user, cached[:device_info])
+        else
+          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+        end
       end
 
       def enable_ai
@@ -226,7 +345,20 @@ module Api
           return false if device.nil?
 
           required_fields = %w[device_id device_name device_type os_version app_version]
-          required_fields.all? { |field| device[field].present? }
+          return false unless required_fields.all? { |field| device[field].present? }
+
+          # Run MobileDevice's attribute-level validations up front (e.g.,
+          # device_type must be ios/android/web) so a misconfigured client
+          # is rejected BEFORE signup commits user/family/invite. Skip
+          # errors we can't evaluate without a user: the :user belongs_to
+          # presence check, and device_id uniqueness scoped to user_id
+          # (upsert_device! treats collisions as updates anyway).
+          preview = MobileDevice.new(device_params)
+          preview.valid?
+          relevant_errors = preview.errors.errors.reject do |err|
+            err.type == :taken || err.attribute == :user
+          end
+          relevant_errors.empty?
         end
 
         def device_params
@@ -246,6 +378,49 @@ module Api
             ui_layout: user.ui_layout,
             ai_enabled: user.ai_enabled?
           }
+        end
+
+        def build_omniauth_hash(cached)
+          OpenStruct.new(
+            provider: cached[:provider],
+            uid: cached[:uid],
+            info: OpenStruct.new(cached.slice(:email, :name, :first_name, :last_name)),
+            extra: OpenStruct.new(raw_info: OpenStruct.new(iss: cached[:issuer]))
+          )
+        end
+
+        def validate_linking_code(linking_code)
+          if linking_code.blank?
+            render json: { error: "Linking code is required" }, status: :bad_request
+            return nil
+          end
+
+          cache_key = "mobile_sso_link:#{linking_code}"
+          cached = Rails.cache.read(cache_key)
+
+          unless cached.present?
+            render json: { error: "Linking code is invalid or expired" }, status: :unauthorized
+            return nil
+          end
+
+          cached
+        end
+
+        # Atomically deletes the linking code from cache.
+        # Returns true only for the first caller; subsequent callers get false.
+        def consume_linking_code!(linking_code)
+          Rails.cache.delete("mobile_sso_link:#{linking_code}")
+        end
+
+        def issue_mobile_tokens(user, device_info)
+          device_info = device_info.symbolize_keys if device_info.respond_to?(:symbolize_keys)
+          device = MobileDevice.upsert_device!(user, device_info)
+          token_response = device.issue_token!
+
+          render json: token_response.merge(user: mobile_user_payload(user))
+        rescue ActiveRecord::RecordInvalid => e
+          Rails.logger.error("[Auth] Device registration failed: #{e.message}")
+          render json: { error: "Failed to register device" }, status: :unprocessable_entity
         end
 
         def ensure_write_scope

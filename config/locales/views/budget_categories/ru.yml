@@ -5,7 +5,7 @@ ru:
       category_label: Категория
       overview_title: Обзор
       recent_transactions_title: Недавние транзакции
-      spending_for_month: "Расходы за %{month}"
+      spending_for_month: Расходы за %{month}
       status_label: Статус
       budgeted_label: Запланировано
       monthly_average_spending: Средние расходы за месяц

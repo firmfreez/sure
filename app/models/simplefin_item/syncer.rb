@@ -120,14 +120,32 @@ class SimplefinItem::Syncer
     end
 
     def mark_completed(sync)
-      if sync.may_start?
-        sync.start!
+      # Re-read under a row lock before finalizing: this job holds an
+      # in-memory copy loaded before the run, and the sync may have been
+      # cancelled (Sync#request_cancel! finalized it to stale) or otherwise
+      # terminalized while the work ran. An unguarded complete! here would
+      # overwrite that terminal status and resurrect a cancelled sync.
+      finalized = sync.with_lock do
+        if sync.cancel_requested_at? || sync.terminal?
+          false
+        else
+          sync.start! if sync.may_start?
+          sync.complete! if sync.may_complete?
+          true
+        end
       end
-      if sync.may_complete?
-        sync.complete!
-      else
-        # If aasm not used, at least set status text
-        sync.update!(status: :completed) if sync.status != "completed"
+
+      unless finalized
+        DebugLogEntry.capture(
+          category: "provider_sync",
+          level: "info",
+          message: "SimplefinItem::Syncer#mark_completed skipped: sync was #{sync.status} (cancel requested: #{sync.cancel_requested_at.present?})",
+          source: self.class.name,
+          family: simplefin_item.family,
+          provider_key: "simplefin",
+          metadata: { sync_id: sync.id, status: sync.status, cancel_requested_at: sync.cancel_requested_at }
+        )
+        return
       end
 
       # After completion, compute and persist compact post-run stats for the summary panel
@@ -172,28 +190,10 @@ class SimplefinItem::Syncer
         target_id = ActionView::RecordIdentifier.dom_id(simplefin_item)
         Turbo::StreamsChannel.broadcast_replace_to(simplefin_item.family, target: target_id, html: card_html)
 
-        # Also refresh the Manual Accounts group so duplicates clear without a full page reload
-        begin
-          manual_accounts = simplefin_item.family.accounts
-            .visible_manual
-            .order(:name)
-          if manual_accounts.any?
-            manual_html = ApplicationController.render(
-              partial: "accounts/index/manual_accounts",
-              formats: [ :html ],
-              locals: { accounts: manual_accounts }
-            )
-            Turbo::StreamsChannel.broadcast_update_to(simplefin_item.family, target: "manual-accounts", html: manual_html)
-          else
-            manual_html = ApplicationController.render(inline: '<div id="manual-accounts"></div>')
-            Turbo::StreamsChannel.broadcast_replace_to(simplefin_item.family, target: "manual-accounts", html: manual_html)
-          end
-        rescue => inner
-          Rails.logger.warn("SimplefinItem::Syncer manual-accounts broadcast failed: #{inner.class} - #{inner.message}")
-        end
-
-        # Intentionally do not broadcast modal reloads here to avoid unexpected auto-pop after sync.
-        # Modal opening is controlled explicitly via controller redirects with actionable conditions.
+        # Broadcast a refresh signal instead of rendered HTML. Each user's browser
+        # re-fetches via their own authenticated request, so the manual accounts
+        # list is correctly scoped to the current user.
+        simplefin_item.family.broadcast_refresh
       rescue => e
         Rails.logger.warn("SimplefinItem::Syncer broadcast failed: #{e.class} - #{e.message}")
       end

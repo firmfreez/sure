@@ -3,39 +3,31 @@ ru:
   holdings:
     cash:
       brokerage_cash: Брокерская наличность
-    destroy:
-      success: Позиция удалена
-    update:
-      success: База стоимости сохранена.
-      error: Некорректная база стоимости.
-    unlock_cost_basis:
-      success: База стоимости разблокирована. Она может быть обновлена при следующей синхронизации.
-    remap_security:
-      success: Бумага успешно обновлена.
-      security_not_found: Не удалось найти выбранную бумагу.
-    reset_security:
-      success: Бумага сброшена к значению провайдера.
-    errors:
-      security_collision: "Нельзя заменить: у вас уже есть позиция по %{ticker} на %{date}."
-    cost_basis_sources:
-      manual: Задано пользователем
-      calculated: По сделкам
-      provider: От провайдера
     cost_basis_cell:
-      unknown: "--"
-      set_cost_basis_header: "Установить базу стоимости для %{ticker} (%{qty} шт.)"
-      total_cost_basis_label: Общая база стоимости
-      or_per_share_label: "Или введите за штуку:"
-      per_share: за штуку
       cancel: Отмена
-      save: Сохранить
+      or_per_share_label: 'Или введите за штуку:'
+      overwrite_confirm_body: Это заменит текущую базу стоимости %{current}.
       overwrite_confirm_title: Перезаписать базу стоимости?
-      overwrite_confirm_body: "Это заменит текущую базу стоимости %{current}."
+      per_share: за штуку
+      save: Сохранить
+      set: Установить
+      set_cost_basis_header: Установить базу стоимости для %{ticker} (%{qty} шт.)
+      total_cost_basis_label: Общая база стоимости
+      unknown: "--"
+    cost_basis_sources:
+      calculated: По сделкам
+      manual: Задано пользователем
+      provider: От провайдера
+    destroy:
+      cannot_delete: Вы не можете удалить этот актив
+      success: Позиция удалена
+    errors:
+      security_collision: 'Нельзя заменить: у вас уже есть позиция по %{ticker} на %{date}.'
     holding:
+      no_cost_basis: Нет базы стоимости
       per_share: за штуку
       shares: "%{qty} шт."
       unknown: "--"
-      no_cost_basis: Нет базы стоимости
     index:
       average_cost: Средняя цена
       holdings: Позиции
@@ -47,36 +39,63 @@ ru:
     missing_price_tooltip:
       description: По этой инвестиции нет данных, поэтому мы не смогли рассчитать доходность или стоимость.
       missing_data: Нет данных
+    remap_security:
+      security_not_found: Не удалось найти выбранную бумагу.
+      success: Бумага успешно обновлена.
+    reset_security:
+      success: Бумага сброшена к значению провайдера.
     show:
       avg_cost_label: Средняя цена
+      book_value_label: Балансовая стоимость
+      cancel: Отмена
+      cost_basis_locked_description: Вручную заданная база стоимости не будет изменяться синхронизацией.
+      cost_basis_locked_label: База стоимости заблокирована
       current_market_price_label: Текущая рыночная цена
       delete: Удалить
       delete_subtitle: Это удалит позицию и все связанные сделки по этому счету. Это действие нельзя отменить.
       delete_title: Удалить позицию
       edit_security: Редактировать бумагу
       history: История
+      last_price_update: Последнее обновление цены
+      market_data_label: Рыночные данные
+      market_data_sync_button: Обновить
+      market_value_label: Рыночная стоимость
+      never: Никогда
+      no_security_provider: Провайдер бумаг не настроен. Поиск недоступен.
       no_trade_history: Для этой позиции нет истории сделок.
+      originally: было %{ticker}
       overview: Обзор
       portfolio_weight_label: Доля в портфеле
-      settings: Настройки
-      security_label: Бумага
-      originally: "было %{ticker}"
+      provider_disabled_warning: Обновления цен приостановлены — поставщик %{provider} отключен. Переключитесь на другого поставщика ниже или включите его в Настройках.
+      provider_sent: 'Провайдер прислал: %{ticker}'
+      remap_security: Сохранить
+      reset_confirm_body: Это заменит бумагу с %{current} на %{original} и перенесет все связанные сделки.
+      reset_confirm_title: Сбросить бумагу к провайдеру?
+      reset_to_provider: Сбросить к провайдеру
       search_security: Найти бумагу
       search_security_placeholder: Поиск по тикеру или названию
-      cancel: Отмена
-      remap_security: Сохранить
-      no_security_provider: Провайдер бумаг не настроен. Поиск недоступен.
+      security_label: Бумага
       security_remapped_label: Бумага заменена
-      provider_sent: "Провайдер прислал: %{ticker}"
-      reset_to_provider: Сбросить к провайдеру
-      reset_confirm_title: Сбросить бумагу к провайдеру?
-      reset_confirm_body: "Это заменит бумагу с %{current} на %{original} и перенесет все связанные сделки."
+      settings: Настройки
+      shares_label: Акции
+      switch_provider_button: Сменить
+      switch_provider_description: "%{provider} отключен. Найдите эту ценную бумагу у другого включенного поставщика."
+      switch_provider_label: Сменить поставщика
+      syncing: Синхронизация...
       ticker_label: Тикер
-      trade_history_entry: "%{qty} шт. %{security} по %{price}"
       total_return_label: Общая доходность
+      trade_history_entry: "%{qty} шт. %{security} по %{price}"
+      truncated_history_warning: История цен доступна только с %{date}. Более ранние даты не содержат данных от выбранного поставщика — это может произойти, если актив был добавлен после даты вашей сделки или если поставщик предлагает ограниченное количество исторических данных в текущем тарифе.
       unknown: Неизвестно
-      cost_basis_locked_label: База стоимости заблокирована
-      cost_basis_locked_description: Вручную заданная база стоимости не будет изменяться синхронизацией.
-      unlock_cost_basis: Разблокировать
-      unlock_confirm_title: Разблокировать базу стоимости?
       unlock_confirm_body: Это позволит обновлять базу стоимости при синхронизации или расчете по сделкам.
+      unlock_confirm_title: Разблокировать базу стоимости?
+      unlock_cost_basis: Разблокировать
+    sync_prices:
+      provider_error: Не удалось получить последние цены. Пожалуйста, попробуйте снова через несколько минут.
+      success: Рыночные данные успешно синхронизированы.
+      unavailable: Синхронизация рыночных данных недоступна для офлайн-активов.
+    unlock_cost_basis:
+      success: База стоимости разблокирована. Она может быть обновлена при следующей синхронизации.
+    update:
+      error: Некорректная база стоимости.
+      success: База стоимости сохранена.

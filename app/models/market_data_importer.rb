@@ -17,7 +17,7 @@ class MarketDataImporter
 
   # Syncs historical security prices (and details)
   def import_security_prices
-    unless Security.provider
+    unless Security.providers.any?
       Rails.logger.warn("No provider configured for MarketDataImporter.import_security_prices, skipping sync")
       return
     end
@@ -76,27 +76,22 @@ class MarketDataImporter
            .each do |(source, target), date|
         key = [ source, target ]
         pair_dates[key] = [ pair_dates[key], date ].compact.min
-
-        inverse_key = [ target, source ]
-        pair_dates[inverse_key] = [ pair_dates[inverse_key], date ].compact.min
       end
 
-      # 2. ACCOUNT-BASED PAIRS – use the account's oldest entry date
-      account_first_entry_dates = Entry.group(:account_id).minimum(:date)
-
+      # 2. ACCOUNT-BASED PAIRS – use the account's oldest entry date.
+      # The earliest entry date per account is resolved in SQL to avoid loading a
+      # potentially large Hash of all account IDs into Ruby memory.
       Account.joins(:family)
+             .joins("LEFT JOIN (SELECT account_id, MIN(date) AS first_entry_date FROM entries GROUP BY account_id) AS entry_mins ON entry_mins.account_id = accounts.id")
              .where.not("families.currency = accounts.currency")
-             .select("accounts.id, accounts.currency AS source, families.currency AS target")
+             .select("accounts.id, accounts.currency AS source, families.currency AS target, entry_mins.first_entry_date")
              .find_each do |account|
-        earliest_entry_date = account_first_entry_dates[account.id]
+        earliest_entry_date = account.first_entry_date
 
         chosen_date = [ earliest_entry_date, default_start_date ].compact.min
 
         key = [ account.source, account.target ]
         pair_dates[key] = [ pair_dates[key], chosen_date ].compact.min
-
-        inverse_key = [ account.target, account.source ]
-        pair_dates[inverse_key] = [ pair_dates[inverse_key], chosen_date ].compact.min
       end
 
       # Convert to array of hashes for ease of use

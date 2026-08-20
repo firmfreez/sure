@@ -1,5 +1,5 @@
 <%= render DS::Dialog.new do |dialog| %>
-  <% dialog.with_header(title: t("properties.dialog.title")) %>
+  <% dialog.with_header(title: t(".title")) %>
   <% dialog.with_body do %>
     <div class="flex gap-4">
       <!-- Left sidebar with tabs -->
@@ -16,8 +16,9 @@
           <!-- Save button -->
           <div class="flex justify-end mt-4">
             <%= render DS::Button.new(
-              text: @account.active? ? t("properties.actions.save") : t("properties.actions.next"),
+              text: @account.active? ? "Save" : "Next",
               variant: "primary",
+              type: :submit,
             ) %>
           </div>
         <% end %>

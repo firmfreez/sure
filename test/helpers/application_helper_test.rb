@@ -1,6 +1,39 @@
 require "test_helper"
 
 class ApplicationHelperTest < ActionView::TestCase
+  test "#icon normalizes icon names to lowercase" do
+    capture = []
+
+    singleton_class.send(:define_method, :lucide_icon) do |key, **opts|
+      capture << [ key, opts ]
+      "<svg></svg>".html_safe
+    end
+
+    icon("Key")
+
+    assert_equal "key", capture.first.first
+  ensure
+    singleton_class.send(:remove_method, :lucide_icon) if singleton_class.method_defined?(:lucide_icon)
+  end
+
+  test "#icon falls back when lucide icon is unknown" do
+    calls = []
+
+    singleton_class.send(:define_method, :lucide_icon) do |key, **_opts|
+      calls << key
+      raise ArgumentError, "Unknown icon #{key}" if key == "not-a-real-icon"
+
+      "<svg></svg>".html_safe
+    end
+
+    result = icon("not-a-real-icon")
+
+    assert_equal [ "not-a-real-icon", "key" ], calls
+    assert_equal "<svg></svg>", result
+  ensure
+    singleton_class.send(:remove_method, :lucide_icon) if singleton_class.method_defined?(:lucide_icon)
+  end
+
   test "#title(page_title)" do
     title("Test Title")
     assert_equal "Test Title", content_for(:title)
@@ -9,6 +42,42 @@ class ApplicationHelperTest < ActionView::TestCase
   test "#header_title(page_title)" do
     header_title("Test Header Title")
     assert_equal "Test Header Title", content_for(:header_title)
+  end
+
+  test "#sidekiq_web_available? returns true when the route is mounted" do
+    named_routes = Struct.new(:defined) do
+      def route_defined?(name)
+        defined.fetch(name)
+      end
+    end
+
+    Rails.application.routes.stub(:named_routes, named_routes.new({ sidekiq_web_path: true })) do
+      assert sidekiq_web_available?
+    end
+  end
+
+  test "#sidekiq_web_available? returns false when the route is unavailable" do
+    named_routes = Struct.new(:defined) do
+      def route_defined?(name)
+        defined.fetch(name, false)
+      end
+    end
+
+    Rails.application.routes.stub(:named_routes, named_routes.new({})) do
+      assert_not sidekiq_web_available?
+    end
+  end
+
+  test "#sidekiq_web_available? returns true when only the url helper is defined" do
+    named_routes = Struct.new(:defined) do
+      def route_defined?(name)
+        defined.fetch(name, false)
+      end
+    end
+
+    Rails.application.routes.stub(:named_routes, named_routes.new({ sidekiq_web_url: true })) do
+      assert sidekiq_web_available?
+    end
   end
 
   def setup
@@ -25,29 +94,17 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_equal "-$3.00 | €7.00", totals_by_currency(collection: [ @account1, @account2, @account3 ], money_method: :balance_money, negate: true)
   end
 
-  test "#format_month_year handles 1-based month name arrays" do
-    month_names = [ nil, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]
-    i18n_t = lambda do |key, **|
-      key == "date.month_names_standalone" ? month_names : key
-    end
+  test "#currency_picker_options_for_family returns enabled family currencies" do
+    family = families(:dylan_family)
+    family.update!(currency: "SGD", enabled_currencies: [ "USD" ])
 
-    I18n.stub(:t, i18n_t) do
-      I18n.stub(:l, "fallback") do
-        assert_equal "Jan 2026", format_month_year(Date.new(2026, 1, 15))
-      end
-    end
+    assert_equal [ "SGD", "USD" ], currency_picker_options_for_family(family)
   end
 
-  test "#format_month_year handles 0-based month name arrays" do
-    month_names = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]
-    i18n_t = lambda do |key, **|
-      key == "date.month_names_standalone" ? month_names : key
-    end
+  test "#currency_picker_options_for_family keeps selected legacy currency visible" do
+    family = families(:dylan_family)
+    family.update!(currency: "SGD", enabled_currencies: [ "USD" ])
 
-    I18n.stub(:t, i18n_t) do
-      I18n.stub(:l, "fallback") do
-        assert_equal "Jan 2026", format_month_year(Date.new(2026, 1, 15))
-      end
-    end
+    assert_equal [ "SGD", "USD", "EUR" ], currency_picker_options_for_family(family, extra: "EUR")
   end
 end

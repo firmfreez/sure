@@ -1,34 +1,51 @@
 ---
 ru:
   loans:
-    new:
-      title: Новый займ
     edit:
       edit: Редактировать %{account}
     form:
-      initial_balance: Изначальный остаток долга
+      initial_balance: Первоначальная сумма кредита
       interest_rate: Процентная ставка
-      interest_rate_placeholder: Введите годовую ставку
+      interest_rate_placeholder: '5.25'
+      none: Нет
       rate_type: Тип ставки
+      subtype_none: Нет
+      subtype_prompt: Выберите тип кредита
+      term_months: Срок (в месяцах)
+      term_months_placeholder: '360'
+      rate_type_adjustable: Регулируемый
+      rate_type_fixed: Зафиксированный
+      rate_type_variable: Переменная
       rate_types:
         fixed: Фиксированная
         variable: Плавающая
         adjustable: Регулируемая
-      term_months: Срок (в месяцах)
-      term_months_placeholder: Введите срок в месяцах
+    new:
+      title: Введите детали кредита
+    overview:
+      interest_rate: Процентная ставка
+      monthly_payment: Ежемесячный платёж
+      not_applicable: Н/Д
+      original_principal: Первоначальная сумма
+      remaining_principal: Остаток по кредиту
+      term: Срок
+      type: Тип
+      unknown: Неизвестно
     tabs:
       overview:
-        original_principal: Изначальный долг
-        remaining_principal: Оставшийся долг
+        edit_loan_details: Редактировать детали займа
         interest_rate: Процентная ставка
         monthly_payment: Ежемесячный платёж
+        not_applicable: Н/Д
+        original_principal: Изначальный долг
+        remaining_principal: Оставшийся долг
+        term: Срок
+        type: Тип
+        unknown: Неизвестно
         total_term: Общий срок
         remaining_term: Остался срок
         total_payments: Сколько всего платежей
         remaining_payments: Сколько осталось платежей
-        type: Тип
-        unknown: Неизвестно
-        not_applicable: Неприменимо
         month_count:
           one: "%{count} месяц"
           few: "%{count} месяца"
@@ -48,4 +65,3 @@ ru:
           fixed: Фиксированная
           variable: Плавающая
           adjustable: Регулируемая
-        edit_loan_details: Редактировать детали займа

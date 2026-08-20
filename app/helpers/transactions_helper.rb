@@ -20,10 +20,8 @@ module TransactionsHelper
     transaction_search_filters[0]
   end
 
-  def transaction_category_filter_label(value)
-    return Category.uncategorized_name if value.to_s == Category::UNCATEGORIZED_FILTER_TOKEN
-
-    Current.family.categories.find_by(id: value)&.name_with_parent || value
+  def in_split_group?(entry, params_grouped)
+    entry.split_child? && Current.user.show_split_grouped? && params_grouped == "true"
   end
 
   # ---- Transaction extra details helpers ----

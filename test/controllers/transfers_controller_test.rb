@@ -25,115 +25,340 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "create uses localized success notice" do
-    users(:family_admin).update!(locale: "ru")
+  test "can create transfer with custom exchange rate" do
+    usd_account = accounts(:depository)
+    eur_account = users(:family_admin).family.accounts.create!(
+      name: "EUR Account",
+      balance: 1000,
+      currency: "EUR",
+      accountable: Depository.new
+    )
 
+    assert_equal "USD", usd_account.currency
+    assert_equal "EUR", eur_account.currency
+
+    assert_difference "Transfer.count", 1 do
+      post transfers_url, params: {
+        transfer: {
+          from_account_id: usd_account.id,
+          to_account_id: eur_account.id,
+          date: Date.current,
+          amount: 100,
+          exchange_rate: 0.92
+        }
+      }
+    end
+
+    transfer = Transfer.where(
+      "outflow_transaction_id IN (?) AND inflow_transaction_id IN (?)",
+      usd_account.transactions.pluck(:id),
+      eur_account.transactions.pluck(:id)
+    ).last
+    assert_not_nil transfer
+    assert_equal "USD", transfer.outflow_transaction.entry.currency
+    assert_equal "EUR", transfer.inflow_transaction.entry.currency
+    assert_equal 100, transfer.outflow_transaction.entry.amount
+    assert_in_delta(-92, transfer.inflow_transaction.entry.amount, 0.01)
+  end
+
+  test "exchange_rate endpoint returns 400 when from currency is missing" do
+    get exchange_rate_url, params: {
+      to: "USD"
+    }
+
+    assert_response :bad_request
+    json_response = JSON.parse(response.body)
+    assert_equal "from and to currencies are required", json_response["error"]
+  end
+
+  test "exchange_rate endpoint returns 400 when to currency is missing" do
+    get exchange_rate_url, params: {
+      from: "EUR"
+    }
+
+    assert_response :bad_request
+    json_response = JSON.parse(response.body)
+    assert_equal "from and to currencies are required", json_response["error"]
+  end
+
+  test "exchange_rate endpoint returns 400 on invalid date format" do
+    get exchange_rate_url, params: {
+      from: "EUR",
+      to: "USD",
+      date: "not-a-date"
+    }
+
+    assert_response :bad_request
+    json_response = JSON.parse(response.body)
+    assert_equal "Invalid date format", json_response["error"]
+  end
+
+  test "exchange_rate endpoint returns rate for different currencies" do
+    ExchangeRate.expects(:find_or_fetch_rate)
+                .with(from: "USD", to: "EUR", date: Date.current)
+                .returns(OpenStruct.new(rate: 0.92))
+
+    get exchange_rate_url, params: {
+      from: "USD",
+      to: "EUR",
+      date: Date.current.to_s
+    }
+
+    assert_response :success
+    json_response = JSON.parse(response.body)
+    assert_equal 0.92, json_response["rate"]
+  end
+
+  test "exchange_rate endpoint returns error when exchange rate unavailable" do
+    ExchangeRate.expects(:find_or_fetch_rate)
+                .with(from: "USD", to: "EUR", date: Date.current)
+                .returns(nil)
+
+    get exchange_rate_url, params: {
+      from: "USD",
+      to: "EUR",
+      date: Date.current.to_s
+    }
+
+    assert_response :not_found
+    json_response = JSON.parse(response.body)
+    assert_equal "Exchange rate not found", json_response["error"]
+  end
+
+  test "cannot create transfer when exchange rate unavailable and no custom rate provided" do
+    usd_account = accounts(:depository)
+    eur_account = users(:family_admin).family.accounts.create!(
+      name: "EUR Account",
+      balance: 1000,
+      currency: "EUR",
+      accountable: Depository.new
+    )
+
+    ExchangeRate.stubs(:find_or_fetch_rate).returns(nil)
+
+    assert_no_difference "Transfer.count" do
+      post transfers_url, params: {
+        transfer: {
+          from_account_id: usd_account.id,
+          to_account_id: eur_account.id,
+          date: Date.current,
+          amount: 100
+        }
+      }
+    end
+
+    assert_response :unprocessable_entity
+  end
+
+  test "can create transfer with source fee" do
+    assert_difference "Transfer.count", 1 do
+      post transfers_url, params: {
+        transfer: {
+          from_account_id: accounts(:depository).id,
+          to_account_id: accounts(:credit_card).id,
+          date: Date.current,
+          amount: 100,
+          source_fee_amount: 3
+        }
+      }
+    end
+
+    transfer = Transfer.order(created_at: :desc).first
+    assert_equal 100, transfer.amount
+    assert_equal 3, transfer.derived_source_fee_amount
+    assert_equal 0, transfer.derived_destination_fee_amount
+    # Outflow should be principal only (no fee baked in)
+    assert_equal 100, transfer.outflow_transaction.entry.amount
+    # Inflow should be -(converted_principal)
+    assert_equal(-100, transfer.inflow_transaction.entry.amount)
+    # Fee transaction should be created
+    assert_equal 1, transfer.fee_transactions.count
+    fee_tx = transfer.fee_transactions.first
+    assert_equal "standard", fee_tx.kind
+    assert_equal 3, fee_tx.entry.amount
+    assert_equal accounts(:depository).id, fee_tx.entry.account_id
+    assert transfer.has_source_fee?
+    assert_not transfer.has_destination_fee?
+  end
+
+  test "can create transfer with destination fee" do
+    assert_difference "Transfer.count", 1 do
+      post transfers_url, params: {
+        transfer: {
+          from_account_id: accounts(:depository).id,
+          to_account_id: accounts(:credit_card).id,
+          date: Date.current,
+          amount: 100,
+          destination_fee_amount: 3
+        }
+      }
+    end
+
+    transfer = Transfer.order(created_at: :desc).first
+    assert_equal 100, transfer.amount
+    assert_equal 0, transfer.derived_source_fee_amount
+    assert_equal 3, transfer.derived_destination_fee_amount
+    # Outflow should be principal only
+    assert_equal 100, transfer.outflow_transaction.entry.amount
+    # Inflow should be -(converted_principal)
+    assert_equal(-100, transfer.inflow_transaction.entry.amount)
+    # Fee transaction should be created
+    assert_equal 1, transfer.fee_transactions.count
+    fee_tx = transfer.fee_transactions.first
+    assert_equal "standard", fee_tx.kind
+    assert_equal 3, fee_tx.entry.amount
+    assert_equal accounts(:credit_card).id, fee_tx.entry.account_id
+    assert_not transfer.has_source_fee?
+    assert transfer.has_destination_fee?
+  end
+
+  test "can create transfer with both source and destination fees" do
+    assert_difference "Transfer.count", 1 do
+      post transfers_url, params: {
+        transfer: {
+          from_account_id: accounts(:depository).id,
+          to_account_id: accounts(:credit_card).id,
+          date: Date.current,
+          amount: 100,
+          source_fee_amount: 2,
+          destination_fee_amount: 3
+        }
+      }
+    end
+
+    transfer = Transfer.order(created_at: :desc).first
+    assert_equal 100, transfer.amount
+    assert_equal 2, transfer.derived_source_fee_amount
+    assert_equal 3, transfer.derived_destination_fee_amount
+    # Outflow should be principal only
+    assert_equal 100, transfer.outflow_transaction.entry.amount
+    # Inflow should be -(converted_principal)
+    assert_equal(-100, transfer.inflow_transaction.entry.amount)
+    # Two fee transactions should be created
+    assert_equal 2, transfer.fee_transactions.count
+    source_fee_tx = transfer.fee_transactions.find { |t| t.entry.account_id == accounts(:depository).id }
+    dest_fee_tx = transfer.fee_transactions.find { |t| t.entry.account_id == accounts(:credit_card).id }
+    assert_equal 2, source_fee_tx.entry.amount
+    assert_equal 3, dest_fee_tx.entry.amount
+    assert transfer.has_fees?
+  end
+
+  test "derived fee methods reflect fee transaction entry edits" do
     post transfers_url, params: {
       transfer: {
         from_account_id: accounts(:depository).id,
         to_account_id: accounts(:credit_card).id,
         date: Date.current,
-        amount: 100
+        amount: 100,
+        source_fee_amount: 3
       }
     }
 
-    assert_equal "Перевод создан", flash[:notice]
+    transfer = Transfer.order(created_at: :desc).first
+    assert_equal 3, transfer.derived_source_fee_amount
+
+    # Simulate an independent edit of the fee transaction entry
+    fee_tx = transfer.fee_transactions.first
+    fee_tx.entry.update!(amount: 5)
+
+    # Derived fee should reflect the updated entry
+    transfer.reload
+    assert_equal 5, transfer.derived_source_fee_amount
+    assert transfer.has_source_fee?
   end
 
-  test "create materializes account balances immediately" do
-    family = users(:family_admin).family
-    source_account = family.accounts.create!(
-      name: "Source Checking",
-      balance: 1000,
-      currency: "USD",
-      status: "active",
-      accountable: Depository.new
-    )
-    destination_account = family.accounts.create!(
-      name: "Destination Savings",
-      balance: 250,
-      currency: "USD",
-      status: "active",
-      accountable: Depository.new
-    )
-
-    source_materializer = mock
-    destination_materializer = mock
-
-    Balance::Materializer.expects(:new).with(source_account, strategy: :forward).returns(source_materializer)
-    Balance::Materializer.expects(:new).with(destination_account, strategy: :forward).returns(destination_materializer)
-    source_materializer.expects(:materialize_balances)
-    destination_materializer.expects(:materialize_balances)
-
-    post transfers_url, params: {
-      transfer: {
-        from_account_id: source_account.id,
-        to_account_id: destination_account.id,
-        date: Date.current,
-        amount: 125
-      }
+  test "exchange_rate endpoint returns same_currency for matching currencies" do
+    get exchange_rate_url, params: {
+      from: "USD",
+      to: "USD"
     }
-  end
-
-  test "turbo_stream create falls back to path when referer is missing" do
-    post transfers_url,
-         params: {
-           transfer: {
-             from_account_id: accounts(:depository).id,
-             to_account_id: accounts(:credit_card).id,
-             date: Date.current,
-             amount: 100,
-             name: "Turbo transfer"
-           }
-         },
-         headers: { "Accept" => Mime[:turbo_stream].to_s }
 
     assert_response :success
-    assert_equal Mime[:turbo_stream].to_s, response.media_type
-    assert_includes response.body, %(turbo-stream action="redirect" target="#{transactions_path}")
+    json_response = JSON.parse(response.body)
+    assert_equal true, json_response["same_currency"]
+    assert_equal 1.0, json_response["rate"]
   end
 
-  test "destroy deletes transfer and both linked transactions" do
-    transfer = transfers(:one)
-
+  test "soft deletes transfer" do
     assert_difference -> { Transfer.count }, -1 do
-      assert_difference -> { Transaction.count }, -2 do
-        assert_difference -> { Entry.count }, -2 do
-          delete transfer_url(transfer)
-        end
-      end
+      delete transfer_url(transfers(:one))
     end
-
-    assert_not Transaction.exists?(transfer.inflow_transaction_id)
-    assert_not Transaction.exists?(transfer.outflow_transaction_id)
   end
 
-  test "destroy materializes affected account balances immediately" do
-    transfer = transfers(:one)
-    source_materializer = mock
-    destination_materializer = mock
+  test "can create transfer with tags on both sides" do
+    tag = tags(:one)
 
-    Balance::Materializer.expects(:new).with(transfer.from_account, strategy: :forward).returns(source_materializer)
-    Balance::Materializer.expects(:new).with(transfer.to_account, strategy: :forward).returns(destination_materializer)
-    source_materializer.expects(:materialize_balances)
-    destination_materializer.expects(:materialize_balances)
-
-    delete transfer_url(transfer)
-  end
-
-  test "reject removes transfer but keeps underlying transactions" do
-    transfer = transfers(:one)
-
-    assert_difference -> { Transfer.count }, -1 do
-      patch transfer_url(transfer), params: {
+    assert_difference "Transfer.count", 1 do
+      post transfers_url, params: {
         transfer: {
-          status: "rejected"
+          from_account_id: accounts(:depository).id,
+          to_account_id: accounts(:credit_card).id,
+          date: Date.current,
+          amount: 100,
+          tag_ids: [ tag.id ]
         }
       }
     end
 
-    assert Transaction.exists?(transfer.inflow_transaction_id)
-    assert Transaction.exists?(transfer.outflow_transaction_id)
+    transfer = Transfer.order(:created_at).last
+    assert_equal [ tag.id ], transfer.outflow_transaction.tag_ids
+    assert_equal [ tag.id ], transfer.inflow_transaction.tag_ids
+  end
+
+  test "can update transfer tags on both sides" do
+    transfer = transfers(:one)
+    tag = tags(:one)
+
+    patch tags_transfer_url(transfer), params: { tag_ids: [ tag.id ] }, as: :json
+
+    assert_response :success
+    assert_equal [ tag.id ], transfer.outflow_transaction.reload.tag_ids
+    assert_equal [ tag.id ], transfer.inflow_transaction.reload.tag_ids
+    assert_equal [ tag.id ], JSON.parse(response.body)["tag_ids"]
+  end
+
+  test "update transfer tags ignores tags from other families" do
+    transfer = transfers(:one)
+    family_tag = tags(:one)
+    other_family = Family.create!(name: "Other Family", currency: "USD")
+    other_tag = other_family.tags.create!(name: "Foreign")
+
+    patch tags_transfer_url(transfer), params: {
+      tag_ids: [ family_tag.id, other_tag.id ]
+    }, as: :json
+
+    assert_response :success
+    assert_equal [ family_tag.id ], transfer.outflow_transaction.reload.tag_ids
+    assert_equal [ family_tag.id ], transfer.inflow_transaction.reload.tag_ids
+  end
+
+  test "can clear transfer tags" do
+    transfer = transfers(:one)
+    tag = tags(:one)
+    transfer.outflow_transaction.update!(tag_ids: [ tag.id ])
+    transfer.inflow_transaction.update!(tag_ids: [ tag.id ])
+
+    patch tags_transfer_url(transfer), params: { tag_ids: [] }, as: :json
+
+    assert_response :success
+    assert_empty transfer.outflow_transaction.reload.tag_ids
+    assert_empty transfer.inflow_transaction.reload.tag_ids
+  end
+
+  test "update tags requires annotate permission on both transfer sides" do
+    # family_member: full_control on depository (outflow), read_only on credit_card (inflow)
+    sign_in users(:family_member)
+    transfer = transfers(:one)
+    tag = tags(:one)
+    original_outflow_tags = transfer.outflow_transaction.tag_ids
+    original_inflow_tags = transfer.inflow_transaction.tag_ids
+
+    patch tags_transfer_url(transfer), params: { tag_ids: [ tag.id ] }, as: :json
+
+    assert_response :forbidden
+    assert_equal I18n.t("accounts.not_authorized"), JSON.parse(response.body)["error"]
+    assert_equal original_outflow_tags, transfer.outflow_transaction.reload.tag_ids
+    assert_equal original_inflow_tags, transfer.inflow_transaction.reload.tag_ids
   end
 
   test "can add notes to transfer" do
@@ -165,8 +390,49 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     assert_raises(ActiveRecord::RecordNotFound) do
       transfer.reload
     end
+  end
 
-    assert Transaction.exists?(transfer.inflow_transaction_id)
-    assert Transaction.exists?(transfer.outflow_transaction_id)
+  test "mark_as_recurring creates a recurring transfer" do
+    transfer = transfers(:one)
+    family = users(:family_admin).family
+    family.recurring_transactions.destroy_all
+
+    assert_difference -> { RecurringTransaction.where(family: family).count }, +1 do
+      post mark_as_recurring_transfer_url(transfer)
+    end
+
+    rt = RecurringTransaction.where(family: family).last
+    assert rt.transfer?
+    assert_equal transfer.outflow_transaction.entry.account, rt.account
+    assert_equal transfer.inflow_transaction.entry.account, rt.destination_account
+    assert rt.manual?
+    assert_equal I18n.t("recurring_transactions.transfer_marked_as_recurring"), flash[:notice]
+    assert_redirected_to transactions_path
+  end
+
+  test "mark_as_recurring is idempotent: second call flashes already-exists" do
+    transfer = transfers(:one)
+    family = users(:family_admin).family
+    family.recurring_transactions.destroy_all
+
+    post mark_as_recurring_transfer_url(transfer)
+    assert_equal I18n.t("recurring_transactions.transfer_marked_as_recurring"), flash[:notice]
+
+    assert_no_difference -> { RecurringTransaction.where(family: family).count } do
+      post mark_as_recurring_transfer_url(transfer)
+    end
+    assert_equal I18n.t("recurring_transactions.transfer_already_exists"), flash[:alert]
+  end
+
+  test "mark_as_recurring is rejected when recurring_transactions_disabled" do
+    transfer = transfers(:one)
+    family = users(:family_admin).family
+    family.update!(recurring_transactions_disabled: true)
+    family.recurring_transactions.destroy_all
+
+    assert_no_difference -> { RecurringTransaction.where(family: family).count } do
+      post mark_as_recurring_transfer_url(transfer)
+    end
+    assert_equal I18n.t("recurring_transactions.transfer_feature_disabled"), flash[:alert]
   end
 end

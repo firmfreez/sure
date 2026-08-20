@@ -11,6 +11,30 @@ Sure includes an AI assistant that can help users understand their financial dat
 
 > 👉 Help us by taking a structured approach to your issue reporting. 🙏
 
+## Architecture: Two AI Pipelines
+
+Sure has **two separate AI systems** that operate independently. Understanding this is important because they have different configuration requirements.
+
+### 1. Chat Assistant (conversational)
+
+The interactive chat where users ask questions about their finances. Routes through one of two backends:
+
+- **Builtin** (default): Uses the OpenAI-compatible provider configured via `OPENAI_ACCESS_TOKEN` / `OPENAI_URI_BASE` / `OPENAI_MODEL`. Calls Sure's function tools directly (get_accounts, get_transactions, etc.).
+- **External**: Delegates the entire conversation to a remote AI agent. The agent calls back to Sure via MCP to access financial data. Set `ASSISTANT_TYPE=external` as a global override, or configure each family's assistant type in Settings.
+
+### 2. Auto-Categorization and Merchant Detection (background)
+
+Background jobs that classify transactions and detect merchants. These **always** use the OpenAI-compatible provider (`OPENAI_ACCESS_TOKEN`), regardless of what the chat assistant uses. They rely on structured function calling with JSON schemas, not conversational chat.
+
+### What this means in practice
+
+| Setting | Chat assistant | Auto-categorization |
+|---------|---------------|---------------------|
+| `ASSISTANT_TYPE=builtin` (default) | Uses OpenAI provider | Uses OpenAI provider |
+| `ASSISTANT_TYPE=external` | Uses external agent | Still uses OpenAI provider |
+
+If you use an external agent for chat, you still need `OPENAI_ACCESS_TOKEN` set for auto-categorization and merchant detection to work. The two systems are fully independent.
+
 ## Quickstart: OpenAI Token
 
 The easiest way to get started with AI features in Sure is to use OpenAI:
@@ -192,6 +216,26 @@ OPENAI_URI_BASE=http://localhost:11434/v1
 # Model you pulled
 OPENAI_MODEL=llama3.1:13b
 
+# Raise this for large-context local models so auto-categorize and merchant detection
+# have enough prompt budget for categories + schemas before transaction rows are added.
+LLM_CONTEXT_WINDOW=8192
+
+# Slow local models often need a longer HTTP timeout once the prompt budget issue is fixed.
+OPENAI_REQUEST_TIMEOUT=180
+
+# Chained tool calls per turn. Each iteration is another call to the model, so
+# lowering this is the cheapest way to keep a turn inside the timeout below.
+ASSISTANT_MAX_TOOL_CALL_ITERATIONS=2
+
+# Whole-turn budget before the chat gives up and shows a "no response" error.
+# Responses from custom providers are not streamed and tool-call rounds display
+# nothing, so this covers every call the turn makes, not just the first token.
+# Size it as a sum:
+#   (1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) * OPENAI_REQUEST_TIMEOUT
+#     + tool execution + queue wait
+# Here (1 + 2) * 180 = 540s of model time, plus headroom, so 720.
+AI_RESPONSE_TIMEOUT=720
+
 # Optional: enable debug logging in the AI chat
 AI_DEBUG_MODE=true 
 ```
@@ -200,6 +244,9 @@ AI_DEBUG_MODE=true
 - You **must** set `OPENAI_MODEL` - the system cannot default to `gpt-4.1` as that model won't exist in Ollama
 - The `OPENAI_ACCESS_TOKEN` can be any non-empty value (Ollama ignores it)
 - If you don't set a model, chats will fail with a validation error
+- Auto-categorization uses a conservative default `LLM_CONTEXT_WINDOW=2048`, so large category lists or schemas can exhaust the prompt budget before any transactions are sent
+- If requests start timing out after raising `LLM_CONTEXT_WINDOW`, increase `OPENAI_REQUEST_TIMEOUT` too; these are separate limits
+- Responses from custom providers are **not streamed** — the chat shows "Thinking…" until the entire reply is generated, and a turn that chains tool calls stays there through every round, since tool-call responses have no text to display. If the chat errors while your model is clearly still working, raise `AI_RESPONSE_TIMEOUT` or lower `ASSISTANT_MAX_TOOL_CALL_ITERATIONS`; `OPENAI_REQUEST_TIMEOUT` alone will not help. `AI_RESPONSE_TIMEOUT` has to cover the whole turn, so size it as `(1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × OPENAI_REQUEST_TIMEOUT` plus tool execution and queue wait — a sum, not simply a larger number than the per-call limit
 
 ### Docker Compose Example
 
@@ -210,6 +257,8 @@ services:
       - OPENAI_ACCESS_TOKEN=ollama-local
       - OPENAI_URI_BASE=http://ollama:11434/v1
       - OPENAI_MODEL=llama3.1:13b
+      - LLM_CONTEXT_WINDOW=8192
+      - OPENAI_REQUEST_TIMEOUT=180
       - AI_DEBUG_MODE=true # Optional: enable debug logging in the AI chat
     depends_on:
       - ollama
@@ -283,12 +332,487 @@ For self-hosted deployments, you can configure AI settings through the web inter
 
 1. Go to **Settings** → **Self-Hosting**
 2. Scroll to the **AI Provider** section
-3. Configure:
-   - **OpenAI Access Token** - Your API key
-   - **OpenAI URI Base** - Custom endpoint (leave blank for OpenAI)
-   - **OpenAI Model** - Model name (required for custom endpoints)
+3. Configure the provider:
+   - **Access Token** - Your API key
+   - **API Base URL** - Custom endpoint (leave blank for OpenAI)
+   - **Model** - Model name (required for custom endpoints)
+   - **JSON Mode** - Structured-output format; `Auto` suits most models
+4. Optionally tune **Token Budget** — Context Window, Max Response Tokens and Max Items Per Batch. The defaults are conservative so small-context local models work out of the box; raise them for cloud or large-context models.
+5. Optionally set **Chat Response Timeout** — how long the chat waits for a whole turn before showing a "no response" error (default 90s). Raise it for slow local models; see [Chat Errors While the Model Is Still Generating](#chat-errors-while-the-model-is-still-generating).
 
-**Note:** Settings in the UI override environment variables. If you change settings in the UI, those values take precedence.
+**Note:** Environment variables take precedence over UI settings. When an env var is set, the corresponding UI field is disabled.
+
+## External AI Assistant
+
+Instead of using the built-in LLM (which calls OpenAI or a local model directly), you can delegate chat to an **external AI agent**. The agent receives the conversation, can call back to Sure's financial data via MCP, and streams a response.
+
+This is useful when:
+- You have a custom AI agent with domain knowledge, memory, or personality
+- You want to use a non-OpenAI-compatible model (the agent translates)
+- You want to keep LLM credentials and logic outside Sure entirely
+
+> [!IMPORTANT]
+> **Set `ASSISTANT_TYPE=external` to route all users to the external agent.** Without it, routing falls back to each family's `assistant_type` DB column (configurable per-family in the Settings UI), then defaults to `"builtin"`. If you want a global override that applies to every family regardless of their UI setting, set the env var. If you only want specific families to use the external agent, skip the env var and configure it per-family in Settings.
+
+> [!NOTE]
+> The external assistant handles **chat only**. Auto-categorization and merchant detection still use the OpenAI-compatible provider (`OPENAI_ACCESS_TOKEN`). See [Architecture: Two AI Pipelines](#architecture-two-ai-pipelines) for details.
+
+### How It Works
+
+1. User sends a message in the Sure chat UI
+2. Sure sends the conversation to your agent's API endpoint (OpenAI chat completions format)
+3. Your agent processes it using whatever LLM, tools, or context it needs
+4. Your agent can call Sure's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, budgets, file search, statement import, goals)
+5. Your agent streams the response back to Sure via Server-Sent Events (SSE)
+
+The agent's API must be **OpenAI chat completions compatible**: accept `POST` with a `messages` array, return SSE with `delta.content` chunks.
+
+### Configuration
+
+Configure via the UI or environment variables:
+
+**Settings UI:**
+1. Go to **Settings** -> **Self-Hosting**
+2. Set **Assistant type** to "External (remote agent)"
+3. Enter the **Endpoint URL** and **API Token** from your agent provider
+4. Optionally set an **Agent ID** if the provider hosts multiple agents
+
+**Environment variables:**
+```bash
+ASSISTANT_TYPE=external                          # Global override (or set per-family in UI)
+EXTERNAL_ASSISTANT_URL=https://your-agent/v1/chat/completions
+EXTERNAL_ASSISTANT_TOKEN=your-api-token
+EXTERNAL_ASSISTANT_AGENT_ID=main                 # Optional, defaults to "main"
+EXTERNAL_ASSISTANT_SESSION_KEY=agent:main:main   # Optional, for session persistence
+EXTERNAL_ASSISTANT_ALLOWED_EMAILS=user@example.com  # Optional, comma-separated allowlist
+```
+
+When environment variables are set, the corresponding UI fields are disabled (env takes precedence).
+
+### MCP Callback Endpoint
+
+Sure exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) endpoint at `/mcp` so your external agent can call back and query financial data. This is how the agent accesses accounts, transactions, balance sheets, and other user data.
+
+**Protocol:** JSON-RPC 2.0 over HTTP POST
+
+**Authentication:** Bearer token via `Authorization` header
+
+Sure supports both:
+
+- OAuth bearer tokens issued through its discovery and registration endpoints (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `POST /register`)
+- Static bearer tokens configured with `MCP_API_TOKEN` and `MCP_USER_EMAIL`
+
+**Static-token environment variables:**
+```bash
+MCP_API_TOKEN=your-secret-token    # Bearer token the agent sends to authenticate
+MCP_USER_EMAIL=user@example.com    # Email of the Sure user the agent acts as
+```
+
+The agent must send requests to `https://your-sure-instance/mcp` with:
+```http
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
+
+For OAuth clients, `<access-token>` is the issued Doorkeeper bearer token. For static-token clients, it is the configured `MCP_API_TOKEN`.
+
+**Supported methods:**
+
+| Method | Description |
+|--------|-------------|
+| `initialize` | Handshake, returns server info and capabilities |
+| `tools/list` | Lists available tools with names, descriptions, and input schemas |
+| `tools/call` | Calls a specific tool by name with arguments |
+
+**Base tools** (exposed via `tools/list`; treat the live response as the source of truth):
+
+| Tool | Description |
+|------|-------------|
+| `get_accounts` | Retrieve account information |
+| `get_transactions` | Query transaction history |
+| `get_holdings` | Investment holdings data |
+| `get_balance_sheet` | Current financial position |
+| `get_income_statement` | Income and expenses |
+| `get_budget` | Budget status and category breakdowns |
+| `import_bank_statement` | Import bank statement data |
+| `search_family_files` | Search documents uploaded through the import flow |
+| `create_goal` | Create a savings goal |
+| `get_tags` | List family tags |
+| `create_tag` | Create a family tag |
+| `update_tag` | Update a family tag |
+| `get_categories` | List family categories |
+| `create_category` | Create a family category |
+| `update_category` | Update a family category |
+| `update_transaction` | Update an existing transaction |
+| `update_budget` | Update a budget category allocation |
+
+Preview users may also see Statement Vault tools in `tools/list`.
+
+**Example: list tools**
+```bash
+curl -X POST https://your-sure-instance/mcp \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+**Example: call a tool**
+```bash
+curl -X POST https://your-sure-instance/mcp \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_accounts","arguments":{}}}'
+```
+
+### OpenClaw Gateway Example
+
+[OpenClaw](https://github.com/luckyPipewrench/openclaw) is an AI agent gateway that exposes agents as OpenAI-compatible endpoints. If your agent runs behind OpenClaw, configure it like this:
+
+```bash
+ASSISTANT_TYPE=external
+EXTERNAL_ASSISTANT_URL=http://your-openclaw-host:18789/v1/chat/completions
+EXTERNAL_ASSISTANT_TOKEN=your-gateway-token
+EXTERNAL_ASSISTANT_AGENT_ID=your-agent-name
+```
+
+**OpenClaw setup requirements:**
+- The gateway must have `chatCompletions.enabled: true` in its config
+- The agent's MCP config must point to Sure's `/mcp` endpoint with the correct `MCP_API_TOKEN`
+- The URL format is always `/v1/chat/completions` (OpenAI-compatible)
+
+**Kubernetes in-cluster example** (agent in a different namespace):
+```bash
+# URL uses Kubernetes DNS: <service>.<namespace>.svc.cluster.local:<port>
+EXTERNAL_ASSISTANT_URL=http://my-agent.my-namespace.svc.cluster.local:18789/v1/chat/completions
+```
+
+#### Giving the agent a long-term memory of its own
+
+An external agent can do more than answer questions about the current balance:
+with its own repository behind it, it can maintain a document-backed history of
+a family's wealth, where every figure traces back to the statement it came from.
+
+That is a two-install shape — Sure as the system of record, the agent harness as
+the model and the compiler — rather than a feature inside Sure. Sure exposes a
+set of preview MCP tools for it (the Statement Vault, coverage gaps, and
+valuations that require a source citation).
+
+See [Wealth history with an external agent harness](../llm-guides/wealth-agent-harness.md)
+for which side owns what, and [the blueprint](../llm-guides/wealth-blueprint.md)
+it implements.
+
+### Security with Pipelock
+
+When [Pipelock](https://github.com/luckyPipewrench/pipelock) is enabled (`pipelock.enabled=true` in Helm, or the `pipelock` service in Docker Compose), all traffic between Sure and the external agent is scanned:
+
+- **Outbound** (Sure -> agent): routed through Pipelock's forward proxy via `HTTPS_PROXY`
+- **Inbound** (agent -> Sure /mcp): routed through Pipelock's MCP reverse proxy (port 8889)
+
+Pipelock scans for prompt injection, DLP violations, and tool poisoning. The external agent does not need Pipelock installed. Sure's Pipelock handles both directions.
+
+If you need audit evidence, configure Pipelock's flight recorder as described in [Pipelock signed action receipts](pipelock.md#signed-action-receipts). `pipelock.enabled=true` gives scanning; receipts require mounted evidence storage plus a receipt-signing key.
+
+**`NO_PROXY` behavior (Helm/Kubernetes only):** The Helm chart's env template sets `NO_PROXY` to include `.svc.cluster.local` and other internal domains. This means in-cluster agent URLs (like `http://agent.namespace.svc.cluster.local:18789`) bypass the forward proxy and go directly. If your agent is in-cluster, its traffic won't be forward-proxy scanned (but MCP callbacks from the agent are still scanned by the reverse proxy). Docker Compose deployments use a different `NO_PROXY` set; check your compose file for the exact values.
+
+**`mcpToolPolicy` note:** The Helm chart's `pipelock.mcpToolPolicy.enabled` defaults to `false`. Pipelock rejects an enabled tool policy with no rules, so the chart ships it off by default. To turn it on, define at least one rule and set `enabled: true`:
+
+```yaml
+# Helm values
+pipelock:
+  mcpToolPolicy:
+    enabled: true
+    action: warn
+    rules:
+      - name: example
+        toolPattern: "^shell$"
+        action: block
+```
+
+See the [Pipelock documentation](https://github.com/luckyPipewrench/pipelock) for tool policy configuration details.
+
+### Network Policies (Kubernetes)
+
+If you use Kubernetes NetworkPolicies (and you should), both Sure and the agent's namespace need rules to allow traffic in both directions.
+
+> [!WARNING]
+> **Port number gotcha:** Kubernetes network policies evaluate **after** kube-proxy DNAT. This means egress rules must use the pod's `targetPort`, not the service port. If your agent's Service maps port 18789 to targetPort 18790, the network policy must allow port **18790**.
+
+**Sure namespace egress** (Sure calling the agent):
+```yaml
+# Allow Sure -> agent namespace
+- to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: agent-namespace
+  ports:
+    - protocol: TCP
+      port: 18790  # targetPort, not service port!
+```
+
+**Sure namespace ingress** (agent calling Sure's pipelock MCP reverse proxy):
+```yaml
+# Allow agent -> Sure pipelock MCP reverse proxy
+- from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: agent-namespace
+  ports:
+    - protocol: TCP
+      port: 8889
+```
+
+**Agent namespace** needs the reverse: egress to Sure on port 8889, ingress from Sure on its listening port.
+
+### Access Control
+
+Use `EXTERNAL_ASSISTANT_ALLOWED_EMAILS` to restrict which users can use the external assistant. When set, only users whose email matches the comma-separated list will see the AI chat. When blank, all users can access it.
+
+### Docker Compose Example
+
+```yaml
+x-rails-env: &rails_env
+  ASSISTANT_TYPE: external
+  EXTERNAL_ASSISTANT_URL: https://your-agent/v1/chat/completions
+  EXTERNAL_ASSISTANT_TOKEN: your-api-token
+  MCP_API_TOKEN: your-mcp-token          # For agent callback
+  MCP_USER_EMAIL: user@example.com        # User the agent acts as
+```
+
+Or configure the assistant via the Settings UI after startup (MCP env vars are still required for callback).
+
+## Assistant Architecture
+
+Sure's AI assistant system uses a modular architecture that allows different assistant implementations to be plugged in based on configuration. This section explains the architecture for contributors who want to understand or extend the system.
+
+### Overview
+
+The assistant system evolved from a monolithic class to a module-based architecture with a registry pattern. This allows Sure to support multiple assistant types (builtin, external) and makes it easy to add new implementations.
+
+**Key benefits:**
+- **Extensible:** Add new assistant types without modifying existing code
+- **Configurable:** Choose assistant type per family or globally
+- **Isolated:** Each implementation has its own logic and dependencies
+- **Testable:** Implementations are independent and can be tested separately
+
+### Component Hierarchy
+
+#### `Assistant` Module
+
+The main entry point for all assistant operations. Located in `app/models/assistant.rb`.
+
+**Key methods:**
+
+| Method | Description |
+|--------|-------------|
+| `.for_chat(chat)` | Returns the appropriate assistant instance for a chat |
+| `.config_for(chat)` | Returns configuration for builtin assistants |
+| `.available_types` | Lists all registered assistant types |
+| `.function_classes` | Returns all available function/tool classes |
+
+**Example usage:**
+
+```ruby
+# Get an assistant for a chat
+assistant = Assistant.for_chat(chat)
+
+# Respond to a message
+assistant.respond_to(message)
+```
+
+#### `Assistant::Base`
+
+Abstract base class that all assistant implementations inherit from. Located in `app/models/assistant/base.rb`.
+
+**Contract:**
+- Must implement `respond_to(message)` instance method
+- Includes `Assistant::Broadcastable` for real-time updates
+- Receives the `chat` object in the initializer
+
+**Example implementation:**
+
+```ruby
+class Assistant::MyCustom < Assistant::Base
+  def respond_to(message)
+    # Your custom logic here
+    assistant_message = AssistantMessage.new(chat: chat, content: "Response")
+    assistant_message.save!
+  end
+end
+```
+
+#### `Assistant::Builtin`
+
+The default implementation that uses the configured OpenAI-compatible LLM provider. Located in `app/models/assistant/builtin.rb`.
+
+**Features:**
+- Uses `Assistant::Provided` for LLM provider selection
+- Uses `Assistant::Configurable` for system prompts and function configuration
+- Supports function calling via `Assistant::FunctionToolCaller`
+- Streams responses in real-time
+
+**Key methods:**
+
+| Method | Description |
+|--------|-------------|
+| `.for_chat(chat)` | Creates a new builtin assistant with config |
+| `#respond_to(message)` | Processes a message using the LLM |
+
+#### `Assistant::External`
+
+Implementation for delegating chat to a remote AI agent. Located in `app/models/assistant/external.rb`.
+
+**Features:**
+- Sends conversation to external agent via OpenAI-compatible API
+- Agent calls back to Sure's `/mcp` endpoint for financial data
+- Supports access control via email allowlist
+- Streams responses from the agent
+
+**Configuration:**
+
+```ruby
+config = Assistant::External.config
+# => #<struct url="...", token="...", agent_id="...", session_key="...">
+```
+
+### Registry Pattern
+
+The `Assistant` module uses a registry to map type names to implementation classes:
+
+```ruby
+REGISTRY = {
+  "builtin" => Assistant::Builtin,
+  "external" => Assistant::External
+}.freeze
+```
+
+**Type selection logic:**
+
+1. Check `ENV["ASSISTANT_TYPE"]` (global override)
+2. Check `chat.user.family.assistant_type` (per-family setting)
+3. Default to `"builtin"`
+
+**Example:**
+
+```ruby
+# Global override
+ENV["ASSISTANT_TYPE"] = "external"
+Assistant.for_chat(chat) # => Assistant::External instance
+
+# Per-family setting
+family.update(assistant_type: "external")
+Assistant.for_chat(chat) # => Assistant::External instance
+
+# Default
+Assistant.for_chat(chat) # => Assistant::Builtin instance
+```
+
+### Function Registry
+
+The `Assistant.function_classes` method centralizes all available financial tools:
+
+```ruby
+def self.function_classes
+  [
+    Function::GetTransactions,
+    Function::GetAccounts,
+    Function::GetHoldings,
+    Function::GetBalanceSheet,
+    Function::GetIncomeStatement,
+    Function::GetBudget,
+    Function::ImportBankStatement,
+    Function::SearchFamilyFiles,
+    Function::CreateGoal
+  ]
+end
+```
+
+These functions are:
+- Used by builtin assistants for LLM function calling
+- Exposed via the MCP endpoint for external agents
+- Defined in `app/models/assistant/function/`
+
+### Adding a New Assistant Type
+
+To add a custom assistant implementation:
+
+#### 1. Create the implementation class
+
+```ruby
+# app/models/assistant/my_custom.rb
+class Assistant::MyCustom < Assistant::Base
+  class << self
+    def for_chat(chat)
+      new(chat)
+    end
+  end
+
+  def respond_to(message)
+    # Your implementation here
+    # Must create and save an AssistantMessage
+    assistant_message = AssistantMessage.new(
+      chat: chat,
+      content: "My custom response"
+    )
+    assistant_message.save!
+  end
+end
+```
+
+#### 2. Register the implementation
+
+```ruby
+# app/models/assistant.rb
+REGISTRY = {
+  "builtin" => Assistant::Builtin,
+  "external" => Assistant::External,
+  "my_custom" => Assistant::MyCustom
+}.freeze
+```
+
+#### 3. Add validation
+
+```ruby
+# app/models/family.rb
+ASSISTANT_TYPES = %w[builtin external my_custom].freeze
+```
+
+#### 4. Use the new type
+
+```bash
+# Global override
+ASSISTANT_TYPE=my_custom
+
+# Or set per-family in the database
+family.update(assistant_type: "my_custom")
+```
+
+### Integration Points
+
+#### Pipelock Integration
+
+For external assistants, Pipelock can scan traffic:
+- **Outbound:** Sure -> agent (via `HTTPS_PROXY`)
+- **Inbound:** Agent -> Sure /mcp (via MCP reverse proxy on port 8889)
+
+See the [External AI Assistant](#external-ai-assistant) and [Pipelock](pipelock.md) documentation for configuration.
+
+#### OpenClaw/WebSocket Support
+
+The `Assistant::External` implementation currently uses HTTP streaming. Future implementations could use WebSocket connections via OpenClaw or other gateways.
+
+**Example future implementation:**
+
+```ruby
+class Assistant::WebSocket < Assistant::Base
+  def respond_to(message)
+    # Connect via WebSocket
+    # Stream bidirectional communication
+    # Handle tool calls via MCP
+  end
+end
+```
+
+Register it in the `REGISTRY` and add to `Family::ASSISTANT_TYPES` to activate.
 
 ## AI Cache Management
 
@@ -564,6 +1088,34 @@ ollama list  # See what's installed
 ollama pull model-name  # Install a model
 ```
 
+### "Fixed prompt tokens exceed context budget"
+
+**Symptom:** Auto-categorization or merchant detection fails immediately with an error like:
+
+```text
+Fixed prompt tokens (2108) exceed context budget (1280)
+```
+
+**Cause:** Sure computes the usable prompt budget as:
+
+```text
+context_window - max_response_tokens - system_prompt_reserve
+```
+
+The defaults are conservative:
+- `LLM_CONTEXT_WINDOW=2048`
+- `LLM_MAX_RESPONSE_TOKENS=512`
+- `LLM_SYSTEM_PROMPT_RESERVE=256`
+
+That leaves `1280` input tokens. On local or custom models, the fixed prompt can already exceed that budget once you include Sure's instructions, category taxonomy, and schema payloads.
+
+**Fix:**
+```bash
+LLM_CONTEXT_WINDOW=8192
+```
+
+Then restart both `web` and `worker` so the new env var is loaded. If you are using Docker Compose, make sure your compose file forwards `LLM_CONTEXT_WINDOW` into the containers.
+
 ### Slow Responses
 
 **Symptom:** Long wait times for AI responses
@@ -578,6 +1130,42 @@ ollama pull model-name  # Install a model
 - Try a smaller model
 - Ensure you're using GPU, not CPU
 - Check for thermal throttling
+- If you see `Net::ReadTimeout` after fixing the context budget, raise `OPENAI_REQUEST_TIMEOUT` (for example `180`)
+
+### Chat Errors While the Model Is Still Generating
+
+**Symptom:** The chat shows "Thinking…" for a while, then an error saying the assistant is not available — but the model does produce a reply and LLM Usage shows tokens were generated.
+
+**Cause:** Three settings interact here, measured over different spans:
+
+- `OPENAI_REQUEST_TIMEOUT` (default `60`) — applies to **each HTTP call** to the model, on its own.
+- `ASSISTANT_MAX_TOOL_CALL_ITERATIONS` (default `5`) — how many chained tool calls one turn may make. A turn costs up to `1 + this` model calls.
+- `AI_RESPONSE_TIMEOUT` (default `90`) — covers the **whole turn**, and its clock starts when the message is queued, so Sidekiq queue time counts against it.
+
+Responses from custom OpenAI-compatible providers are **not streamed**, so nothing appears in the chat until the entire reply is generated. Worse, the assistant only shows text once a response actually contains some — a tool-call-only response produces nothing to display — so a turn that chains several tool calls sits on "Thinking…" through all of them. At the defaults the worst case is six sequential model calls plus five tool executions.
+
+**Fix:** size `AI_RESPONSE_TIMEOUT` as a **sum**, not simply as a number larger than the per-call limit:
+
+```text
+AI_RESPONSE_TIMEOUT ≥ (1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × OPENAI_REQUEST_TIMEOUT
+                      + tool execution + queue wait
+```
+
+You have two levers, and the cheaper one is usually the tool-call cap, because it divides the first term. With `ASSISTANT_MAX_TOOL_CALL_ITERATIONS=2` a turn costs at most three model calls instead of six, halving the timeout you need. The trade-off is that genuinely long tool chains fail earlier, with a clear "exceeded the tool-call limit" error rather than a timeout.
+
+```bash
+OPENAI_REQUEST_TIMEOUT=300
+ASSISTANT_MAX_TOOL_CALL_ITERATIONS=2
+AI_RESPONSE_TIMEOUT=1200   # (1 + 2) × 300 = 900, plus 300 headroom
+```
+
+Keeping the full five iterations at 300s per call would instead need `6 × 300 = 1800` plus headroom — which is why lowering the cap is usually the better trade.
+
+If `AI_RESPONSE_TIMEOUT` ends up below what the turn actually takes, you get a generic "no response" instead of the specific timeout error, and the job keeps running and burning tokens after the chat has given up.
+
+`AI_RESPONSE_TIMEOUT` can also be set at **Settings → Self-Hosting → OpenAI → Chat Response Timeout**, which takes effect without a restart. The environment variable wins if both are set. The minimum accepted value is `30`.
+
+Restart `web` and `worker` after changing the environment variables, and make sure your Docker Compose file forwards them into the containers.
 
 ### No Provider Available
 
@@ -588,6 +1176,42 @@ ollama pull model-name  # Install a model
 2. For custom providers, verify `OPENAI_URI_BASE` and `OPENAI_MODEL`
 3. Restart Sure after changing environment variables
 4. Check logs for specific error messages
+
+### "Failed to generate response" with External Assistant
+
+**Symptom:** Chat shows "Failed to generate response" when expecting the external assistant
+
+**Check in order:**
+
+1. **Is external routing active?** Sure uses external mode when `ASSISTANT_TYPE=external` is set as an env var, OR when the family's `assistant_type` is set to "external" in Settings. Check what the pod sees:
+   ```bash
+   kubectl exec deploy/sure-web -c rails -- env | grep ASSISTANT_TYPE
+   kubectl exec deploy/sure-worker -c sidekiq -- env | grep ASSISTANT_TYPE
+   ```
+   If the env var is unset, check the family setting in the database or Settings UI.
+
+2. **Can Sure reach the agent?** Test from inside the worker pod (use `sh -c` so the env var expands inside the pod, not locally):
+   ```bash
+   kubectl exec deploy/sure-worker -c sidekiq -- \
+     sh -c 'curl -s -o /dev/null -w "%{http_code}" \
+     -H "Authorization: Bearer $EXTERNAL_ASSISTANT_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"model\":\"test\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}" \
+     $EXTERNAL_ASSISTANT_URL'
+   ```
+   - **Exit code 7 (connection refused):** Network policy is blocking. Check egress rules, and remember to use the `targetPort`, not the service port.
+   - **HTTP 401/403:** Token mismatch between Sure's `EXTERNAL_ASSISTANT_TOKEN` and the agent's expected token.
+   - **HTTP 404:** Wrong URL path. Must be `/v1/chat/completions`.
+
+3. **Check worker logs** for the actual error:
+   ```bash
+   kubectl logs deploy/sure-worker -c sidekiq --tail=50 | grep -i "external\|assistant\|error"
+   ```
+
+4. **If using Pipelock:** Check the Pipelock deployment logs. A crashed Pipelock proxy can block outbound requests:
+   ```bash
+   kubectl logs deploy/sure-pipelock --tail=20
+   ```
 
 ### High Costs
 
@@ -608,7 +1232,7 @@ ollama pull model-name  # Install a model
 
 ### Custom System Prompts
 
-Sure's AI assistant uses a system prompt that defines its behavior. The prompt is defined in `app/models/assistant/configurable.rb`.
+The builtin AI assistant uses a system prompt that defines its behavior. The prompt is defined in `app/models/assistant/configurable.rb`. This does not apply to external assistants, which manage their own prompts.
 
 To customize:
 1. Fork the repository
@@ -628,8 +1252,13 @@ The assistant uses OpenAI's function calling (tool use) to access user data:
 **Available functions:**
 - `get_transactions` - Retrieve transaction history
 - `get_accounts` - Get account information
+- `get_holdings` - Investment holdings data
 - `get_balance_sheet` - Current financial position
 - `get_income_statement` - Income and expenses
+- `get_budget` - Budget status and category breakdowns
+- `import_bank_statement` - Import bank statement data
+- `search_family_files` - Search uploaded documents
+- `create_goal` - Create a savings goal
 
 These are defined in `app/models/assistant/function/`.
 
@@ -648,7 +1277,7 @@ Sure's AI assistant can search documents that have been uploaded to a family's v
 | Backend | Status | Best For | Requirements |
 |---------|--------|----------|--------------|
 | **OpenAI** (default) | ready | Cloud deployments, zero setup | `OPENAI_ACCESS_TOKEN` |
-| **Pgvector** | scaffolded | Self-hosted, full data privacy | PostgreSQL with `pgvector` extension |
+| **Pgvector** | ready | Self-hosted, full data privacy | PostgreSQL with `pgvector` extension + embedding model |
 | **Qdrant** | scaffolded | Self-hosted, dedicated vector DB | Running Qdrant instance |
 
 #### Configuration
@@ -658,22 +1287,35 @@ Sure's AI assistant can search documents that have been uploaded to a family's v
 No extra configuration is needed. If you already have `OPENAI_ACCESS_TOKEN` set for the AI assistant, document search works automatically. OpenAI manages chunking, embedding, and retrieval.
 
 ```bash
-# Already set for AI chat — document search uses the same token
+# Already set for AI chat - document search uses the same token
 OPENAI_ACCESS_TOKEN=sk-proj-...
 ```
 
 ##### Pgvector (Self-Hosted)
 
-> [!CAUTION]
-> Only `OpenAI` has been implemented!
+Use PostgreSQL's pgvector extension for fully local document search. All data stays on your infrastructure.
 
-Use PostgreSQL's pgvector extension for fully local document search:
+**Requirements:**
+- Use the `pgvector/pgvector:pg16` Docker image instead of `postgres:16` (drop-in replacement)
+- An embedding model served via an OpenAI-compatible `/v1/embeddings` endpoint (e.g. Ollama with `nomic-embed-text`)
+- Run the migration with `VECTOR_STORE_PROVIDER=pgvector` to create the `vector_store_chunks` table
 
 ```bash
+# Required
 VECTOR_STORE_PROVIDER=pgvector
+
+# Embedding model configuration
+EMBEDDING_MODEL=nomic-embed-text          # Default: nomic-embed-text
+EMBEDDING_DIMENSIONS=1024                 # Default: 1024 (must match your model)
+EMBEDDING_URI_BASE=http://ollama:11434/v1 # Falls back to OPENAI_URI_BASE if not set
+EMBEDDING_ACCESS_TOKEN=                   # Falls back to OPENAI_ACCESS_TOKEN if not set
 ```
 
-> **Note:** The pgvector adapter is currently a skeleton. A future release will add full support including embedding model configuration.
+If you are using Ollama (as in `compose.example.ai.yml`), pull the embedding model:
+
+```bash
+docker compose exec ollama ollama pull nomic-embed-text
+```
 
 ##### Qdrant (Self-Hosted)
 
@@ -777,4 +1419,4 @@ For issues with AI features:
 
 ---
 
-**Last Updated:** October 2025
+**Last Updated:** March 2026

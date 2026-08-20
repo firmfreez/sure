@@ -3,9 +3,12 @@ ru:
   tags:
     create:
       created: Тег создан
-      error: "Ошибка при создании тега: %{error}"
+      error: 'Ошибка при создании тега: %{error}'
     destroy:
       deleted: Тег удален
+    destroy_all:
+      all_deleted: Все теги удалены
+      deleted_all: Все теги удалены
     edit:
       edit: Редактировать тег
     form:
@@ -13,17 +16,15 @@ ru:
       create_submit: Создать тег
       update_submit: Обновить тег
     index:
+      delete_all: Удалить все
       empty: Тегов пока нет
       new: Новый тег
       tags: Теги
-      delete_all: Удалить все
       all_tags_resource: все теги
     new:
       new: Новый тег
     tag:
       delete: Удалить
       edit: Редактировать
-    destroy_all:
-      deleted_all: Все теги удалены
     update:
       updated: Тег обновлен

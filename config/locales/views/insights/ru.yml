@@ -1,0 +1,95 @@
+---
+ru:
+  insights:
+    index:
+      title: Информация
+      subtitle: Информация о том, что происходит в ваших финансах, обновляется каждую ночь.
+      refresh: Проверьте наличие новой информации
+      empty:
+        title: Пока нет статистики
+        description: Статистика появится здесь, когда в ваших аккаунтах будет достаточно активности. Они обновляются автоматически каждую ночь.
+    refresh:
+      queued: Мы генерируем свежие идеи. Зайдите через минуту.
+      checking: Проверка…
+    card:
+      acknowledged: Статистика отклонена
+      acknowledge: Понятно
+      acknowledge_title: Скрыть это, пока цифры не изменятся
+      new: Новый
+    feed:
+      view_all: Посмотреть всю информацию
+      header: Последний
+      header_new: Новый
+      acknowledge_aria: 'Понял: %{title}'
+    types:
+      spending_anomaly: Расходы
+      cash_flow_warning: Денежный поток
+      net_worth_milestone: Чистая стоимость
+      subscription_audit: Подписки
+      savings_rate_change: Ставка сбережений
+      idle_cash: Свободные деньги
+      budget_at_risk: Бюджет
+      budget_on_track: Бюджет
+    meta:
+      next_n_days:
+        one: На следующий день
+        other: Следующие %{count} дней
+      last_n_days:
+        one: Последний день
+        other: Последние %{count} дней
+      date_range: От %{from} до %{to}
+    figures:
+      vs_previous: по сравнению с предыдущим месяцем
+      today: сегодня
+      on_pace: в темпе
+      of_budget: бюджета
+      need_attention: нужно внимание
+      days_overdue:
+        one: "%{count} просрочка на день"
+        other: Просрочка %{count} дней
+      idle_days:
+        one: день простоя %{count}
+        other: простой %{count} дней
+    actions:
+      spending_anomaly: Просмотр транзакций %{category}
+      cash_flow_warning: Просмотр повторяющихся транзакций
+      net_worth_milestone: Посмотреть отчет о собственном капитале
+      subscription_audit: Просмотр повторяющихся транзакций
+      savings_rate_change: Просмотр транзакций за этот месяц
+      idle_cash: Перейти в аккаунт
+      budget: Посмотреть бюджет
+    titles:
+      spending_anomaly:
+        above: "%{category} расходы растут"
+        below: Расходы %{category} имеют тенденцию к снижению
+      cash_flow_warning:
+        low: Ваш баланс денежных средств может иссякнуть
+        negative: Ваш денежный баланс может стать отрицательным
+      net_worth_milestone: 'Чистый капитал: %{milestone}'
+      subscription_audit: "%{name} все еще активен?"
+      savings_rate_change:
+        up: Уровень ваших сбережений увеличился в %{month}
+        down: Ваша норма сбережений упала в %{month}
+      idle_cash: Свободные деньги в %{account}
+      budget_at_risk:
+        one: Одна категория требует внимания в вашем бюджете
+        other: Категории %{count} требуют внимания в вашем бюджете
+      budget_on_track: Ваш бюджет соответствует плану
+    templates:
+      spending_anomaly:
+        above: В этом месяце вы готовы потратить %{projected_spend} на %{category}, что примерно на %{deviation_pct}% больше, чем ваш недавний среднемесячный показатель %{baseline_spend}.
+        below: В этом месяце вы готовы потратить %{projected_spend} на %{category}, что примерно на %{deviation_pct}% меньше, чем ваш недавний среднемесячный показатель %{baseline_spend}.
+      cash_flow_warning:
+        low: С учетом ваших предстоящих повторяющихся транзакций и типичных расходов ваш баланс денежных средств может упасть до %{projected_low} примерно до %{projected_low_date}.
+        negative: С учетом ваших предстоящих повторяющихся транзакций и типичных расходов ваш баланс денежных средств может упасть до %{projected_low} примерно до %{projected_low_date}.
+      net_worth_milestone: Ваш собственный капитал пересек %{milestone} и теперь составляет %{net_worth}.
+      subscription_audit: "%{name} (%{amount}) не появился, так как ожидался на %{expected_on}. Возможно, он был отменен или списание могло быть перенесено."
+      savings_rate_change:
+        up: Вы сэкономили %{current_rate}% своего дохода в %{month}, что на %{change_pp} процентных пунктов больше, чем %{previous_rate}% месяцем ранее.
+        down: Вы сэкономили %{current_rate}% своего дохода в %{month}, что на %{change_pp} процентных пунктов меньше, чем %{previous_rate}% месяцем ранее.
+        down_negative: 'В %{month} вы потратили больше, чем заработали: ваша норма сбережений упала до %{current_rate}% с %{previous_rate}% месяцем ранее.'
+      idle_cash: "%{account} содержит %{balance}, в течение последних дней %{idle_days} не было активности."
+      budget_at_risk:
+        over: "%{categories} в этом месяце превысил бюджет. На данный момент вы израсходовали %{budget_spent_pct}% вашего общего бюджета."
+        near: "%{categories} в этом месяце близки к своему пределу. На данный момент вы израсходовали %{budget_spent_pct}% вашего общего бюджета."
+      budget_on_track: Вы потратили %{spent} своего бюджета %{budgeted} (%{budget_spent_pct}%), и все в пределах лимита.

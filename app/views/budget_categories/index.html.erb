@@ -2,15 +2,15 @@
   <%= render "budgets/budget_nav", budget: @budget %>
 <% end %>
 
-<%= content_for :previous_path, edit_budget_path(@budget) %>
-<%= content_for :cancel_path, budget_path(@budget) %>
+<%= content_for :previous_path, edit_budget_path(@budget, **budget_owner_query) %>
+<%= content_for :cancel_path, budget_path(@budget, **budget_owner_query) %>
 
 <div>
   <div class="space-y-6">
     <div class="text-center space-y-2">
-      <h1 class="text-3xl text-primary font-medium"><%= t("budgets.categories_edit.title") %></h1>
+      <h1 class="text-3xl text-primary font-medium"><%= t(".title") %></h1>
       <p class="text-secondary text-sm max-w-md mx-auto">
-        <%= t("budgets.categories_edit.subtitle") %>
+        <%= t(".description") %>
       </p>
     </div>
 

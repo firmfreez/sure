@@ -21,6 +21,42 @@ class CategoryTest < ActiveSupport::TestCase
     assert_nil transactions.map { |t| t.reload.category }.uniq.first
   end
 
+  test "destroying parent category preserves subcategory transaction assignments" do
+    parent = @family.categories.create!(
+      name: "Parent With Child Transactions",
+      color: "#000000",
+      lucide_icon: "folder"
+    )
+    subcategory = @family.categories.create!(
+      name: "Child With Transactions",
+      color: "#111111",
+      lucide_icon: "folder",
+      parent: parent
+    )
+    transaction = Transaction.create!(category: subcategory)
+
+    assert_difference "Category.count", -1 do
+      parent.destroy!
+    end
+
+    assert_nil subcategory.reload.parent_id
+    assert_equal subcategory, transaction.reload.category
+  end
+
+  test "invalid parent_id does not raise during validation" do
+    category = Category.new(
+      name: "Orphan Subcategory",
+      color: "#000000",
+      lucide_icon: "folder",
+      family: @family,
+      parent_id: SecureRandom.uuid
+    )
+
+    assert_nothing_raised { category.valid? }
+    assert_not category.subcategory?
+    assert_nil category.parent
+  end
+
   test "subcategory can only be one level deep" do
     category = categories(:subcategory)
 
@@ -41,66 +77,114 @@ class CategoryTest < ActiveSupport::TestCase
     assert_equal names, names.uniq  # No duplicates
   end
 
-  test "allows same subcategory name under different parents" do
-    parent_one = @family.categories.create!(
-      name: "Gifts",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "gift"
-    )
-    parent_two = @family.categories.create!(
-      name: "Holidays",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "party-popper"
-    )
-
-    first = @family.categories.create!(
-      name: "Birthday",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "cake",
-      parent: parent_one
-    )
-
-    second = @family.categories.new(
-      name: "Birthday",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "cake",
-      parent: parent_two
-    )
-
-    assert second.valid?
-    assert second.save
-    assert_not_equal first.parent_id, second.parent_id
+  test "display_name localizes default category names" do
+    I18n.with_locale(:"zh-CN") do
+      assert_equal "餐饮", categories(:food_and_drink).display_name
+      assert_equal "未分类", Category.uncategorized.display_name
+    end
   end
 
-  test "does not allow same subcategory name under same parent" do
-    parent = @family.categories.create!(
-      name: "Gifts",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "gift"
+  test "display_name returns default category names in english" do
+    I18n.with_locale(:en) do
+      assert_equal "Food & Drink", categories(:food_and_drink).display_name
+      assert_equal "Uncategorized", Category.uncategorized.display_name
+    end
+  end
+
+  test "display_name preserves custom category names" do
+    category = Category.new(name: "School Supplies", color: "#123456", lucide_icon: "book", family: @family)
+
+    I18n.with_locale(:"zh-CN") do
+      assert_equal "School Supplies", category.display_name
+    end
+  end
+
+  test "display_name_with_parent localizes default parent and child names" do
+    category = Category.new(
+      name: "Groceries",
+      color: "#123456",
+      lucide_icon: "shopping-bag",
+      family: @family,
+      parent: categories(:food_and_drink)
     )
 
-    @family.categories.create!(
-      name: "Birthday",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "cake",
-      parent: parent
+    I18n.with_locale(:"zh-CN") do
+      assert_equal "餐饮 > 杂货", category.display_name_with_parent
+    end
+  end
+
+  test "display_name_with_parent preserves custom child names" do
+    category = Category.new(
+      name: "Coffee Beans",
+      color: "#123456",
+      lucide_icon: "coffee",
+      family: @family,
+      parent: categories(:food_and_drink)
     )
 
-    duplicate = @family.categories.new(
-      name: "Birthday",
-      color: "#61c9ea",
-      classification: "expense",
-      lucide_icon: "cake",
-      parent: parent
+    I18n.with_locale(:"zh-CN") do
+      assert_equal "餐饮 > Coffee Beans", category.display_name_with_parent
+    end
+  end
+
+  test "should accept valid 6-digit hex colors" do
+    [ "#FFFFFF", "#000000", "#123456", "#ABCDEF", "#abcdef" ].each do |color|
+      category = Category.new(name: "Category #{color}", color: color, lucide_icon: "shapes", family: @family)
+      assert category.valid?, "#{color} should be valid"
+    end
+  end
+
+  test "should reject invalid colors" do
+    [ "invalid", "#123", "#1234567", "#GGGGGG", "red", "ffffff", "#ffff", "" ].each do |color|
+      category = Category.new(name: "Category #{color}", color: color, lucide_icon: "shapes", family: @family)
+      assert_not category.valid?, "#{color} should be invalid"
+      assert_includes category.errors[:color], "is invalid"
+    end
+  end
+
+  test "ids_with_transactions returns a lookup hash for categorized transactions" do
+    category = categories(:food_and_drink)
+    transaction = Transaction.create!(category: category)
+    Entry.create!(
+      account: accounts(:depository),
+      entryable: transaction,
+      name: "Lookup transaction",
+      date: Date.current,
+      amount: 10,
+      currency: "USD"
     )
 
-    assert_not duplicate.valid?
-    assert_includes duplicate.errors[:name], "has already been taken"
+    lookup = Category.ids_with_transactions(family: @family, category_ids: [ category.id, 0 ])
+
+    assert lookup.key?(category.id)
+    assert_not lookup.key?(0)
+  end
+
+  test "recently_used_for orders by last_used_at, most recent first" do
+    older = categories(:income)
+    newer = categories(:food_and_drink)
+    older.update!(last_used_at: 2.days.ago)
+    newer.update!(last_used_at: 1.day.ago)
+
+    assert_equal [ newer, older ], Category.recently_used_for(family: @family).to_a
+  end
+
+  test "recently_used_for excludes categories with no usage yet" do
+    categories(:food_and_drink).update!(last_used_at: 1.day.ago)
+
+    assert_not_includes Category.recently_used_for(family: @family).to_a, categories(:income)
+  end
+
+  test "recently_used_for excludes given categories and respects limit" do
+    a = categories(:income)
+    b = categories(:food_and_drink)
+    c = categories(:subcategory)
+    a.update!(last_used_at: 3.days.ago)
+    b.update!(last_used_at: 2.days.ago)
+    c.update!(last_used_at: 1.day.ago)
+
+    result = Category.recently_used_for(family: @family, excluding: b, limit: 1)
+
+    assert_equal [ c ], result.to_a
   end
 end

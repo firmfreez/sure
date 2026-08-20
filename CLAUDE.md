@@ -12,9 +12,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Testing
 - `bin/rails test` - Run all tests
 - `bin/rails test:db` - Run tests with database reset
-- `bin/rails test:system` - Run system tests only (use sparingly - they take longer)
+- `DISABLE_PARALLELIZATION=true bin/rails test:system` - Run system tests only (use sparingly - they take longer)
 - `bin/rails test test/models/account_test.rb` - Run specific test file
 - `bin/rails test test/models/account_test.rb:42` - Run specific test at line
+
+#### System Tests in the Dev Container
+When running inside the Dev Container, the `SELENIUM_REMOTE_URL` environment variable is automatically set to the bundled `selenium/standalone-chromium` service. System tests will connect to that remote browser — no local Chrome installation is required.
+
+```bash
+DISABLE_PARALLELIZATION=true bin/rails test:system
+```
+
+To watch the browser live, open `http://localhost:7900` or `http://localhost:4444` in your host browser (password: `secret`).
 
 ### Linting & Formatting
 - `bin/rubocop` - Run Ruby linter
@@ -38,7 +47,7 @@ ALWAYS run these commands before opening a pull request:
 
 1. **Tests** (Required):
    - `bin/rails test` - Run all tests (always required)
-   - `bin/rails test:system` - Run system tests (only when applicable, they take longer)
+   - `DISABLE_PARALLELIZATION=true bin/rails test:system` - Run system tests (only when applicable, they take longer)
 
 2. **Linting** (Required):
    - `bin/rubocop -f github -a` - Ruby linting with auto-correct
@@ -109,6 +118,7 @@ Two primary data ingestion methods:
   - Set `SIMPLEFIN_INCLUDE_PENDING=0` to disable pending fetching for SimpleFIN.
   - Set `PLAID_INCLUDE_PENDING=0` to disable pending fetching for Plaid.
   - Set `SIMPLEFIN_DEBUG_RAW=1` to enable raw payload debug logging.
+  - Set `UP_DEBUG_RAW=1` to enable raw Up payload debug logging. DEV-ONLY: the dump contains PII and is gated to local environments, so it never logs in managed/production.
 
 Provider support notes:
 - SimpleFIN: supports pending + FX metadata (stored under `extra["simplefin"]`).
@@ -123,13 +133,19 @@ Sidekiq handles asynchronous tasks:
 - AI chat responses (`AssistantResponseJob`)
 - Scheduled maintenance via sidekiq-cron
 
+### Debug Logging for Provider Syncs
+- Prefer `DebugLogEntry.capture(...)` over `Rails.logger.*` for provider sync/import failures, partial responses, and other support-relevant diagnostics.
+- Record support-relevant incidents in the super-admin `/settings/debug` UI rather than leaving them only in raw application logs.
+- Include `category`, `level`, `message`, `source`, `provider_key`, and structured `metadata`.
+- Attach `family` and `account_provider` whenever possible so support can filter to the affected provider connection.
+
 ### Frontend Architecture
 - **Hotwire Stack**: Turbo + Stimulus for reactive UI without heavy JavaScript
 - **ViewComponents**: Reusable UI components in `app/components/`
 - **Stimulus Controllers**: Handle interactivity, organized alongside components
 - **Charts**: D3.js for financial visualizations (time series, donut, sankey)
 - **Styling**: Tailwind CSS v4.x with custom design system
-  - Design system defined in `app/assets/tailwind/maybe-design-system.css`
+  - Design system defined in `app/assets/tailwind/sure-design-system.css`
   - Always use functional tokens (e.g., `text-primary` not `text-white`)
   - Prefer semantic HTML elements over JS components
   - Use `icon` helper for icons, never `lucide_icon` directly
@@ -213,7 +229,7 @@ Sidekiq handles asynchronous tasks:
 ## TailwindCSS Design System
 
 ### Design System Rules
-- **Always reference `app/assets/tailwind/maybe-design-system.css`** for primitives and tokens
+- **Always reference `app/assets/tailwind/sure-design-system.css`** for primitives and tokens
 - **Use functional tokens** defined in design system:
   - `text-primary` instead of `text-white`
   - `bg-container` instead of `bg-white`

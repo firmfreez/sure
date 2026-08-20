@@ -95,6 +95,10 @@ class Period
   }
 
   class << self
+    def valid_key?(key)
+      PERIODS.key?(key)
+    end
+
     def from_key(key)
       unless PERIODS.key?(key)
         raise InvalidKeyError, "Invalid period key: #{key}"
@@ -120,7 +124,10 @@ class Period
     def current_month_for(family)
       return from_key("current_month") unless family&.uses_custom_month_start?
 
-      family.current_custom_month_period
+      # Keep the semantic key so callers (e.g. the period picker) can identify
+      # this as "current month" even though the date range is custom.
+      custom_period = family.current_custom_month_period
+      new(key: "current_month", start_date: custom_period.start_date, end_date: custom_period.end_date)
     end
 
     def last_month_for(family)
@@ -130,7 +137,7 @@ class Period
       last_month_date = current_start - 1.day
       start_date = family.custom_month_start_for(last_month_date)
       end_date = family.custom_month_end_for(last_month_date)
-      custom(start_date: start_date, end_date: end_date)
+      new(key: "last_month", start_date: start_date, end_date: end_date)
     end
   end
 
@@ -165,7 +172,9 @@ class Period
   end
 
   def interval
-    if days > 366
+    if end_date > start_date.advance(years: 5)   # more than 5 calendar years → monthly
+      "1 month"
+    elsif end_date > start_date.advance(years: 1) # more than 1 calendar year → weekly
       "1 week"
     else
       "1 day"
@@ -173,26 +182,26 @@ class Period
   end
 
   def label
-    if key_metadata
-      I18n.t("periods.#{key}.label", default: key_metadata.fetch(:label))
+    if key
+      I18n.t("period.#{key}.label", default: key_metadata&.fetch(:label) || "Custom Period")
     else
-      I18n.t("periods.custom.label", default: "Custom Period")
+      I18n.t("period.custom.label", default: "Custom Period")
     end
   end
 
   def label_short
-    if key_metadata
-      I18n.t("periods.#{key}.label_short", default: key_metadata.fetch(:label_short))
+    if key
+      I18n.t("period.#{key}.label_short", default: key_metadata&.fetch(:label_short) || "Custom")
     else
-      I18n.t("periods.custom.label_short", default: "Custom")
+      I18n.t("period.custom.label_short", default: "Custom")
     end
   end
 
   def comparison_label
-    if key_metadata
-      I18n.t("periods.#{key}.comparison_label", default: key_metadata.fetch(:comparison_label))
+    if key
+      I18n.t("period.#{key}.comparison_label", default: key_metadata&.fetch(:comparison_label) || "#{start_date.strftime(@date_format)} to #{end_date.strftime(@date_format)}")
     else
-      "#{I18n.l(start_date, format: @date_format)} to #{I18n.l(end_date, format: @date_format)}"
+      "#{start_date.strftime(@date_format)} to #{end_date.strftime(@date_format)}"
     end
   end
 

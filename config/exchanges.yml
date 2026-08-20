@@ -295,6 +295,11 @@ XLIM:
   name: Lima
   country: PE
 
+# Crypto exchanges
+BNCX:
+  name: Binance
+  country: AE
+
 # Middle East & Africa
 XTAE:
   name: Tel Aviv
@@ -311,3 +316,8 @@ XSAU:
 XJSE:
   name: Johannesburg
   country: ZA
+
+# Russia - Moscow Exchange (Operating MIC: MISX)
+MISX:
+  name: Moscow Exchange
+  country: RU

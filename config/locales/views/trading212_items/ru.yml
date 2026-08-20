@@ -1,0 +1,102 @@
+---
+ru:
+  providers:
+    trading212:
+      name: Trading 212
+      connection_description: Подключите инвестиционный счет Trading 212 через ключ API
+      institution_name: Trading 212
+  trading212_items:
+    defaults:
+      name: Trading 212
+    trading212_item:
+      deletion_in_progress: Выполняется удаление
+      environment_label_live: Реальный счет
+      environment_label_demo: Демо-счет
+      syncing: Синхронизация
+      requires_update: Ключ API требует внимания
+      error: Ошибка
+      synced: Синхронизировано %{time} назад. %{summary}.
+      never_synced: Никогда не синхронизировался.
+      setup_accounts: Настройка учетных записей
+      delete: Удалить
+      accounts_need_setup: Требуется настройка аккаунта
+      accounts_need_setup_description: Ваша учетная запись Trading 212 должна быть связана с учетной записью Sure.
+      no_accounts_discovered: Счет Trading 212 еще не обнаружен.
+      no_accounts_discovered_description: Запустите синхронизацию после сохранения ключа API, чтобы обнаружить свою учетную запись.
+    setup_accounts:
+      page_title: Настройка учетной записи Trading 212
+      dialog_title: Настройте свою учетную запись Trading 212
+      subtitle: Привяжите свой инвестиционный счет Trading 212.
+      info_box:
+        title: Trading 212 API Импорт
+        items:
+          item_1: Текущие позиции с ценами и количеством
+          item_2: Полная история заказов (покупки и продажи)
+          item_3: Дивиденды и кассовые операции
+      status:
+        fetching_accounts: Получение счета из Trading 212...
+        no_accounts_found_title: Аккаунт не найден.
+        no_accounts_found_description: Конечно, не удалось найти учетную запись Trading 212. Убедитесь, что ваш ключ API действителен.
+      available_accounts:
+        title: Доступный аккаунт
+        account_type_investment: Инвестиции
+        account_summary: "%{account_type} • Баланс: %{balance}"
+        account_id: 'Идентификатор учетной записи: %{account_id}'
+      link_existing:
+        description: Или свяжите обнаруженную учетную запись Trading 212 с существующей учетной записью для инвестиций вручную.
+        manual_account_option: "%{name} (%{balance})"
+        select_prompt: Выберите аккаунт...
+      linked_accounts:
+        title: Уже связано
+        linked_to_html: 'Ссылка на: %{account}'
+      buttons:
+        refresh: Обновить
+        cancel: Отмена
+        back_to_settings: Вернуться к настройкам
+        create_selected_accounts: Создать выбранные аккаунты
+        link: Связь
+        done: Сделанный
+    sync:
+      status:
+        checking_credentials: Проверка учетных данных Trading 212...
+        importing_account: Импорт аккаунта Trading 212...
+        checking_configuration: Проверка конфигурации аккаунта...
+        accounts_need_setup:
+          one: 1 Требуется настройка счета Trading 212...
+          other: Необходимо настроить счета %{count} Trading 212...
+        processing_activity: Обработка позиций и активности...
+        calculating_balances: Расчет остатков...
+    sync_status:
+      no_accounts: Счет Trading 212 еще не обнаружен
+      all_linked:
+        one: 1 аккаунт связан
+        other: Аккаунты %{count} связаны
+      partial: "%{linked} подключен, %{unlinked} требует настройки"
+    select_existing_account:
+      title: Ссылка на аккаунт Trading 212
+      no_accounts_available: Несвязанных аккаунтов Trading 212 пока нет.
+      run_sync_hint: Запустите синхронизацию в меню «Настройки» > «Поставщики» после сохранения ключа API.
+      wait_for_sync: Дождитесь завершения синхронизации обнаружения учетной записи.
+      balance: Баланс
+      link: Связь
+      cancel: Отмена
+    create:
+      success: Успешно настроен Трейдинг 212.
+    update:
+      success: Конфигурация Trading 212 успешно обновлена.
+    destroy:
+      success: Запланированное торговое соединение 212 на удаление.
+    select_accounts:
+      not_configured: Trading 212 не настроена.
+    link_existing_account:
+      not_found: Конфигурация счета или Trading 212 не найдена.
+      only_manual_investment: К Trading 212 можно привязать только инвестиционные счета, созданные вручную.
+      already_linked: Этот счет Trading 212 уже связан.
+      success: Успешно привязан к счету Trading 212.
+      failed: Не удалось привязать аккаунт Trading 212.
+    complete_account_setup:
+      success:
+        one: Успешно создан счет %{count} Trading 212.
+        other: Успешно созданы счета %{count} Trading 212.
+      none_selected: Аккаунты не выбраны.
+      none_created: Никакие учетные записи не были созданы.

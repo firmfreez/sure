@@ -1,12 +1,16 @@
 ---
 en:
   transfer_matches:
+    create:
+      success: Transfer created
     new:
-      title: Match transfer or payment
+      header:
+        title: Match transfer or payment
+        subtitle: Match the corresponding transaction in another account or create one if it doesn't exist.
       from_account: From account
-      from_account_with_name: "From account: %{name}"
+      from_account_named: "From account: %{name}"
       to_account: To account
-      to_account_with_name: "To account: %{name}"
+      to_account_named: "To account: %{name}"
       outflow_transaction: Outflow transaction
       inflow_transaction: Inflow transaction
       create_transfer_match: Create transfer match
@@ -17,4 +21,4 @@ en:
       matching_method: Matching method
       matching_transaction: Matching transaction
       target_account: Target account
-      no_matches: We couldn't find any transactions to match from your other accounts. Please select an account and we will create a new inflow transaction for you.
+      no_matching_transactions: We couldn't find any transactions to match from your other accounts. Please select an account and we will create a new inflow transaction for you.

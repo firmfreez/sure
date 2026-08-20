@@ -1,38 +1,40 @@
-<details class="w-full">
-  <summary class="list-none cursor-pointer select-none inline-flex items-center gap-2 text-sm font-medium text-primary px-2 py-1.5 rounded-md hover:bg-surface-hover">
-    <%= icon("sparkles", size: "sm") %>
-    <%= t(".toggle") %>
-  </summary>
+<div class="flex items-start w-full gap-3 p-2">
+  <%= render "chats/ai_avatar" %>
 
-  <div class="flex items-start w-full gap-3 p-2">
-    <%= render "chats/ai_avatar" %>
+  <div class="max-w-[85%] text-sm space-y-4 text-primary">
+    <p><%= t(".greeting", name: Current.user&.first_name || t(".there")) %></p>
 
-    <div class="max-w-[85%] text-sm space-y-4 text-primary">
-      <% name = Current.user&.first_name.presence || t(".default_name") %>
-      <p><%= t(".intro", name: name) %></p>
+    <p>
+      <%= t(".commands_hint_html") %>
+    </p>
 
-      <% command = content_tag(:span, "/", class: "bg-container border border-secondary px-1.5 py-0.5 rounded font-mono text-xs") %>
-      <p><%= t(".command_hint_html", command: command).html_safe %></p>
+    <div class="space-y-3">
+      <p><%= t(".questions_intro") %></p>
 
-      <div class="space-y-3">
-        <p><%= t(".questions_title") %></p>
+      <% questions = [
+        {
+          icon: "chart-area",
+          text: t(".evaluate_portfolio")
+        },
+        {
+          icon: "wallet-minimal",
+          text: t(".spending_insights")
+        },
+        {
+          icon: "alert-triangle",
+          text: t(".unusual_patterns")
+        }
+      ] %>
 
-        <% questions = [
-          { icon: "chart-area", text: t(".questions.evaluate_portfolio") },
-          { icon: "wallet-minimal", text: t(".questions.spending_insights") },
-          { icon: "alert-triangle", text: t(".questions.unusual_patterns") }
-        ] %>
-
-        <div class="space-y-2.5">
-          <% questions.each do |question| %>
-            <button data-action="chat#submitSampleQuestion"
-                    data-chat-question-param="<%= question[:text] %>"
-                    class="w-fit flex items-center gap-2 border border-tertiary rounded-full py-1.5 px-2.5 hover:bg-gray-100">
-              <%= icon(question[:icon]) %> <%= question[:text] %>
-            </button>
-          <% end %>
-        </div>
+      <div class="space-y-2.5">
+        <% questions.each do |question| %>
+          <button data-action="chat#submitSampleQuestion"
+                  data-chat-question-param="<%= question[:text] %>"
+                  class="w-fit flex items-center gap-2 border border-tertiary rounded-full py-1.5 px-2.5 hover:bg-surface-inset">
+            <%= icon(question[:icon]) %> <%= question[:text] %>
+          </button>
+        <% end %>
       </div>
     </div>
   </div>
-</details>
+</div>

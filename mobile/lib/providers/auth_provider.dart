@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/device_service.dart';
 import '../services/api_config.dart';
 import '../services/log_service.dart';
+import '../services/telemetry_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -22,6 +25,15 @@ class AuthProvider with ChangeNotifier {
   bool _mfaRequired = false;
   bool _showMfaInput = false; // Track if we should show MFA input field
 
+  // SSO onboarding state
+  bool _ssoOnboardingPending = false;
+  String? _ssoLinkingCode;
+  String? _ssoEmail;
+  String? _ssoFirstName;
+  String? _ssoLastName;
+  bool _ssoAllowAccountCreation = false;
+  bool _ssoHasPendingInvitation = false;
+
   User? get user => _user;
   bool get isIntroLayout => _user?.isIntroLayout ?? false;
   bool get aiEnabled => _user?.aiEnabled ?? false;
@@ -36,8 +48,24 @@ class AuthProvider with ChangeNotifier {
   bool get mfaRequired => _mfaRequired;
   bool get showMfaInput => _showMfaInput; // Expose MFA input state
 
+  // SSO onboarding getters
+  bool get ssoOnboardingPending => _ssoOnboardingPending;
+  String? get ssoLinkingCode => _ssoLinkingCode;
+  String? get ssoEmail => _ssoEmail;
+  String? get ssoFirstName => _ssoFirstName;
+  String? get ssoLastName => _ssoLastName;
+  bool get ssoAllowAccountCreation => _ssoAllowAccountCreation;
+  bool get ssoHasPendingInvitation => _ssoHasPendingInvitation;
+
   AuthProvider() {
     _loadStoredAuth();
+  }
+
+  void _logAuthException(String operation, Object error) {
+    LogService.instance.error(
+      'AuthProvider',
+      '$operation failed with ${error.runtimeType}',
+    );
   }
 
   Future<void> _loadStoredAuth() async {
@@ -74,11 +102,26 @@ class AuthProvider with ChangeNotifier {
           }
         }
       }
-    } catch (e) {
+      _updateTelemetryUser(_user);
+      _addTelemetryBreadcrumb(
+        'auth',
+        'stored_auth_loaded',
+        data: {
+          'authenticated': isAuthenticated,
+          'api_key_mode': _isApiKeyAuth,
+        },
+      );
+    } catch (e, stackTrace) {
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.load_stored',
+      );
       _tokens = null;
       _user = null;
       _apiKey = null;
       _isApiKeyAuth = false;
+      _clearTelemetryUser();
     }
 
     _isLoading = false;
@@ -109,13 +152,18 @@ class AuthProvider with ChangeNotifier {
         otpCode: otpCode,
       );
 
-      LogService.instance.debug('AuthProvider', 'Login result: $result');
+      LogService.instance.debug(
+        'AuthProvider',
+        'Login result received: success=${result['success'] == true}, mfa_required=${result['mfa_required'] == true}',
+      );
 
       if (result['success'] == true) {
         _tokens = result['tokens'] as AuthTokens?;
         _user = result['user'] as User?;
         _mfaRequired = false;
         _showMfaInput = false; // Reset on successful login
+        _updateTelemetryUser(_user);
+        _addTelemetryBreadcrumb('auth', 'login_success');
         _isLoading = false;
         notifyListeners();
         return true;
@@ -123,7 +171,8 @@ class AuthProvider with ChangeNotifier {
         if (result['mfa_required'] == true) {
           _mfaRequired = true;
           _showMfaInput = true; // Show MFA input field
-          LogService.instance.debug('AuthProvider', 'MFA required! Setting _showMfaInput to true');
+          LogService.instance.debug(
+              'AuthProvider', 'MFA required! Setting _showMfaInput to true');
 
           // If user already submitted an OTP code, this is likely an invalid OTP error
           // Show the error message so user knows the code was wrong
@@ -142,12 +191,27 @@ class AuthProvider with ChangeNotifier {
             _showMfaInput = true;
           }
         }
+        _addTelemetryBreadcrumb(
+          'auth',
+          'login_failed',
+          data: {
+            'mfa_required': _mfaRequired,
+            'otp_submitted': otpCode != null,
+          },
+        );
         _isLoading = false;
         notifyListeners();
         return false;
       }
-    } catch (e) {
-      _errorMessage = 'Connection error: ${e.toString()}';
+    } catch (e, stackTrace) {
+      _logAuthException('Login', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.login',
+      );
+      _errorMessage =
+          'Unable to connect. Please check your network and try again.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -164,24 +228,42 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await _authService.loginWithApiKey(apiKey: apiKey);
 
-      LogService.instance.debug('AuthProvider', 'API key login result: $result');
+      LogService.instance.debug(
+        'AuthProvider',
+        'API key login result received: success=${result['success'] == true}',
+      );
 
       if (result['success'] == true) {
         _apiKey = apiKey;
         _isApiKeyAuth = true;
         ApiConfig.setApiKeyAuth(apiKey);
+        _clearTelemetryUser();
+        _addTelemetryBreadcrumb(
+          'auth',
+          'api_key_login_success',
+        );
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
+        _addTelemetryBreadcrumb(
+          'auth',
+          'api_key_login_failed',
+        );
         _errorMessage = result['error'] as String?;
         _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e, stackTrace) {
-      LogService.instance.error('AuthProvider', 'API key login error: $e\n$stackTrace');
-      _errorMessage = 'Unable to connect. Please check your network and try again.';
+      _logAuthException('API key login', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.api_key_login',
+      );
+      _errorMessage =
+          'Unable to connect. Please check your network and try again.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -213,17 +295,27 @@ class AuthProvider with ChangeNotifier {
       if (result['success'] == true) {
         _tokens = result['tokens'] as AuthTokens?;
         _user = result['user'] as User?;
+        _updateTelemetryUser(_user);
+        _addTelemetryBreadcrumb('auth', 'signup_success');
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
+        _addTelemetryBreadcrumb('auth', 'signup_failed');
         _errorMessage = result['error'] as String?;
         _isLoading = false;
         notifyListeners();
         return false;
       }
-    } catch (e) {
-      _errorMessage = 'Connection error: ${e.toString()}';
+    } catch (e, stackTrace) {
+      _logAuthException('Signup', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.signup',
+      );
+      _errorMessage =
+          'Unable to connect. Please check your network and try again.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -242,12 +334,23 @@ class AuthProvider with ChangeNotifier {
         deviceInfo: deviceInfo,
       );
 
-      final launched = await launchUrl(Uri.parse(ssoUrl), mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(Uri.parse(ssoUrl),
+          mode: LaunchMode.externalApplication);
+      _addTelemetryBreadcrumb(
+        'auth',
+        'sso_launch_result',
+        data: {'launched': launched},
+      );
       if (!launched) {
         _errorMessage = 'Unable to open browser for sign-in.';
       }
     } catch (e, stackTrace) {
-      LogService.instance.error('AuthProvider', 'SSO launch error: $e\n$stackTrace');
+      _logAuthException('SSO launch', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.sso_launch',
+      );
       _errorMessage = 'Unable to start sign-in. Please try again.';
     } finally {
       _isLoading = false;
@@ -266,22 +369,183 @@ class AuthProvider with ChangeNotifier {
       if (result['success'] == true) {
         _tokens = result['tokens'] as AuthTokens?;
         _user = result['user'] as User?;
+        _ssoOnboardingPending = false;
+        _updateTelemetryUser(_user);
+        _addTelemetryBreadcrumb(
+          'auth',
+          'sso_callback_success',
+        );
         _isLoading = false;
         notifyListeners();
         return true;
+      } else if (result['account_not_linked'] == true) {
+        // SSO onboarding needed - store linking data
+        _ssoOnboardingPending = true;
+        _ssoLinkingCode = result['linking_code'] as String?;
+        _ssoEmail = result['email'] as String?;
+        _ssoFirstName = result['first_name'] as String?;
+        _ssoLastName = result['last_name'] as String?;
+        _ssoAllowAccountCreation = result['allow_account_creation'] == true;
+        _ssoHasPendingInvitation = result['has_pending_invitation'] == true;
+        _addTelemetryBreadcrumb(
+          'auth',
+          'sso_onboarding_required',
+          data: {
+            'account_creation_allowed': _ssoAllowAccountCreation,
+            'has_pending_invitation': _ssoHasPendingInvitation,
+          },
+        );
+        _isLoading = false;
+        notifyListeners();
+        return false;
       } else {
+        _addTelemetryBreadcrumb(
+          'auth',
+          'sso_callback_failed',
+        );
         _errorMessage = result['error'] as String?;
         _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e, stackTrace) {
-      LogService.instance.error('AuthProvider', 'SSO callback error: $e\n$stackTrace');
+      _logAuthException('SSO callback', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.sso_callback',
+      );
       _errorMessage = 'Sign-in failed. Please try again.';
       _isLoading = false;
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> ssoLinkAccount({
+    required String email,
+    required String password,
+  }) async {
+    if (_ssoLinkingCode == null) {
+      _errorMessage = 'No pending SSO session. Please try signing in again.';
+      notifyListeners();
+      return false;
+    }
+
+    _errorMessage = null;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await _authService.ssoLink(
+        linkingCode: _ssoLinkingCode!,
+        email: email,
+        password: password,
+      );
+
+      if (result['success'] == true) {
+        _tokens = result['tokens'] as AuthTokens?;
+        _user = result['user'] as User?;
+        _clearSsoOnboardingState();
+        _updateTelemetryUser(_user);
+        _addTelemetryBreadcrumb(
+          'auth',
+          'sso_link_success',
+        );
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _addTelemetryBreadcrumb('auth', 'sso_link_failed');
+        _errorMessage = result['error'] as String?;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e, stackTrace) {
+      _logAuthException('SSO link', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.sso_link',
+      );
+      _errorMessage = 'Failed to link account. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> ssoCreateAccount({
+    String? firstName,
+    String? lastName,
+  }) async {
+    if (_ssoLinkingCode == null) {
+      _errorMessage = 'No pending SSO session. Please try signing in again.';
+      notifyListeners();
+      return false;
+    }
+
+    _errorMessage = null;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await _authService.ssoCreateAccount(
+        linkingCode: _ssoLinkingCode!,
+        firstName: firstName,
+        lastName: lastName,
+      );
+
+      if (result['success'] == true) {
+        _tokens = result['tokens'] as AuthTokens?;
+        _user = result['user'] as User?;
+        _clearSsoOnboardingState();
+        _updateTelemetryUser(_user);
+        _addTelemetryBreadcrumb(
+          'auth',
+          'sso_create_account_success',
+        );
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _addTelemetryBreadcrumb(
+          'auth',
+          'sso_create_account_failed',
+        );
+        _errorMessage = result['error'] as String?;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e, stackTrace) {
+      _logAuthException('SSO create account', e);
+      _captureTelemetryException(
+        e,
+        stackTrace,
+        operation: 'auth.sso_create_account',
+      );
+      _errorMessage = 'Failed to create account. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void cancelSsoOnboarding() {
+    _clearSsoOnboardingState();
+    notifyListeners();
+  }
+
+  void _clearSsoOnboardingState() {
+    _ssoOnboardingPending = false;
+    _ssoLinkingCode = null;
+    _ssoEmail = null;
+    _ssoFirstName = null;
+    _ssoLastName = null;
+    _ssoAllowAccountCreation = false;
+    _ssoHasPendingInvitation = false;
   }
 
   Future<void> logout() async {
@@ -293,6 +557,10 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = null;
     _mfaRequired = false;
     ApiConfig.clearApiKeyAuth();
+    _safeTelemetry(() async {
+      TelemetryService.instance.addBreadcrumb('auth', 'logout');
+      await TelemetryService.instance.clearUser();
+    });
     notifyListeners();
   }
 
@@ -318,6 +586,64 @@ class AuthProvider with ChangeNotifier {
       await logout();
       return false;
     }
+  }
+
+  Future<void> _setTelemetryUser(User? user) async {
+    if (user == null) {
+      await TelemetryService.instance.clearUser();
+      return;
+    }
+
+    await TelemetryService.instance.setUserId(user.id);
+  }
+
+  void _updateTelemetryUser(User? user) {
+    _safeTelemetry(() => _setTelemetryUser(user));
+  }
+
+  void _clearTelemetryUser() {
+    _safeTelemetry(() => TelemetryService.instance.clearUser());
+  }
+
+  void _addTelemetryBreadcrumb(
+    String category,
+    String message, {
+    Map<String, dynamic>? data,
+  }) {
+    _safeTelemetry(
+      () => TelemetryService.instance.addBreadcrumb(
+        category,
+        message,
+        data: data,
+      ),
+    );
+  }
+
+  void _captureTelemetryException(
+    Object error,
+    StackTrace stackTrace, {
+    required String operation,
+  }) {
+    _safeTelemetry(
+      () => TelemetryService.instance.captureHandledException(
+        error,
+        stackTrace,
+        operation: operation,
+      ),
+    );
+  }
+
+  void _safeTelemetry(FutureOr<void> Function() action) {
+    unawaited(Future<void>(() async {
+      try {
+        await action();
+      } catch (error) {
+        LogService.instance.warning(
+          'AuthProvider',
+          'Telemetry operation failed: ${error.runtimeType}',
+        );
+      }
+    }));
   }
 
   Future<String?> getValidAccessToken() async {

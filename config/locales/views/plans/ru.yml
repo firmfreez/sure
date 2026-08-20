@@ -1,0 +1,36 @@
+---
+ru:
+  plans:
+    show:
+      title: План
+      subtitle: Решите, куда идут ваши деньги — что вы тратите, а что экономите.
+    budget_card:
+      title: В этом месяце
+      edit_budget: Изменить бюджет
+      of_total: из %{total}
+      days_left:
+        one: остался 1 день
+        other: Осталось %{count} дней
+      percent_used: "%{percent}% использовано"
+      top_categories: Топ категории
+      view_budget: Посмотреть полный бюджет
+      empty_body: Установите ежемесячную цель расходов и лимиты для каждой категории, чтобы увидеть, как отслеживаются результаты в этом месяце.
+      set_up: Настройте бюджет на этот месяц
+    goals_card:
+      title: Ваши цели
+      new_goal: Новая цель
+      active_count:
+        one: 1 активный
+        other: "%{count} активен"
+      of_targets: "%{total} по целям"
+      behind_count:
+        one: 1 отстает от темпа
+        other: "%{count} отстает от темпа"
+      pending_count:
+        one: 1 ожидающий залог
+        other: "%{count} ожидаемые взносы"
+      all_on_pace: Все в темпе
+      active_goals: Активные цели
+      pending_marker: в ожидании
+      runway: "%{months} мес ВПП · %{pace}/мес"
+      all_goals: Все цели

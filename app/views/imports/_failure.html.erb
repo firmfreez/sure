@@ -7,10 +7,10 @@
     </div>
 
     <div class="text-center space-y-2">
-      <h1 class="font-medium text-primary text-center text-3xl"><%= t("imports.failure.title") %></h1>
-      <p class="text-sm text-secondary"><%= t("imports.failure.description") %></p>
+      <h1 class="font-medium text-primary text-center text-3xl"><%= t(".title") %></h1>
+      <p class="text-sm text-secondary"><%= t(".description") %></p>
     </div>
 
-    <%= render DS::Button.new(text: t("imports.failure.try_again"), href: publish_import_path(import), full_width: true) %>
+    <%= render DS::Button.new(text: t(".try_again"), href: publish_import_path(import), full_width: true) %>
   </div>
 </div>

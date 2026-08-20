@@ -3,8 +3,8 @@ class Settings::GuidesController < ApplicationController
 
   def show
     @breadcrumbs = [
-      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
-      [ t("settings.settings_nav.guides_label"), nil ]
+      [ t("breadcrumbs.home"), root_path ],
+      [ t("breadcrumbs.guides"), nil ]
     ]
     markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML,
       autolink: true,
@@ -13,9 +13,6 @@ class Settings::GuidesController < ApplicationController
       strikethrough: true,
       superscript: true
     )
-    localized_path = Rails.root.join("docs/onboarding/guide.#{I18n.locale}.md")
-    fallback_path = Rails.root.join("docs/onboarding/guide.md")
-    path = File.exist?(localized_path) ? localized_path : fallback_path
-    @guide_content = markdown.render(File.read(path))
+    @guide_content = markdown.render(File.read(Rails.root.join("docs/onboarding/guide.md")))
   end
 end

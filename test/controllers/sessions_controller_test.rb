@@ -38,6 +38,31 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "login page offers passkey sign-in" do
+    AuthConfig.stubs(:passkey_login_enabled?).returns(true)
+
+    get new_session_url
+
+    assert_response :success
+    assert_select "button", text: I18n.t("sessions.new.passkey_button")
+    assert_select "[data-webauthn-authentication-conditional-value='true']"
+    assert_select "[data-webauthn-authentication-unsupported-message-value=?]", I18n.t("sessions.new.passkey_unsupported")
+    assert_select "[data-webauthn-authentication-error-fallback-value=?]", I18n.t("passkey_sessions.invalid_credential")
+    # Browsers only surface passkeys from autofill when the field carries the
+    # "webauthn" token.
+    assert_select "input[type=email][autocomplete='username webauthn']"
+  end
+
+  test "login page hides passkey sign-in when disabled" do
+    AuthConfig.stubs(:passkey_login_enabled?).returns(false)
+
+    get new_session_url
+
+    assert_response :success
+    assert_select "button", text: I18n.t("sessions.new.passkey_button"), count: 0
+    assert_select "input[type=email][autocomplete='email']"
+  end
+
   test "can sign in" do
     sign_in @user
     assert_redirected_to root_url
@@ -112,9 +137,10 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match %r{/auth/openid_connect}, @response.body
     assert_match /Sign in with Keycloak/, @response.body
 
-    # Google-branded button
+    # Google-branded button — DS outline button carrying Google's official
+    # multi-color "G" mark (one of its brand hexes proves the inline SVG rendered).
     assert_match %r{/auth/google_oauth2}, @response.body
-    assert_match /gsi-material-button/, @response.body
+    assert_match /#4285F4/i, @response.body
     assert_match /Sign in with Google/, @response.body
   end
 
@@ -543,20 +569,39 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
       { name: "openid_connect", strategy: "openid_connect", label: "Google" }
     ])
 
-    get "/auth/mobile/openid_connect", params: {
-      device_id: "flutter-device-006",
-      device_name: "Pixel 8",
-      device_type: "android"
-    }
-    get "/auth/openid_connect/callback"
+    # Use a real cache store so we can verify the cache entry written by handle_mobile_sso_onboarding
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
 
-    assert_response :redirect
-    redirect_url = @response.redirect_url
+    begin
+      get "/auth/mobile/openid_connect", params: {
+        device_id: "flutter-device-006",
+        device_name: "Pixel 8",
+        device_type: "android"
+      }
+      get "/auth/openid_connect/callback"
 
-    assert redirect_url.start_with?("sureapp://oauth/callback?"), "Expected redirect to sureapp://"
-    params = Rack::Utils.parse_query(URI.parse(redirect_url).query)
-    assert_equal "account_not_linked", params["error"]
-    assert_nil session[:mobile_sso], "Expected mobile_sso session to be cleared"
+      assert_response :redirect
+      redirect_url = @response.redirect_url
+
+      assert redirect_url.start_with?("sureapp://oauth/callback?"), "Expected redirect to sureapp://"
+      params = Rack::Utils.parse_query(URI.parse(redirect_url).query)
+      assert_equal "account_not_linked", params["status"]
+      assert params["linking_code"].present?, "Expected linking_code in redirect params"
+      assert_nil session[:mobile_sso], "Expected mobile_sso session to be cleared"
+
+      # Verify the cache entry written by handle_mobile_sso_onboarding
+      cached = Rails.cache.read("mobile_sso_link:#{params['linking_code']}")
+      assert cached.present?, "Expected cache entry for mobile_sso_link:#{params['linking_code']}"
+      assert_equal "openid_connect", cached[:provider]
+      assert_equal "unlinked-uid-99999", cached[:uid]
+      assert_equal user_without_oidc.email, cached[:email]
+      assert_equal "New User", cached[:name]
+      assert cached.key?(:device_info), "Expected device_info in cached payload"
+      assert cached.key?(:allow_account_creation), "Expected allow_account_creation in cached payload"
+    ensure
+      Rails.cache = original_cache
+    end
   end
 
   test "mobile SSO does not create a web session" do
@@ -658,5 +703,76 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     # Follow redirect to verify we're on the link page (not logged in)
     follow_redirect!
     assert_response :success
+  end
+
+  # ── Desktop SSO: browser handoff + PKCE code exchange ──
+
+  test "desktop SSO exchanges a PKCE-bound code for a web session and is single-use" do
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+
+    verifier = SecureRandom.hex(32)
+    challenge = Base64.urlsafe_encode64(Digest::SHA256.digest(verifier), padding: false)
+    oidc_identity = oidc_identities(:bob_google)
+
+    Rails.configuration.x.auth.stubs(:sso_providers).returns([
+      { name: "openid_connect", strategy: "openid_connect", label: "Google" }
+    ])
+    setup_omniauth_mock(provider: oidc_identity.provider, uid: oidc_identity.uid, email: @user.email, name: "Bob Dylan")
+
+    get "/auth/desktop/openid_connect", params: { code_challenge: challenge }
+    assert_response :success
+
+    get "/auth/openid_connect/callback"
+    assert_response :redirect
+    redirect_url = @response.redirect_url
+    assert redirect_url.start_with?("sure://sso/callback?code="), "Expected sure://sso/callback but got #{redirect_url}"
+    code = Rack::Utils.parse_query(URI.parse(redirect_url).query)["code"]
+    assert code.present?
+
+    assert_difference -> { oidc_identity.user.sessions.count }, 1 do
+      post desktop_sso_exchange_path, params: { code: code, code_verifier: verifier }
+    end
+    assert_redirected_to root_path
+
+    # Single-use: the same code cannot be redeemed again.
+    assert_no_difference -> { oidc_identity.user.sessions.count } do
+      post desktop_sso_exchange_path, params: { code: code, code_verifier: verifier }
+    end
+    assert_redirected_to new_session_path
+  ensure
+    Rails.cache = original_cache
+  end
+
+  test "desktop SSO exchange rejects a wrong PKCE verifier" do
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+
+    challenge = Base64.urlsafe_encode64(Digest::SHA256.digest("the-real-verifier"), padding: false)
+    oidc_identity = oidc_identities(:bob_google)
+
+    Rails.configuration.x.auth.stubs(:sso_providers).returns([
+      { name: "openid_connect", strategy: "openid_connect", label: "Google" }
+    ])
+    setup_omniauth_mock(provider: oidc_identity.provider, uid: oidc_identity.uid, email: @user.email, name: "Bob Dylan")
+
+    get "/auth/desktop/openid_connect", params: { code_challenge: challenge }
+    get "/auth/openid_connect/callback"
+    code = Rack::Utils.parse_query(URI.parse(@response.redirect_url).query)["code"]
+
+    assert_no_difference -> { oidc_identity.user.sessions.count } do
+      post desktop_sso_exchange_path, params: { code: code, code_verifier: "an-attacker-guess" }
+    end
+    assert_redirected_to new_session_path
+  ensure
+    Rails.cache = original_cache
+  end
+
+  test "desktop_sso_start rejects a missing PKCE code_challenge" do
+    Rails.configuration.x.auth.stubs(:sso_providers).returns([
+      { name: "openid_connect", strategy: "openid_connect", label: "Google" }
+    ])
+    get "/auth/desktop/openid_connect"
+    assert_redirected_to new_session_path
   end
 end

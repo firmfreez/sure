@@ -1,43 +1,113 @@
 ---
 ru:
   properties:
-    actions:
+    address:
+      address_line1_label: Адрес, строка 1
+      address_line1_placeholder: ул. Ленина, 123
+      city_label: Город
+      city_placeholder: Москва
+      country_label: Страна
+      country_placeholder: Россия
+      postal_code_label: Почтовый индекс
+      postal_code_placeholder: '101000'
+      save: Сохранить
+      state_region_label: Область/Регион
+      state_region_placeholder: МО
+      title: Ввести данные вручную
+    balances:
+      market_value_label: Оценочная рыночная стоимость
+      market_value_tooltip: Оценочная рыночная стоимость вашей недвижимости. Это число можно найти на сайтах, таких как Zillow или Redfin, и оно никогда не является точным.
       next: Далее
       save: Сохранить
-    dialog:
-      title: Введите данные недвижимости вручную
-    tabs:
-      overview: Обзор
-      value: Стоимость
-      address: Адрес
+      title: Ввести данные вручную
+    edit:
+      edit: Редактировать %{account}
+      title: Введите недвижимость вручную
     form:
+      address_line1: Улица
+      address_line1_placeholder: 123 Main Street
+      area: Жилая площадь
+      area_placeholder: '1200'
+      area_unit: Единица площади
+      country: Страна
+      country_placeholder: USA
+      locality: Город
+      locality_placeholder: Москва
+      none: Нет
+      postal_code: Почтовый индекс
+      postal_code_placeholder: '12345'
+      region: Область/Регион
+      region_placeholder: CA
+      subtype_prompt: Выберите тип
+      year_built: Год постройки
+      year_built_placeholder: '1990'
       name_label: Название
       name_placeholder: Дом для отдыха
       subtype_label: Тип недвижимости
-      subtype_prompt: Выберите тип
       year_built_label: Год постройки (необязательно)
-      year_built_placeholder: "1990"
       area_label: Площадь (необязательно)
-      area_placeholder: "1200"
       area_unit_label: Единица площади
-      area_unit: Единица площади
       area_units:
         square_feet: Квадратные футы
         square_meters: Квадратные метры
       address_line1_label: Адрес (строка 1)
-      address_line1_placeholder: 123 Main Street
       city_label: Город
       city_placeholder: San Francisco
       region_label: Штат/регион
-      region_placeholder: CA
       postal_code_label: Почтовый индекс
-      postal_code_placeholder: "12345"
       country_label: Страна
-      country_placeholder: USA
       market_value_label: Оценочная рыночная стоимость
       market_value_tooltip: Оценочная рыночная стоимость недвижимости. Обычно можно найти на сайтах вроде Zillow или Redfin, и это не точное значение.
-      market_value_placeholder: "0"
+      market_value_placeholder: '0'
+    new:
+      next: Далее
+      title: Ввести данные вручную
+      avm_option: Добавить через %{provider}
+      avm_title: Добавить свойство через %{provider}
+      avm_description: Введите название объекта недвижимости и его адрес. %{provider} проверит для вас подробную информацию об объекте недвижимости и его ориентировочную рыночную стоимость.
+      avm_us_only: "%{provider} поддерживает только объекты недвижимости, расположенные в США."
+      avm_submit: Поиск недвижимости
+      avm_preview_title: Подтвердите данные об объекте недвижимости
+      avm_preview_description: Вот что нашел %{provider}. Прежде чем добавлять свойство, просмотрите детали — пока ничего не создано.
+      avm_preview_no_record: "%{provider} не удалось найти запись о собственности по этому адресу, поэтому указанное значение является приблизительным, основанным на окружающей местности. Прежде чем продолжить, дважды проверьте адрес."
+      avm_preview_back: Назад
+      avm_preview_confirm: Добавить недвижимость
+    overview:
+      living_area: Жилая площадь
+      market_value: Рыночная стоимость
+      purchase_price: Цена покупки
+      trend: Тренд
+      unknown: Неизвестно
+      year_built: Год постройки
+      edit_account_details: Редактировать детали счета
+    overview_fields:
+      area_label: Площадь (необязательно)
+      area_placeholder: '1200'
+      area_unit_label: Единица площади
+      name_label: Название
+      name_placeholder: Дом для отпуска
+      property_type_label: Тип недвижимости
+      square_feet: Квадратные футы
+      square_meters: Квадратные метры
+      subtype_prompt: Выберите тип
+      year_built_label: Год постройки (необязательно)
+      year_built_placeholder: '1990'
     subtypes:
+      agri_land:
+        long: Сельскохозяйственная земля
+        short: С/х земля
+      apartment:
+        long: Квартира
+        short: Квартира
+      commercial:
+        long: Коммерческая недвижимость
+        short: Коммерческая
+      plot:
+        long: Участок / Земля
+        short: Участок
+      rented:
+        long: Арендованная недвижимость
+        short: Арендованная
       single_family_home:
         short: Дом
         long: Дом (на одну семью)
@@ -56,11 +126,26 @@ ru:
       second_home:
         short: Второй дом
         long: Второй дом
-    overview:
-      living_area: Жилая площадь
-      market_value: Рыночная стоимость
-      purchase_price: Цена покупки
-      trend: Тренд
-      unknown: Неизвестно
-      year_built: Год постройки
-      edit_account_details: Редактировать детали счета
+    tabs:
+      overview:
+        living_area: Жилая площадь
+        market_value: Рыночная стоимость
+        purchase_price: Цена покупки
+        trend: Тренд
+        unknown: Неизвестный
+        year_built: Год постройки
+        edit_account_details: Изменить данные учетной записи
+      value: Стоимость
+      address: Адрес
+    actions:
+      next: Далее
+      save: Сохранить
+    dialog:
+      title: Введите данные недвижимости вручную
+    avm_providers:
+      rentcast: РентКаст
+      realie: Реали
+    form_tabs:
+      address: Адрес
+      overview: Обзор
+      value: Ценить

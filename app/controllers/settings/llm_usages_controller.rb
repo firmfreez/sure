@@ -1,10 +1,12 @@
 class Settings::LlmUsagesController < ApplicationController
   layout "settings"
 
+  before_action :require_admin!
+
   def show
     @breadcrumbs = [
-      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
-      [ t("settings.settings_nav.llm_usage_label"), nil ]
+      [ t("breadcrumbs.home"), root_path ],
+      [ t("breadcrumbs.llm_usage"), nil ]
     ]
     @family = Current.family
 

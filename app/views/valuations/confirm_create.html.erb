@@ -10,10 +10,10 @@
           reconciliation_dry_run: @reconciliation_dry_run,
           account: @account,
           entry: @entry,
-          action_key: "set",
+          action_verb: t("valuations.confirmation_contents.action_set"),
           is_update: false %>
 
-      <%= form.submit t(".submit") %>
+      <%= form.submit t(".confirm") %>
     <% end %>
   <% end %>
 <% end %>

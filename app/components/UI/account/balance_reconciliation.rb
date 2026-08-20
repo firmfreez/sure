@@ -26,109 +26,109 @@ class UI::Account::BalanceReconciliation < ApplicationComponent
   end
 
   private
-    def t_recon(key)
-      I18n.t("accounts.show.reconciliation.#{key}", default: key.to_s.humanize)
+
+    def t_label(key)
+      I18n.t("UI.account.balance_reconciliation.labels.#{key}")
+    end
+
+    def t_tooltip(key)
+      I18n.t("UI.account.balance_reconciliation.tooltips.#{key}")
     end
 
     def default_items
       items = [
-        { label: t_recon("start_balance_label"), value: balance.start_balance_money, tooltip: t_recon("start_balance_tooltip"), style: :start },
-        { label: t_recon("net_cash_flow_label"), value: net_cash_flow, tooltip: t_recon("net_cash_flow_tooltip"), style: :flow }
+        { label: t_label(:start_balance), value: balance.start_balance_money, tooltip: t_tooltip(:start_balance), style: :start },
+        { label: t_label(:net_cash_flow), value: net_cash_flow, tooltip: t_tooltip(:net_cash_flow), style: :flow }
       ]
 
       if has_adjustments?
-        items << { label: t_recon("end_balance_label"), value: end_balance_before_adjustments, tooltip: t_recon("end_balance_tooltip"), style: :subtotal }
-        items << { label: t_recon("adjustments_label"), value: total_adjustments, tooltip: t_recon("adjustments_tooltip"), style: :adjustment }
+        items << { label: t_label(:end_balance), value: end_balance_before_adjustments, tooltip: t_tooltip(:end_balance), style: :subtotal }
+        items << { label: t_label(:adjustments), value: total_adjustments, tooltip: t_tooltip(:adjustments), style: :adjustment }
       end
 
-      items << { label: t_recon("final_balance_label"), value: balance.end_balance_money, tooltip: t_recon("final_balance_tooltip"), style: :final }
+      items << { label: t_label(:final_balance), value: balance.end_balance_money, tooltip: t_tooltip(:final_balance), style: :final }
       items
     end
 
     def credit_card_items
       items = [
-        { label: t_recon("start_balance_label"), value: balance.start_balance_money, tooltip: t_recon("cc_start_balance_tooltip"), style: :start },
-        { label: t_recon("cc_charges_label"), value: balance.cash_outflows_money, tooltip: t_recon("cc_charges_tooltip"), style: :flow },
-        { label: t_recon("cc_payments_label"), value: balance.cash_inflows_money * -1, tooltip: t_recon("cc_payments_tooltip"), style: :flow }
+        { label: t_label(:start_balance), value: balance.start_balance_money, tooltip: t_tooltip(:start_balance_credit), style: :start },
+        { label: t_label(:charges), value: balance.cash_outflows_money, tooltip: t_tooltip(:charges), style: :flow },
+        { label: t_label(:payments), value: balance.cash_inflows_money * -1, tooltip: t_tooltip(:payments), style: :flow }
       ]
 
       if has_adjustments?
-        items << { label: t_recon("end_balance_label"), value: end_balance_before_adjustments, tooltip: t_recon("end_balance_tooltip"), style: :subtotal }
-        items << { label: t_recon("adjustments_label"), value: total_adjustments, tooltip: t_recon("adjustments_tooltip"), style: :adjustment }
+        items << { label: t_label(:end_balance), value: end_balance_before_adjustments, tooltip: t_tooltip(:end_balance), style: :subtotal }
+        items << { label: t_label(:adjustments), value: total_adjustments, tooltip: t_tooltip(:adjustments), style: :adjustment }
       end
 
-      items << { label: t_recon("final_balance_label"), value: balance.end_balance_money, tooltip: t_recon("cc_final_balance_tooltip"), style: :final }
+      items << { label: t_label(:final_balance), value: balance.end_balance_money, tooltip: t_tooltip(:final_balance_credit), style: :final }
       items
     end
 
     def investment_items
       items = [
-        { label: t_recon("start_balance_label"), value: balance.start_balance_money, tooltip: t_recon("investment_start_balance_tooltip"), style: :start }
+        { label: t_label(:start_balance), value: balance.start_balance_money, tooltip: t_tooltip(:start_balance_investment), style: :start }
       ]
 
-      # Change in brokerage cash (includes deposits, withdrawals, and cash from trades)
-      items << { label: t_recon("investment_brokerage_cash_label"), value: net_cash_flow, tooltip: t_recon("investment_brokerage_cash_tooltip"), style: :flow }
-
-      # Change in holdings from trading activity
-      items << { label: t_recon("investment_holdings_trades_label"), value: net_non_cash_flow, tooltip: t_recon("investment_holdings_trades_tooltip"), style: :flow }
-
-      # Market price changes
-      items << { label: t_recon("investment_holdings_market_label"), value: balance.net_market_flows_money, tooltip: t_recon("investment_holdings_market_tooltip"), style: :flow }
+      items << { label: t_label(:change_in_brokerage_cash), value: net_cash_flow, tooltip: t_tooltip(:change_in_brokerage_cash), style: :flow }
+      items << { label: t_label(:change_in_holdings_trades), value: net_non_cash_flow, tooltip: t_tooltip(:change_in_holdings_trades), style: :flow }
+      items << { label: t_label(:change_in_holdings_market), value: balance.net_market_flows_money, tooltip: t_tooltip(:change_in_holdings_market), style: :flow }
 
       if has_adjustments?
-        items << { label: t_recon("end_balance_label"), value: end_balance_before_adjustments, tooltip: t_recon("investment_end_balance_tooltip"), style: :subtotal }
-        items << { label: t_recon("adjustments_label"), value: total_adjustments, tooltip: t_recon("adjustments_tooltip"), style: :adjustment }
+        items << { label: t_label(:end_balance), value: end_balance_before_adjustments, tooltip: t_tooltip(:end_balance_investment), style: :subtotal }
+        items << { label: t_label(:adjustments), value: total_adjustments, tooltip: t_tooltip(:adjustments), style: :adjustment }
       end
 
-      items << { label: t_recon("final_balance_label"), value: balance.end_balance_money, tooltip: t_recon("investment_final_balance_tooltip"), style: :final }
+      items << { label: t_label(:final_balance), value: balance.end_balance_money, tooltip: t_tooltip(:final_balance_investment), style: :final }
       items
     end
 
     def loan_items
       items = [
-        { label: t_recon("loan_start_principal_label"), value: balance.start_balance_money, tooltip: t_recon("loan_start_principal_tooltip"), style: :start },
-        { label: t_recon("loan_net_principal_change_label"), value: net_non_cash_flow, tooltip: t_recon("loan_net_principal_change_tooltip"), style: :flow }
+        { label: t_label(:start_principal), value: balance.start_balance_money, tooltip: t_tooltip(:start_principal), style: :start },
+        { label: t_label(:net_principal_change), value: net_non_cash_flow, tooltip: t_tooltip(:net_principal_change), style: :flow }
       ]
 
       if has_adjustments?
-        items << { label: t_recon("loan_end_principal_label"), value: end_balance_before_adjustments, tooltip: t_recon("loan_end_principal_tooltip"), style: :subtotal }
-        items << { label: t_recon("adjustments_label"), value: balance.non_cash_adjustments_money, tooltip: t_recon("adjustments_tooltip"), style: :adjustment }
+        items << { label: t_label(:end_principal), value: end_balance_before_adjustments, tooltip: t_tooltip(:end_principal), style: :subtotal }
+        items << { label: t_label(:adjustments), value: balance.non_cash_adjustments_money, tooltip: t_tooltip(:adjustments), style: :adjustment }
       end
 
-      items << { label: t_recon("loan_final_principal_label"), value: balance.end_balance_money, tooltip: t_recon("loan_final_principal_tooltip"), style: :final }
+      items << { label: t_label(:final_principal), value: balance.end_balance_money, tooltip: t_tooltip(:final_principal), style: :final }
       items
     end
 
-    def asset_items # Property/Vehicle
+    def asset_items
       items = [
-        { label: t_recon("asset_start_value_label"), value: balance.start_balance_money, tooltip: t_recon("asset_start_value_tooltip"), style: :start },
-        { label: t_recon("asset_net_value_change_label"), value: net_total_flow, tooltip: t_recon("asset_net_value_change_tooltip"), style: :flow }
+        { label: t_label(:start_value), value: balance.start_balance_money, tooltip: t_tooltip(:start_value), style: :start },
+        { label: t_label(:net_value_change), value: net_total_flow, tooltip: t_tooltip(:net_value_change), style: :flow }
       ]
 
       if has_adjustments?
-        items << { label: t_recon("asset_end_value_label"), value: end_balance_before_adjustments, tooltip: t_recon("asset_end_value_tooltip"), style: :subtotal }
-        items << { label: t_recon("adjustments_label"), value: total_adjustments, tooltip: t_recon("asset_adjustments_tooltip"), style: :adjustment }
+        items << { label: t_label(:end_value), value: end_balance_before_adjustments, tooltip: t_tooltip(:end_value), style: :subtotal }
+        items << { label: t_label(:adjustments), value: total_adjustments, tooltip: t_tooltip(:adjustments_asset), style: :adjustment }
       end
 
-      items << { label: t_recon("asset_final_value_label"), value: balance.end_balance_money, tooltip: t_recon("asset_final_value_tooltip"), style: :final }
+      items << { label: t_label(:final_value), value: balance.end_balance_money, tooltip: t_tooltip(:final_value), style: :final }
       items
     end
 
     def crypto_items
       items = [
-        { label: t_recon("start_balance_label"), value: balance.start_balance_money, tooltip: t_recon("crypto_start_balance_tooltip"), style: :start }
+        { label: t_label(:start_balance), value: balance.start_balance_money, tooltip: t_tooltip(:start_balance_crypto), style: :start }
       ]
 
-      items << { label: t_recon("crypto_buys_label"), value: balance.cash_outflows_money * -1, tooltip: t_recon("crypto_buys_tooltip"), style: :flow } if balance.cash_outflows != 0
-      items << { label: t_recon("crypto_sells_label"), value: balance.cash_inflows_money, tooltip: t_recon("crypto_sells_tooltip"), style: :flow } if balance.cash_inflows != 0
-      items << { label: t_recon("crypto_market_changes_label"), value: balance.net_market_flows_money, tooltip: t_recon("crypto_market_changes_tooltip"), style: :flow } if balance.net_market_flows != 0
+      items << { label: t_label(:buys), value: balance.cash_outflows_money * -1, tooltip: t_tooltip(:buys), style: :flow } if balance.cash_outflows != 0
+      items << { label: t_label(:sells), value: balance.cash_inflows_money, tooltip: t_tooltip(:sells), style: :flow } if balance.cash_inflows != 0
+      items << { label: t_label(:market_changes), value: balance.net_market_flows_money, tooltip: t_tooltip(:market_changes), style: :flow } if balance.net_market_flows != 0
 
       if has_adjustments?
-        items << { label: t_recon("end_balance_label"), value: end_balance_before_adjustments, tooltip: t_recon("crypto_end_balance_tooltip"), style: :subtotal }
-        items << { label: t_recon("adjustments_label"), value: total_adjustments, tooltip: t_recon("adjustments_tooltip"), style: :adjustment }
+        items << { label: t_label(:end_balance), value: end_balance_before_adjustments, tooltip: t_tooltip(:end_balance_crypto), style: :subtotal }
+        items << { label: t_label(:adjustments), value: total_adjustments, tooltip: t_tooltip(:adjustments), style: :adjustment }
       end
 
-      items << { label: t_recon("final_balance_label"), value: balance.end_balance_money, tooltip: t_recon("crypto_final_balance_tooltip"), style: :final }
+      items << { label: t_label(:final_balance), value: balance.end_balance_money, tooltip: t_tooltip(:final_balance_crypto), style: :final }
       items
     end
 

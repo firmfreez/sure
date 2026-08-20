@@ -5,14 +5,16 @@ ru:
       edit: Редактировать %{account}
     form:
       annual_fee: Годовое обслуживание
-      annual_fee_placeholder: "99"
+      annual_fee_placeholder: '99'
       apr: Процентная ставка
-      apr_placeholder: "15.99"
+      apr_placeholder: '15.99'
       available_credit: Доступный кредит
-      available_credit_placeholder: "10000"
+      available_credit_placeholder: '10000'
       expiration_date: Срок действия
       minimum_payment: Минимальный платеж
-      minimum_payment_placeholder: "100"
+      minimum_payment_placeholder: '100'
+      treat_balance_as_available_credit_description: Включите эту опцию, если ваш банк сообщает об остатке этой карты как оставшемся доступном кредите, а не о сумме задолженности. Затем задолженность рассчитывается на основе кредитного лимита, указанного вашим банком, или на основе поля «Доступный кредит», если ваш банк его не предоставляет.
+      treat_balance_as_available_credit_label: Баланс доступен кредит
     new:
       title: Введите данные кредитной карты
     overview:
@@ -20,6 +22,7 @@ ru:
       annual_fee: Годовое обслуживание
       apr: Процентная ставка
       available_credit: Доступный кредит
+      edit_account_details: Изменить данные счёта
       expiration_date: Срок действия
       minimum_payment: Минимальный платеж
       unknown: Неизвестно

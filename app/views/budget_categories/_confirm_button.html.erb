@@ -1,9 +1,9 @@
 <div id="<%= dom_id(budget, :confirm_button) %>">
   <%= render DS::Button.new(
-    text: t("budgets.categories_edit.confirm"),
+    text: t(".confirm"),
     variant: "primary",
     full_width: true,
-    href: budget_path(budget),
+    href: budget_path(budget, **budget_owner_query),
     method: :get,
     disabled: !budget.allocations_valid?
   ) %>

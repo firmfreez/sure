@@ -2,28 +2,32 @@
 ru:
   models:
     category:
-      uncategorized: Без категории
-      other_investments: Другие инвестиции
-      investment_contributions: Инвестиционные взносы
       defaults:
-        income: Доходы
-        food_drink: Еда и напитки
+        entertainment: Развлечения
+        fees: Комиссии
+        food_and_drink: Еда и напитки
+        gifts_and_donations: Подарки и пожертвования
         groceries: Продукты
+        healthcare: Здоровье
+        home_improvement: Дом и ремонт
+        income: Доходы
+        insurance: Страхование
+        loan_payments: Платежи по займам
+        mortgage_rent: Ипотека / аренда
+        personal_care: Уход за собой
+        savings_and_investments: Сбережения и инвестиции
+        services: Услуги
         shopping: Покупки
+        sports_and_fitness: Спорт и фитнес
+        subscriptions: Подписки
+        taxes: Налоги
         transportation: Транспорт
         travel: Путешествия
-        entertainment: Развлечения
-        healthcare: Здоровье
-        personal_care: Уход за собой
-        home_improvement: Дом и ремонт
-        mortgage_rent: Ипотека / аренда
         utilities: Коммунальные услуги
-        subscriptions: Подписки
-        insurance: Страхование
+        food_drink: Еда и напитки
         sports_fitness: Спорт и фитнес
         gifts_donations: Подарки и благотворительность
-        taxes: Налоги
-        loan_payments: Платежи по займам
-        services: Услуги
-        fees: Комиссии
         savings_investments: Сбережения и инвестиции
+      investment_contributions: Инвестиционные взносы
+      other_investments: Другие инвестиции
+      uncategorized: Без категории

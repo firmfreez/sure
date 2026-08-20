@@ -1,0 +1,189 @@
+---
+ru:
+  redbark_items:
+    default_name: Красная Кора Связь
+    sync_status:
+      no_accounts: Аккаунты не найдены
+      synced:
+        one: Аккаунт %{count} синхронизирован
+        other: Аккаунты %{count} синхронизированы.
+      synced_with_setup: "%{linked} синхронизирован, %{unlinked} требует настройки"
+    institution_summary:
+      none: Ни одно учреждение не подключено
+      count:
+        one: "%{count} учреждение"
+        other: "%{count} учреждения"
+    errors:
+      provider_not_configured: Поставщик Redbark не настроен
+    sync:
+      status:
+        importing: Импорт учетных записей из Redbark...
+        processing: Обработка транзакций...
+        calculating: Расчет остатков...
+        importing_data: Импорт данных аккаунта...
+        checking_setup: Проверка конфигурации аккаунта...
+        needs_setup: Аккаунты %{count} требуют настройки...
+      success: Синхронизация началась
+    panel:
+      setup_instructions: 'Инструкции по настройке:'
+      step_1: Создайте ключ API на сайте app.redbark.com в разделе «Настройки».
+      step_2: Введите ниже свой ключ API и нажмите кнопку «Сохранить».
+      step_3: После успешного подключения перейдите на вкладку «Учетные записи», чтобы настроить новые учетные записи.
+      field_descriptions: 'Описание полей:'
+      optional: "(Необязательный)"
+      required: "(необходимый)"
+      optional_with_default: "(необязательно, по умолчанию %{default_value})"
+      save_button: Сохранить конфигурацию
+      update_button: Обновить конфигурацию
+      status_configured_html: Настроен и готов к использованию. Посетите вкладку <a href="%{accounts_path}" class="link">Accounts</a>, чтобы управлять учетными записями и настраивать их.
+      status_not_configured: Не настроено
+      fields:
+        api_key:
+          label: API Ключ
+          description: Ваш ключ Redbark API (начинается с rbk_live_)
+          placeholder_new: rbk_live_...
+          placeholder_update: Введите новый ключ API для обновления.
+    create:
+      success: Соединение Redbark успешно создано
+    update:
+      success: Соединение с Redbark обновлено.
+    destroy:
+      success: Соединение с Redbark удалено.
+      unlink_failed:
+        one: Не удалось отменить связь с учетной записью %{count}. Пожалуйста, попробуйте еще раз.
+        other: Не удалось отменить связь учетных записей %{count}. Пожалуйста, попробуйте еще раз.
+    index:
+      title: Редкорные связи
+    loading:
+      loading_message: Загрузка учетных записей Redbark...
+      loading_title: Загрузка
+    redbark_item:
+      accounts_need_setup: Аккаунты требуют настройки
+      delete: Удалить соединение
+      deletion_in_progress: удаление в процессе...
+      error: Ошибка
+      more_accounts_available:
+        one: "%{count} доступен еще аккаунт"
+        other: "%{count} доступны дополнительные аккаунты"
+      no_accounts_description: У этого подключения пока нет связанных аккаунтов.
+      no_accounts_title: Нет аккаунтов
+      provider_name: Краснокорый
+      requires_update: Требуется обновление подключения
+      setup_action: Настройка новых учетных записей
+      setup_description: "%{linked} из %{total} связанных аккаунтов. Выберите типы учетных записей для недавно импортированных учетных записей Redbark."
+      setup_needed: Новые аккаунты готовы к настройке
+      status: Синхронизировано %{timestamp} назад
+      status_never: Никогда не синхронизировалось
+      status_with_summary: Последняя синхронизация %{timestamp} назад — %{summary}
+      syncing: Синхронизация...
+      total: Общий
+      unlinked: Отключено
+      update_credentials: Обновить учетные данные
+    select_accounts:
+      accounts_selected: выбранные аккаунты
+      api_error: 'Ошибка API: %{message}'
+      cancel: Отмена
+      configure_name_in_provider: Невозможно импортировать. Настройте имя учетной записи в Redbark.
+      description: Выберите учетные записи, которые вы хотите связать с вашей учетной записью %{product_name}.
+      link_accounts: Связать выбранные аккаунты
+      no_accounts_found: Аккаунты не найдены. Пожалуйста, проверьте конфигурацию ключа API.
+      no_api_key: Ключ Redbark API не настроен. Пожалуйста, настройте его в настройках.
+      no_credentials_configured: Сначала настройте свои учетные данные Redbark в настройках провайдера.
+      no_name_placeholder: "(Без имени)"
+      title: Выберите учетные записи Redbark
+    select_existing_account:
+      account_already_linked: Эта учетная запись уже связана с провайдером
+      all_accounts_already_linked: Все учетные записи Redbark уже связаны
+      api_error: 'Ошибка API: %{message}'
+      balance_label: 'Баланс:'
+      cancel: Отмена
+      cancel_button: Отмена
+      configure_name_in_provider: Невозможно импортировать. Настройте имя учетной записи в Redbark.
+      connect_hint: Подключите учетную запись Redbark, чтобы включить автоматическую синхронизацию.
+      description: Выберите учетную запись Redbark, чтобы связать ее с этой учетной записью. Транзакции будут синхронизироваться и дедуплицироваться автоматически.
+      header: Связь с Редбарком
+      link_account: Связать аккаунт
+      link_button: Связать этот аккаунт
+      linking_to: 'Ссылка на:'
+      no_account_specified: Аккаунт не указан
+      no_accounts: Несвязанных учетных записей Redbark не обнаружено.
+      no_accounts_found: Аккаунты Redbark не найдены. Пожалуйста, проверьте конфигурацию ключа API.
+      no_api_key: Ключ Redbark API не настроен. Пожалуйста, настройте его в настройках.
+      no_credentials_configured: Сначала настройте свои учетные данные Redbark в настройках провайдера.
+      no_name_placeholder: "(Без имени)"
+      settings_link: Зайдите в настройки провайдера
+      subtitle: Выберите учетную запись Redbark
+      title: Свяжите %{account_name} с Redbark
+    link_existing_account:
+      account_already_linked: Эта учетная запись уже связана с провайдером
+      api_error: 'Ошибка API: %{message}'
+      invalid_account_name: Невозможно связать аккаунт с пустым именем
+      provider_account_already_linked: Эта учетная запись Redbark уже связана с другой учетной записью
+      provider_account_not_found: Аккаунт Redbark не найден
+      missing_parameters: Отсутствуют необходимые параметры
+      no_api_key: Ключ Redbark API не найден. Пожалуйста, настройте его в настройках провайдера.
+      success: Успешно связали %{account_name} с Redbark.
+    setup_accounts:
+      account_type_label: 'Тип аккаунта:'
+      accounts_count:
+        one: Доступен аккаунт %{count}
+        other: Доступны аккаунты %{count}
+      all_accounts_linked: Все ваши учетные записи Redbark уже настроены.
+      api_error: 'Ошибка API: %{message}'
+      creating: Создание учетных записей...
+      fetch_failed: Не удалось получить аккаунты.
+      import_selected: Импортировать выбранные аккаунты
+      instructions: Выберите учетные записи, которые вы хотите импортировать из Redbark. Вы можете выбрать несколько учетных записей.
+      no_accounts: Для этого подключения Redbark не обнаружено несвязанных учетных записей.
+      no_accounts_to_setup: Нет учетных записей для настройки
+      no_api_key: Ключ Redbark API не настроен. Пожалуйста, проверьте настройки подключения.
+      select_all: Выбрать все
+      account_types:
+        skip: Пропустить этот аккаунт
+        depository: Текущий или сберегательный счет
+        credit_card: Кредитная карта
+        loan: Кредит или ипотека
+        other_asset: Другой актив
+      subtype_labels:
+        depository: 'Подтип аккаунта:'
+        credit_card: ''
+        loan: 'Тип кредита:'
+        other_asset: ''
+      subtype_messages:
+        credit_card: Кредитные карты будут автоматически настроены как счета кредитных карт.
+        other_asset: Никаких дополнительных опций для «Других активов» не требуется.
+      subtypes:
+        depository:
+          checking: Проверка
+          savings: Экономия
+          hsa: Медицинский сберегательный счет
+          cd: Депозитный сертификат
+          money_market: Денежный рынок
+        loan:
+          mortgage: Ипотека
+          student: Студенческий кредит
+          auto: Автокредит
+          other: Другой кредит
+      balance: Баланс
+      cancel: Отмена
+      done: Сделанный
+      choose_account_type: 'Выберите правильный тип учетной записи для каждой учетной записи Redbark:'
+      create_accounts: Создание учетных записей
+      creating_accounts: Создание учетных записей...
+      historical_data_range: 'Диапазон исторических данных:'
+      subtitle: Выберите правильные типы учетных записей для импортированных учетных записей.
+      sync_start_date_help: Выберите, как давно вы хотите синхронизировать историю транзакций.
+      sync_start_date_label: 'Начать синхронизацию транзакций из:'
+      title: Настройте свои учетные записи Redbark
+    setup_required:
+      title: Сначала подключите Redbark
+      not_configured_title: Редбарк еще не подключен
+      not_configured_description: Добавьте свой ключ Redbark API в настройках провайдера, а затем вернитесь сюда, чтобы связать учетные записи.
+      go_to_provider_settings: Зайти в настройки провайдера
+    complete_account_setup:
+      all_skipped: Все аккаунты пропущены. Никакие учетные записи не были созданы.
+      creation_failed: 'Не удалось создать учетные записи: %{error}.'
+      creation_failed_generic: Не удалось создать учетные записи.
+      setup_failed: Не удалось создать учетные записи %{count}. Больше ничего не менялось — исправьте проблему и повторите попытку.
+      no_accounts: Нет учетных записей для настройки.
+      success: Аккаунты %{count} успешно созданы.

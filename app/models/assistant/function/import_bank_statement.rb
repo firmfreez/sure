@@ -92,13 +92,15 @@ class Assistant::Function::ImportBankStatement < Assistant::Function
       }
     end
 
-    # Extract transactions from the PDF using provider
-    provider = Provider::Registry.get_provider(:openai)
+    # Extract transactions from the PDF using the configured LLM provider.
+    # Honors Setting.llm_provider (issue #2113) — Provider::Anthropic implements
+    # extract_bank_statement (PR #1985).
+    provider = Provider::Registry.preferred_llm_provider
     unless provider
       return {
         success: false,
         error: "provider_not_configured",
-        message: "OpenAI provider is not configured"
+        message: "AI provider is not configured"
       }
     end
 
@@ -155,7 +157,7 @@ class Assistant::Function::ImportBankStatement < Assistant::Function
       account_holder: result[:account_holder],
       message: "Successfully extracted #{result[:transactions].size} transactions. Import created with ID: #{import.id}. Review and publish when ready."
     }
-  rescue Provider::ProviderError, Faraday::Error, Timeout::Error, RuntimeError => e
+  rescue Provider::Error, Faraday::Error, Timeout::Error, RuntimeError => e
     Rails.logger.error("ImportBankStatement error: #{e.class.name} - #{e.message}")
     Rails.logger.error(e.backtrace.first(10).join("\n"))
     {

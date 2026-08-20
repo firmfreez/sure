@@ -1,24 +1,46 @@
 ---
 en:
+  account:
+    entries:
+      destroy:
+        success: "Entry deleted successfully."
   accounts:
+    not_authorized: "You don't have permission to manage this account"
     account:
+      complete_setup: Complete setup
+      edit: Edit
       link_lunchflow: Link with Lunch Flow
       link_provider: Link with provider
       unlink_provider: Unlink from provider
+      change_simplefin_account: Change SimpleFIN account
       troubleshoot: Troubleshoot
+      enable: Enable account
+      disable: Disable account
+      exclude_from_reports: Exclude from all reports
+      include_in_reports: Include in reports
+      excluded_from_reports_indicator: Excluded from reports
+      set_default: Set as default
+      remove_default: Unset default
+      default_label: Default
+      delete: Delete account
+      sharing: Sharing
     chart:
       data_not_available: Data not available for the selected period
     create:
       success: "%{type} account created"
+    set_default:
+      depository_only: "Only cash and credit card accounts can be set as default."
     destroy:
       success: "%{type} account scheduled for deletion"
       cannot_delete_linked: "Cannot delete a linked account. Please unlink it first."
+      failed: "Resource deletion failed. Try again later."
     empty:
       empty_message: Add an account either via connection, importing or entering manually.
       new_account: New account
       no_accounts: No accounts yet
     form:
-      balance: Current balance
+      balance: "Balance on date:"
+      opening_balance_date_label: Opening balance date
       name_label: Account name
       name_placeholder: Example account name
       additional_details: Additional details
@@ -28,9 +50,12 @@ en:
       institution_domain_placeholder: e.g., chase.com
       notes_label: Notes
       notes_placeholder: Store additional information like account numbers, sort codes, IBAN, routing numbers, etc.
-      submit: Save account
+      exclude_from_reports: Exclude from all reports
+      enable_category_matcher_label: Enable category matcher
+      enable_category_matcher_hint: When enabled, the provider's suggested category is applied to imported transactions. Disable to leave new transactions uncategorized.
     index:
       accounts: Accounts
+      cancel_sync: Cancel sync
       manual_accounts:
         other_accounts: Other accounts
       new_account: New account
@@ -39,6 +64,10 @@ en:
       syncing: "Syncing accounts..."
     new:
       import_accounts: Import accounts
+      container:
+        select: Select
+        navigate: Navigate
+        close: Close
       method_selector:
         connected_entry: Link account
         connected_entry_eu: Link EU account
@@ -48,13 +77,12 @@ en:
         title: How would you like to add it?
       title: What would you like to add?
     show:
+      limited_fx_history_warning: "Exchange rate history is only available from %{date} onwards. Transactions before this date use approximate currency conversions — this can happen when the FX provider only offers a limited historical window."
       tabs:
         activity: Activity
-        overview: Overview
         holdings: Holdings
-      activity_date:
-        end_of_day_balance_tooltip: The end of day balance, after all transactions and adjustments
-        no_balance_data: No balance data available for this date
+        overview: Overview
+        statements: Statements
       activity:
         amount: Amount
         balance: Balance
@@ -73,69 +101,14 @@ en:
         pending: Pending
         search:
           placeholder: Search entries by name
+        search_placeholder: Search entries by name
         status: Status
         title: Activity
       chart:
         balance: Balance
         owed: Amount owed
-        total_account_value: Total account value
-        holdings_value: Holdings value
-        cash_value: Cash value
-        estimated_value: "Estimated %{type} value"
-        debt_balance: Debt balance
-        remaining_principal_balance: Remaining principal balance
-      reconciliation:
-        start_balance_label: Start balance
-        start_balance_tooltip: The account balance at the beginning of this day
-        net_cash_flow_label: Net cash flow
-        net_cash_flow_tooltip: Net change in balance from all transactions during the day
-        end_balance_label: End balance
-        end_balance_tooltip: The calculated balance after all transactions
-        adjustments_label: Adjustments
-        adjustments_tooltip: Manual reconciliations or other adjustments
-        final_balance_label: Final balance
-        final_balance_tooltip: The final account balance for the day
-        cc_start_balance_tooltip: The balance owed at the beginning of this day
-        cc_charges_label: Charges
-        cc_charges_tooltip: New charges made during the day
-        cc_payments_label: Payments
-        cc_payments_tooltip: Payments made to the card during the day
-        cc_final_balance_tooltip: The final balance owed for the day
-        investment_start_balance_tooltip: The total portfolio value at the beginning of this day
-        investment_brokerage_cash_label: Change in brokerage cash
-        investment_brokerage_cash_tooltip: Net change in cash from deposits, withdrawals, and trades
-        investment_holdings_trades_label: Change in holdings (buys/sells)
-        investment_holdings_trades_tooltip: Impact on holdings from buying and selling securities
-        investment_holdings_market_label: Change in holdings (market price activity)
-        investment_holdings_market_tooltip: Change in holdings value from market price movements
-        investment_end_balance_tooltip: The calculated balance after all activity
-        investment_final_balance_tooltip: The final portfolio value for the day
-        loan_start_principal_label: Start principal
-        loan_start_principal_tooltip: The principal balance at the beginning of this day
-        loan_net_principal_change_label: Net principal change
-        loan_net_principal_change_tooltip: Principal payments and new borrowing during the day
-        loan_end_principal_label: End principal
-        loan_end_principal_tooltip: The calculated principal after all transactions
-        loan_final_principal_label: Final principal
-        loan_final_principal_tooltip: The final principal balance for the day
-        asset_start_value_label: Start value
-        asset_start_value_tooltip: The asset value at the beginning of this day
-        asset_net_value_change_label: Net value change
-        asset_net_value_change_tooltip: All value changes including improvements and depreciation
-        asset_end_value_label: End value
-        asset_end_value_tooltip: The calculated value after all changes
-        asset_adjustments_tooltip: Manual value adjustments or appraisals
-        asset_final_value_label: Final value
-        asset_final_value_tooltip: The final asset value for the day
-        crypto_start_balance_tooltip: The crypto holdings value at the beginning of this day
-        crypto_buys_label: Buys
-        crypto_buys_tooltip: Crypto purchases during the day
-        crypto_sells_label: Sells
-        crypto_sells_tooltip: Crypto sales during the day
-        crypto_market_changes_label: Market changes
-        crypto_market_changes_tooltip: Value changes from market price movements
-        crypto_end_balance_tooltip: The calculated balance after all activity
-        crypto_final_balance_tooltip: The final crypto holdings value for the day
+      header:
+        complete_setup: Complete setup
       menu:
         confirm_accept: Delete "%{name}"
         confirm_body_html: "<p>By deleting this account, you will erase its value
@@ -144,12 +117,16 @@ en:
           graphs.</p><br /> <p>After deletion, there is no way you'll be able to restore
           the account information because you'll need to add it as a new account.</p>"
         confirm_title: Delete account?
+        delete_account: Delete account
         edit: Edit
-        delete: Delete account
         import: Import transactions
         import_trades: Import trades
         import_transactions: Import transactions
         manage: Manage accounts
+        sharing: Sharing
+        statements: Statements
+        exclude_from_reports: Exclude from all reports
+        include_in_reports: Include in reports
     update:
       success: "%{type} account updated"
     sidebar:
@@ -174,6 +151,16 @@ en:
       credit_card: Credit Card
       loan: Loan
       other_liability: Other Liability
+    types_plural:
+      depository: Cash
+      investment: Investments
+      crypto: Crypto
+      property: Properties
+      vehicle: Vehicles
+      other_asset: Other Assets
+      credit_card: Credit Cards
+      loan: Loans
+      other_liability: Other Liabilities
     tax_treatments:
       taxable: Taxable
       tax_deferred: Tax-Deferred
@@ -190,6 +177,7 @@ en:
       ca: Canada
       au: Australia
       eu: Europe
+      in: India
       generic: General
     confirm_unlink:
       title: Unlink account from provider?

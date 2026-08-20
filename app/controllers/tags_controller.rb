@@ -15,9 +15,15 @@ class TagsController < ApplicationController
     @tag = Current.family.tags.new(tag_params)
 
     if @tag.save
-      redirect_to tags_path, notice: t(".created")
+      respond_to do |format|
+        format.html { redirect_to tags_path, notice: t(".created") }
+        format.json { render json: tag_json(@tag), status: :created }
+      end
     else
-      redirect_to tags_path, alert: t(".error", error: @tag.errors.full_messages.to_sentence)
+      respond_to do |format|
+        format.html { redirect_to tags_path, alert: t(".error", error: @tag.errors.full_messages.to_sentence) }
+        format.json { render json: { errors: @tag.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -36,16 +42,10 @@ class TagsController < ApplicationController
 
   def destroy_all
     Current.family.tags.destroy_all
-    redirect_back_or_to tags_path, notice: t(".deleted_all")
+    redirect_back_or_to tags_path, notice: t(".all_deleted")
   end
 
   private
-    def set_breadcrumbs
-      @breadcrumbs = [
-        [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
-        [ breadcrumb_t("breadcrumbs.tags", default: t("tags.index.tags", default: "Tags")), nil ]
-      ]
-    end
 
     def set_tag
       @tag = Current.family.tags.find(params[:id])
@@ -53,5 +53,15 @@ class TagsController < ApplicationController
 
     def tag_params
       params.require(:tag).permit(:name, :color)
+    end
+
+    def tag_json(tag)
+      tag.as_json(only: %i[id name color]).merge(
+        html: render_to_string(
+          partial: "DS/tag_select/option",
+          formats: [ :html ],
+          locals: { tag: tag, selected: true, view_helpers: helpers }
+        )
+      )
     end
 end

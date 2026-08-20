@@ -1,6 +1,8 @@
 require "test_helper"
 
 class AccountsControllerTest < ActionDispatch::IntegrationTest
+  include ActionView::RecordIdentifier
+
   setup do
     sign_in @user = users(:family_admin)
     @account = accounts(:depository)
@@ -9,11 +11,256 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get accounts_url
     assert_response :success
+    assert_select "p.ml-auto.privacy-sensitive"
+  end
+
+  test "index renders kraken items" do
+    kraken_item = kraken_items(:one)
+    get accounts_url
+    assert_response :success
+    assert_select "##{dom_id(kraken_item)}"
   end
 
   test "should get show" do
     get account_url(@account)
     assert_response :success
+  end
+
+  test "show avoids N+1 transfer queries across paginated entries" do
+    queries = capture_sql_queries { get account_url(@account) }
+    assert_response :success
+
+    # Per-row transfer lookups (N+1 pattern) hit transfers with a single id
+    # Preloading batches them into IN(...) — assert no single-id lookups remain
+    per_row_transfer = queries.count { |q|
+      q.match?(/FROM "transfers".*WHERE.*"(inflow|outflow)_transaction_id"/) &&
+        !q.include?(" IN (")
+    }
+    assert_equal 0, per_row_transfer, "N+1 per-row transfer queries detected (#{per_row_transfer})"
+  end
+
+  test "show avoids N+1 split-parent queries across paginated entries" do
+    queries = capture_sql_queries { get account_url(@account) }
+    assert_response :success
+
+    # Per-row child-entry existence checks (N+1) hit entries with a single parent_entry_id
+    # @split_parent_entry_ids preloads this in one batch IN query
+    per_row_split = queries.count { |q|
+      q.match?(/FROM "entries".*WHERE.*"parent_entry_id"/) && !q.include?(" IN (")
+    }
+    assert_equal 0, per_row_split, "N+1 per-row split-parent queries detected (#{per_row_split})"
+  end
+
+  test "show lazily loads statement tab data unless statements tab is active" do
+    AccountStatement::Coverage.expects(:for_year).never
+    AccountStatement.expects(:reconciliation_statuses_for).never
+
+    get account_url(@account)
+
+    assert_response :success
+    assert_select "select[name='statement_year']", count: 0
+    statements_path = account_path(@account, tab: "statements")
+    assert_select "turbo-frame[src='#{statements_path}']"
+  end
+
+  test "statements tab links escape turbo frame for full-page navigation" do
+    # Upload a statement to ensure table rows render
+    statement = AccountStatement.create_from_upload!(
+      family: @account.family,
+      file: uploaded_file(
+        filename: "test.pdf",
+        content_type: "application/pdf",
+        content: "%PDF-1.4 test content"
+      ),
+      account: @account
+    )
+
+
+    get account_url(@account, tab: "statements")
+
+    assert_response :success
+
+    # Inbox link escapes frame
+    assert_select "a[href='#{account_statements_path}'][data-turbo-frame='_top']"
+
+    # Statement filename link escapes frame
+    assert_select "a[data-turbo-frame='_top']", text: statement.filename
+
+    # Eye/view icon escapes frame and opens in new tab
+    assert_select "a[target='_blank'][data-turbo-frame='_top'][aria-label='#{I18n.t("account_statements.table.view")}']"
+
+    # Edit icon escapes frame
+    assert_select "a[href='#{account_statement_path(statement)}'][data-turbo-frame='_top'][aria-label='#{I18n.t("account_statements.table.edit")}']"
+
+    # Unlink button escapes frame
+    assert_select "form[action='#{unlink_account_statement_path(statement)}'][data-turbo-frame='_top'] button"
+  end
+
+  test "statements tab shows coverage and upload for statement managers with account write access" do
+    get account_url(@account, tab: "statements")
+
+    assert_response :success
+    assert_select "input[type=file][accept='.pdf,.csv,.xlsx']"
+    assert_select "select[name='statement_year']"
+    assert_select "p", text: I18n.l(Date.current.prev_month.beginning_of_month, format: "%b %Y")
+  end
+
+  test "statements tab lazy frame returns matching frame content" do
+    frame_id = dom_id(@account, :statements_tab)
+
+    get account_url(@account, tab: "statements"), headers: { "Turbo-Frame" => frame_id }
+
+    assert_response :success
+    assert_select "turbo-frame##{frame_id}", count: 1
+    assert_select "select[name='statement_year']"
+    assert_select "turbo-frame##{dom_id(@account, :container)}", count: 0
+  end
+
+  test "statements tab filters historical coverage by year" do
+    account = Account.create!(
+      family: @user.family,
+      owner: @user,
+      name: "Historical Checking",
+      balance: 0,
+      currency: "USD",
+      accountable: Depository.new
+    )
+    statement = AccountStatement.create_from_upload!(
+      family: @user.family,
+      account: account,
+      file: uploaded_file(filename: "historical.csv", content_type: "text/csv")
+    )
+    statement.update!(period_start_on: Date.new(2024, 2, 1), period_end_on: Date.new(2024, 2, 29))
+
+    travel_to Date.new(2026, 5, 6) do
+      get account_url(account, tab: "statements")
+
+      assert_response :success
+      assert_select "select[name='statement_year'] option[selected='selected']", text: "2026"
+      assert_select "p", text: "May 2026"
+      assert_select "p", text: "Not expected"
+
+      get account_url(account, tab: "statements", statement_year: 2024)
+
+      assert_response :success
+      assert_select "select[name='statement_year'] option[selected='selected']", text: "2024"
+      assert_select "p", text: "Jan 2024"
+      assert_select "p", text: "Feb 2024"
+      assert_select "p", text: "Covered"
+      assert_select "p", text: "Missing"
+      assert_select "p", text: "Not expected"
+    end
+  end
+
+  test "statements tab hides upload for read only account access" do
+    sign_in users(:family_member)
+
+    get account_url(accounts(:credit_card), tab: "statements")
+
+    assert_response :success
+    assert_select "input[type=file]", count: 0
+  end
+
+  test "account activity marks trade amounts as privacy-sensitive" do
+    trade_entry = entries(:trade)
+    expected_amount = ApplicationController.helpers.format_money(-trade_entry.amount_money)
+
+    get account_url(accounts(:investment))
+
+    assert_response :success
+    assert_select "turbo-frame##{dom_id(trade_entry)} p.privacy-sensitive", text: expected_amount, count: 1
+  end
+
+  test "renders investment account with gains chart view" do
+    get account_url(accounts(:investment), chart_view: "gains")
+
+    assert_response :success
+    assert_select "option[value=gains][selected]"
+    assert_select "p", text: I18n.t("UI.account.chart.title.total_gains")
+  end
+
+  test "remembers selected per_page across account navigation" do
+    other_account = accounts(:credit_card)
+
+    get account_url(@account, per_page: 50)
+    assert_response :success
+    assert_select "select[name='per_page'] option[value='50'][selected]"
+
+    get account_url(other_account)
+    assert_response :success
+    assert_select "select[name='per_page'] option[value='50'][selected]"
+  end
+
+  test "shares remembered per_page with the global transactions page" do
+    get transactions_url(per_page: 100)
+    assert_response :success
+
+    get account_url(@account)
+    assert_response :success
+    assert_select "select[name='per_page'] option[value='100'][selected]"
+  end
+
+  test "shares account per_page preference with the global transactions page" do
+    get account_url(@account, per_page: 50)
+    assert_response :success
+
+    get transactions_url
+    assert_response :redirect
+    follow_redirect!
+    assert_response :success
+    assert_select "select[name='per_page'] option[value='50'][selected]"
+  end
+
+  test "falls back to default per_page when nothing was stored yet" do
+    get account_url(@account)
+    assert_response :success
+    assert_select "select[name='per_page'] option[value='10'][selected]"
+  end
+
+  test "activity pagination keeps activity tab when loaded from holdings tab" do
+    investment = accounts(:investment)
+
+    11.times do |i|
+      Entry.create!(
+        account: investment,
+        name: "Test investment activity #{i}",
+        date: Date.current - i.days,
+        amount: 10 + i,
+        currency: investment.currency,
+        entryable: Transaction.new
+      )
+    end
+
+    get account_url(investment, tab: "holdings")
+
+    assert_response :success
+    assert_select "a[href*='page=2'][href*='tab=activity']"
+    assert_select "a[href*='page=2'][href*='tab=holdings']", count: 0
+  end
+
+  test "account activity constrains long category labels before the amount on wide screens" do
+    category = categories(:food_and_drink)
+    category.update!(name: "Super Long Category Name That Should Stop Before The Amount On Wide Screens Too")
+
+    entry = @account.entries.create!(
+      name: "Wide category verification",
+      date: Date.current,
+      amount: 187.65,
+      currency: @account.currency,
+      entryable: Transaction.new(category: category)
+    )
+
+    get account_url(@account, tab: "activity")
+
+    assert_response :success
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")}"
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")}.min-w-0"
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")}.overflow-hidden"
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")} button.block"
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")} button.w-full"
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")} button.overflow-hidden"
+    assert_select "##{dom_id(entry.entryable, "category_menu_desktop")} [data-testid='category-name']"
+    assert_select "div.hidden.md\\:flex.min-w-0"
   end
 
   test "should sync account" do
@@ -35,7 +282,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
 
   test "syncing linked account triggers sync for all provider items" do
     plaid_account = plaid_accounts(:one)
-    plaid_item = plaid_account.plaid_item
     AccountProvider.create!(account: @account, provider: plaid_account)
 
     # Reload to ensure the account has the provider association loaded
@@ -137,7 +383,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes @response.body, @account.name
-    assert_includes @response.body, "account_#{@account.id}_active"
   end
 
   test "toggle_active disables and re-enables an account" do
@@ -152,9 +397,58 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert @account.active?
   end
 
+  test "toggle_exclude_from_reports toggles the flag on an account" do
+    assert_not @account.exclude_from_reports?
+
+    patch toggle_exclude_from_reports_account_url(@account)
+    assert_redirected_to accounts_path
+    @account.reload
+    assert @account.exclude_from_reports?
+
+    patch toggle_exclude_from_reports_account_url(@account)
+    assert_redirected_to accounts_path
+    @account.reload
+    assert_not @account.exclude_from_reports?
+  end
+
+  test "toggle_exclude_from_reports requires write permission" do
+    sign_in users(:family_member)
+
+    patch toggle_exclude_from_reports_account_url(accounts(:credit_card))
+    assert_redirected_to account_url(accounts(:credit_card))
+  end
+
   test "select_provider shows available providers" do
     get select_provider_account_url(@account)
     assert_response :success
+  end
+
+  test "set_default sets user default account" do
+    patch set_default_account_url(@account)
+    assert_redirected_to accounts_path
+    @user.reload
+    assert_equal @account.id, @user.default_account_id
+  end
+
+  test "set_default rejects ineligible account type" do
+    investment = accounts(:investment)
+
+    patch set_default_account_url(investment)
+    assert_redirected_to accounts_path
+    assert_equal I18n.t("accounts.set_default.depository_only"), flash[:alert]
+
+    @user.reload
+    assert_not_equal investment.id, @user.default_account_id
+  end
+
+  test "remove_default clears user default account" do
+    @user.update!(default_account: @account)
+
+    patch remove_default_account_url(@account)
+    assert_redirected_to accounts_path
+
+    @user.reload
+    assert_nil @user.default_account_id
   end
 
   test "select_provider redirects for already linked account" do
@@ -209,6 +503,32 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     holding.reload
 
     assert_nil holding.account_provider_id, "Holding should be detached from provider after unlink"
+  end
+
+  # Regression for #2516: the account sidebar fragment cache renders DS::* view
+  # components, which Rails' ERB dependency tracker mis-parses as a bogus "Ds/D"
+  # template dependency. With automatic digesting enabled that logged
+  # "Couldn't find template for digesting: Ds/D" on every cache miss. The
+  # fragment is manually versioned and opts out of digesting via skip_digest.
+  test "sidebar fragment cache does not log a bogus template digest error" do
+    log = StringIO.new
+    logger = ActiveSupport::Logger.new(log)
+
+    original_perform_caching = ActionController::Base.perform_caching
+    original_view_logger = ActionView::Base.logger
+    original_rails_logger = Rails.logger
+
+    ActionController::Base.perform_caching = true
+    ActionView::Base.logger = logger
+    Rails.logger = logger
+
+    get accounts_path
+    assert_response :success
+    assert_no_match(/Couldn't find template for digesting/, log.string)
+  ensure
+    ActionController::Base.perform_caching = original_perform_caching
+    ActionView::Base.logger = original_view_logger
+    Rails.logger = original_rails_logger
   end
 end
 

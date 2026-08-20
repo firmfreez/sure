@@ -1,10 +1,12 @@
 class Settings::AiPromptsController < ApplicationController
   layout "settings"
 
+  before_action :require_admin!
+
   def show
     @breadcrumbs = [
-      [ breadcrumb_t("breadcrumbs.home", default: "Home"), root_path ],
-      [ t("settings.settings_nav.ai_prompts_label"), nil ]
+      [ t("breadcrumbs.home"), root_path ],
+      [ t("breadcrumbs.ai_prompts"), nil ]
     ]
     @family = Current.family
     @assistant_config = Assistant.config_for(OpenStruct.new(user: Current.user))

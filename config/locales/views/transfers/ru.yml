@@ -3,34 +3,56 @@ ru:
   transfers:
     create:
       success: Перевод создан
+      exchange_rate_unavailable: Курс обмена недоступен для выбранных валют и даты.
+      date_invalid: недействителен
     destroy:
       success: Перевод удален
     form:
       amount: Сумма
+      calculate_rate_tab: Рассчитать курс валют
+      convert_tab: Конвертировать по курсу валют
       date: Дата
+      destination_amount: Сумма на счёт назначения
+      destination_amount_display: 'Сумма на счёт назначения: %{amount}'
+      exchange_rate: Курс валют
+      exchange_rate_display: 'Курс валют: %{rate}'
+      exchange_rate_help: Выберите, как ввести сумму перевода.
       expense: Расход
       from: Откуда
       income: Доход
       select_account: Выберите счет
+      source_amount: Сумма со счёта отправления
       submit: Создать перевод
       to: Куда
       transfer: Перевод
+      bank_charges: Банковские сборы
+      outgoing_fee: Комиссия за исходящий перевод
+      incoming_fee: Комиссия за входящий перевод
     new:
       title: Новый перевод
     show:
-      from: Откуда
-      to: Куда
-      date: Дата
       amount: Сумма
-      category_label: Категория
-      uncategorized: Без категории
+      category: Категория
+      date: Дата
       delete: Удалить перевод
       delete_subtitle: Перевод и обе связанные транзакции будут удалены безвозвратно. Это действие нельзя отменить.
       delete_title: Удалить перевод?
       details: Детали
+      from: Откуда
+      mark_recurring: Отметить как регулярный
+      mark_recurring_subtitle: Отслеживайте этот перевод как регулярный в ленте и на странице регулярных операций.
+      mark_recurring_title: Отметить перевод как регулярный
       note_label: Примечание
       note_placeholder: Добавьте примечание к переводу
       overview: Обзор
       settings: Настройки
+      to: Куда
+      uncategorized: Без категории
+      category_label: Категория
+      transfer_amount: Сумма перевода
+      total: Общий
+      bank_charges: Банковские сборы
+      source_fee: Исходная плата
+      destination_fee: Плата за место назначения
     update:
       success: Перевод обновлен

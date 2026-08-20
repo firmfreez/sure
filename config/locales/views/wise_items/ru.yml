@@ -1,0 +1,154 @@
+---
+ru:
+  wise_items:
+    provider_panel:
+      instructions:
+        open_tokens: Перейдите в Settings → Connect and manage apps → Developer tools → API tokens
+        sign_in_html: Посетите %{link} и войдите в свою учетную запись.
+        create_token: Создайте новый личный токен API с доступом только для чтения.
+        copy_token_html: Скопируйте токен и вставьте его ниже. Sure использует его только для синхронизации ваших балансов и транзакций.
+      setup_title: 'Инструкции по настройке:'
+      add_connection: Добавить Wise-соединение
+      token_label: токен API
+      token_placeholder: Вставьте свой личный токен Wise API.
+      keep_token_placeholder: Оставьте пустым, чтобы сохранить текущий токен.
+      connection_name_label: Имя соединения
+      connection_name_placeholder: Wise Personal
+      sync_start_date_label: Импортировать транзакции из
+      sync_start_date_help: Выписки Wise импортируются начиная с этой даты. Значение по умолчанию позволяет загрузить историю за период до одного года.
+      import_all_history_label: Импортировать полную историю транзакций
+      import_all_history_help: Загрузить все доступные выписки Wise, а не только за последний год.
+      connect: Подключить Wise
+      update_connection: Обновить соединение
+      setup_accounts: Настройка учетных записей
+      sync: Синхронизировать
+      disconnect: Отключить
+      disconnect_label: Отключить %{name}
+      disconnect_confirm: Вы уверены, что хотите отключить %{name}? Это приведет к удалению всех синхронизированных данных учетной записи.
+      accounts_link: Счета
+      configured_html: Подключился и синхронизировался. Посетите вкладку %{accounts_link} для управления своими учетными записями.
+      not_configured: Не настроено
+      sandbox_note_html: Используйте для тестирования базу <strong>sandbox</strong> URL (<code>https://api.sandbox.transferwise.tech</code>)). Установите <code>WISE_BASE_URL</code> в своей среде.
+      encryption_warning:
+        title: Шифрование базы данных не настроено
+        message: Настройте ключи шифрования Active Record перед добавлением токенов Wise в производство. Без шифрования токены хранятся в виде открытого текста.
+    profile_types:
+      personal: Персональный
+      business: Бизнес
+    entries:
+      default_name: Транзакция Wise
+      fee_name: Комиссия Wise
+    activities:
+      jar_deposit: Перевод в копилку
+      jar_withdrawal: Перевод из копилки
+      transfer_to_jar: Перенос в %{jar}
+      transfer_from_jar: Трансфер из %{jar}
+      interest: Проценты Wise
+      asset_fee: Комиссия Wise Assets
+      default_name: Операция Wise
+    sync_status:
+      no_accounts: Аккаунты не найдены
+      all_synced:
+        one: Аккаунт %{count} синхронизирован
+        other: Аккаунты %{count} синхронизированы.
+      partial_setup: "%{synced} синхронизирован, %{pending} требует настройки"
+    create:
+      no_profiles_found: Профили Wise не найдены. Пожалуйста, проверьте свой токен API.
+      invalid_token: Неверный токен API. Пожалуйста, проверьте и попробуйте еще раз.
+      connection_failed: Не удалось подключиться к Wise. Пожалуйста, повторите попытку позже.
+    destroy:
+      success: Wise соединение удалено
+    update:
+      success: Wise соединение обновлено
+    sync:
+      success: Синхронизация началась
+    syncer:
+      importing_accounts: Импорт учетных записей из Wise...
+      checking_account_configuration: Проверка конфигурации аккаунта...
+      accounts_need_setup:
+        one: Аккаунт %{count} требует настройки...
+        other: Аккаунты %{count} требуют настройки...
+      processing_transactions: Обработка транзакций...
+      calculating_balances: Расчет остатков...
+      credentials_invalid: Неверный токен Wise API или недостаточно прав.
+      failed: Синхронизация не удалась. Пожалуйста, попробуйте еще раз или обратитесь в службу поддержки.
+      import_failed: Wise импорт не удался.
+      accounts_failed:
+        one: Баланс %{count} не удалось импортировать.
+        other: Балансы %{count} не удалось импортировать.
+      transactions_failed:
+        one: На балансе %{count} возникли сбои при импорте транзакций.
+        other: На балансах %{count} возникли сбои импорта транзакций.
+      account_processing_failed:
+        one: "%{count} Учетная запись Wise не удалось обработать."
+        other: "%{count} Учетные записи Wise не удалось обработать."
+      account_sync_failed:
+        one: "%{count} Не удалось запланировать синхронизацию учетной записи Wise."
+        other: "%{count} Не удалось запланировать синхронизацию учетных записей Wise."
+    provider_connection:
+      default_name: Wise
+      default_description: Подключите мультивалютный счет Wise
+      name: Wise — %{name}
+      description: Подключитесь с помощью %{name}
+    link_profiles:
+      session_expired: Сессия истекла. Пожалуйста, попробуйте подключиться еще раз.
+      no_profiles_selected: Пожалуйста, выберите хотя бы один профиль.
+      already_connected: Все выбранные профили уже подключены.
+      success:
+        one: Профиль %{count} Wise успешно подключен.
+        other: Профили Wise %{count} подключены успешно.
+    select_profiles:
+      session_expired: Сессия истекла. Пожалуйста, попробуйте подключиться еще раз.
+      title: Выберите Wise профили
+      subtitle: Выберите, какие профили подключать
+      description: В вашей учетной записи Wise имеется несколько профилей. Выберите те, которые вы хотите синхронизировать с Sure.
+      unnamed_profile: "(Безымянный профиль)"
+      already_connected_label: Уже подключено
+      connect: Подключить выбранные профили
+      cancel: Отмена
+    wise_item:
+      deletion_in_progress: удаление в процессе...
+      syncing: Синхронизация...
+      error: Ошибка синхронизации
+      status: Синхронизировано %{timestamp} назад
+      status_never: Никогда не синхронизировалось
+      status_with_summary: Последняя синхронизация %{timestamp} назад — %{summary}
+      delete: Отключить
+      setup_needed: Новые аккаунты готовы к настройке
+      setup_description: "%{linked} из %{total} связанных аккаунтов. Создайте аккаунты Sure для своих балансов в валюте Wise."
+      setup_action: Настройка учетных записей
+      no_accounts_title: Аккаунты пока не связаны
+      no_accounts_description: Запустите синхронизацию, чтобы узнать свои балансы Wise, а затем свяжите их с учетными записями Sure.
+    setup_accounts:
+      title: Настройте Wise учетные записи
+      subtitle: Привяжите свои валютные балансы Wise
+      description: Создайте учетную запись Sure для каждого баланса валюты Wise, который вы хотите отслеживать. Каждая валюта становится отдельным счетом.
+      no_accounts_to_setup: Все аккаунты настроены
+      all_accounts_linked: Все ваши балансы в валюте Wise привязаны к счетам Sure.
+      create_account: Зарегистрироваться
+      done: Сделанный
+    select_accounts:
+      title: Выберите Wise баланс
+      description: Выберите валютный баланс Wise, который вы хотите связать со своей учетной записью %{product_name}.
+      no_accounts_found: Все балансы Wise уже привязаны к аккаунтам Sure.
+      no_connection: Соединение Wise не найдено. Пожалуйста, сначала подключите Wise в настройках провайдера.
+      link_account: Баланс ссылки
+      cancel: Отмена
+    select_existing_account:
+      title: Свяжите %{account_name} с Wise
+      description: Выберите баланс валюты Wise, чтобы связать его с этой учетной записью. Транзакции будут синхронизироваться автоматически.
+      no_accounts_found: Несвязанных балансов Wise не найдено.
+      link_account: Баланс ссылки
+      cancel: Отмена
+    link_accounts:
+      not_found: Wise баланс не найден.
+      success: Баланс Wise успешно привязан к аккаунту.
+      failed: Не удалось привязать баланс Wise. Пожалуйста, попробуйте еще раз.
+    link_existing_account:
+      not_found: Аккаунт или баланс Wise не найдены.
+      success: Успешно связали %{account_name} с Wise.
+      failed: Не удалось привязать аккаунт. Пожалуйста, попробуйте еще раз.
+    complete_account_setup:
+      not_found: Wise баланс не найден.
+      success: Аккаунт создан и успешно связан.
+      failed: Не удалось создать учетную запись. Пожалуйста, попробуйте еще раз.

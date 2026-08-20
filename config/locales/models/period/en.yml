@@ -1,6 +1,6 @@
 ---
 en:
-  periods:
+  period:
     last_day:
       label_short: "1D"
       label: "Last Day"

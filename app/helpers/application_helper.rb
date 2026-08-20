@@ -14,10 +14,28 @@ module ApplicationHelper
     form_with(**options, &block)
   end
 
+  # Locale-aware ordinal label for integers.
+  # English falls through to Ruby's ordinalize ("1st"); Catalan returns "1r"/"2n"/...
+  def localized_ordinal(number)
+    case I18n.locale
+    when :ca
+      n = number.to_i
+      suffix = case n
+      when 1, 3 then "r"
+      when 2 then "n"
+      when 4 then "t"
+      else "è"
+      end
+      "#{n}#{suffix}"
+    else
+      number.to_i.ordinalize
+    end
+  end
+
   def icon(key, size: "md", color: "default", custom: false, as_button: false, **opts)
     extra_classes = opts.delete(:class)
     sizes = { xs: "w-3 h-3", sm: "w-4 h-4", md: "w-5 h-5", lg: "w-6 h-6", xl: "w-7 h-7", "2xl": "w-8 h-8" }
-    colors = { default: "fg-gray", white: "fg-inverse", success: "text-success", warning: "text-warning", destructive: "text-destructive", current: "text-current" }
+    colors = { default: "text-secondary", white: "text-inverse", success: "text-success", warning: "text-warning", destructive: "text-destructive", info: "text-info", current: "text-current" }
 
     icon_classes = class_names(
       "shrink-0",
@@ -26,12 +44,14 @@ module ApplicationHelper
       extra_classes
     )
 
+    resolved_key = normalize_icon_key(key)
+
     if custom
-      inline_svg_tag("#{key}.svg", class: icon_classes, **opts)
+      inline_svg_tag("#{resolved_key}.svg", class: icon_classes, **opts)
     elsif as_button
-      render DS::Button.new(variant: "icon", class: extra_classes, icon: key, size: size, type: "button", **opts)
+      render DS::Button.new(variant: "icon", class: extra_classes, icon: resolved_key, size: size, type: "button", **opts)
     else
-      lucide_icon(key, class: icon_classes, **opts)
+      safe_lucide_icon(resolved_key, class: icon_classes, **opts)
     end
   end
 
@@ -61,6 +81,43 @@ module ApplicationHelper
       (normalized_request_path.start_with?(normalized_path) && normalized_path != "/")
   end
 
+  # Wraps a nav-item hash so a single call performs both halves of a
+  # preview-gated entry: returns `nil` for users without the flag (so the
+  # entry never reaches the rendered nav), and stamps `preview: true` on
+  # the hash for users with the flag (so the partial paints the violet
+  # dot on the icon). Use inside an `Array#compact` nav-items list.
+  def preview_gated_nav_item(item)
+    return nil unless preview_features_enabled?
+    item.merge(preview: true)
+  end
+
+  # Budgets and Goals share one nav slot. Preview users get the "Plan" hub
+  # entry fronting both (it stays lit while browsing either subpage, since
+  # page_active? is a path-prefix match and /budgets · /goals don't share
+  # the /plan prefix). Everyone else gets exactly the pre-Plan Budgets
+  # entry — Goals was already hidden without the flag, so their nav is
+  # unchanged.
+  def plan_nav_item
+    if preview_features_enabled?
+      {
+        name: t("layouts.application.nav.plan"),
+        path: plan_path,
+        icon: "compass",
+        icon_custom: false,
+        active: page_active?(plan_path) || page_active?(budgets_path) || page_active?(goals_path),
+        preview: true
+      }
+    else
+      {
+        name: t("layouts.application.nav.budgets"),
+        path: budgets_path,
+        icon: "map",
+        icon_custom: false,
+        active: page_active?(budgets_path)
+      }
+    end
+  end
+
   # Wrapper around I18n.l to support custom date formats
   def format_date(object, format = :default, options = {})
     date = object.to_date
@@ -74,26 +131,9 @@ module ApplicationHelper
     end
   end
 
-  def format_month_year(object, abbreviated: false)
-    return nil unless object
-
-    date = object.to_date
-    month_names_key = abbreviated ? "date.abbr_month_names_standalone" : "date.month_names_standalone"
-    month_names = I18n.t(month_names_key, default: [])
-    month_index = month_names.first.nil? ? date.month : date.month - 1
-    month_name = month_names[month_index].presence || I18n.l(date, format: (abbreviated ? "%b" : "%B"))
-
-    "#{month_name} #{date.year}"
-  end
-
-  def enable_banking_callback_url
-    path = ingress_prefixed_path(callback_enable_banking_items_path)
-    "#{request.base_url}#{path}"
-  end
-
 
   def family_moniker
-    Current.family&.moniker_label || "Family"
+    Current.family&.moniker_label || I18n.t("shared.family_moniker.singular")
   end
 
   def family_moniker_downcase
@@ -101,7 +141,7 @@ module ApplicationHelper
   end
 
   def family_moniker_plural
-    Current.family&.moniker_label_plural || "Families"
+    Current.family&.moniker_label_plural || I18n.t("shared.family_moniker.plural")
   end
 
   def family_moniker_plural_downcase
@@ -111,8 +151,7 @@ module ApplicationHelper
   def format_money(number_or_money, options = {})
     return nil unless number_or_money
 
-    money = number_or_money.is_a?(Money) ? number_or_money : Money.new(number_or_money)
-    money.format(options)
+    Money.new(number_or_money).format(options)
   end
 
   def totals_by_currency(collection:, money_method:, separator: " | ", negate: false)
@@ -120,6 +159,17 @@ module ApplicationHelper
               .transform_values { |item| calculate_total(item, money_method, negate) }
               .map { |_currency, money| format_money(money) }
               .join(separator)
+  end
+
+  def currency_picker_options_for_family(family = Current.family, extra: [])
+    return Money::Currency.as_options.map(&:iso_code) unless family
+
+    family.enabled_currency_codes(extra:)
+  end
+
+  def currency_label(currency_or_code)
+    currency = currency_or_code.is_a?(Money::Currency) ? currency_or_code : Money::Currency.new(currency_or_code)
+    "#{currency.name} (#{currency.iso_code})"
   end
 
   def show_super_admin_bar?
@@ -130,23 +180,31 @@ module ApplicationHelper
     cookies[:admin] == "true"
   end
 
+  def sidekiq_web_available?
+    named_routes = Rails.application.routes.named_routes
+    named_routes.route_defined?(:sidekiq_web_path) || named_routes.route_defined?(:sidekiq_web_url)
+  end
+
+  def assistant_icon
+    type = ENV["ASSISTANT_TYPE"].presence || Current.family&.assistant_type.presence || "builtin"
+    type == "external" ? "claw" : "ai"
+  end
+
   def default_ai_model
     # Always return a valid model, never nil or empty
     # Delegates to Chat.default_model for consistency
     Chat.default_model
   end
+
   def omniauth_provider_path(provider_name)
-    script_name = request.script_name.to_s.sub(%r{/+\z}, "")
-    "#{script_name}/auth/#{provider_name}"
+    "#{request.script_name.to_s.sub(%r{/+\z}, "")}/auth/#{provider_name}"
   end
 
   def ingress_prefixed_path(path)
     return path if path.blank?
 
     script_name = request.script_name.to_s.sub(%r{/+\z}, "")
-    return path if script_name.blank?
-
-    return path if path.start_with?("http://", "https://", "//")
+    return path if script_name.blank? || path.start_with?("http://", "https://", "//")
 
     normalized_path = path.start_with?("/") ? path : "/#{path}"
     return normalized_path if normalized_path.start_with?("#{script_name}/")
@@ -159,33 +217,11 @@ module ApplicationHelper
   end
 
   def ingress_stylesheet_link_tag(*sources, **options)
-    tags = stylesheet_link_tag(*sources, **options)
-    return tags if request.script_name.blank?
-
-    fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
-    fragment.css("link[rel='stylesheet']").each do |node|
-      href = node["href"]
-      next if href.blank?
-
-      node["href"] = ingress_prefixed_path(href)
-    end
-
-    fragment.to_html.html_safe
+    ingress_prefix_link_hrefs(stylesheet_link_tag(*sources, **options), "link[rel='stylesheet']")
   end
 
   def ingress_combobox_style_tag
-    tags = combobox_style_tag
-    return tags if request.script_name.blank?
-
-    fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
-    fragment.css("link[rel='stylesheet']").each do |node|
-      href = node["href"]
-      next if href.blank?
-
-      node["href"] = ingress_prefixed_path(href)
-    end
-
-    fragment.to_html.html_safe
+    ingress_prefix_link_hrefs(combobox_style_tag, "link[rel='stylesheet']")
   end
 
   def ingress_javascript_importmap_tags
@@ -193,30 +229,16 @@ module ApplicationHelper
     return tags if request.script_name.blank?
 
     fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
-
-    importmap = fragment.at_css("script[type='importmap']")
-    if importmap&.content.present?
+    if (importmap = fragment.at_css("script[type='importmap']"))&.content.present?
       data = JSON.parse(importmap.content)
-      data["imports"] = prefix_importmap_values(data["imports"]) if data["imports"].is_a?(Hash)
-
-      if data["scopes"].is_a?(Hash)
-        data["scopes"] = data["scopes"].transform_values do |scoped_imports|
-          prefix_importmap_values(scoped_imports)
-        end
-      end
-
+      data["imports"] = prefix_importmap_values(data["imports"])
+      data["scopes"] = data["scopes"].transform_values { |imports| prefix_importmap_values(imports) } if data["scopes"].is_a?(Hash)
       importmap.content = JSON.generate(data)
     end
-
-    fragment.css("link[rel='modulepreload']").each do |node|
-      href = node["href"]
-      next if href.blank?
-
-      node["href"] = ingress_prefixed_path(href)
-    end
-
+    fragment.css("link[rel='modulepreload']").each { |node| node["href"] = ingress_prefixed_path(node["href"]) if node["href"].present? }
     fragment.to_html.html_safe
   end
+
   # Renders Markdown text using Redcarpet
   def markdown(text)
     return "" if text.blank?
@@ -240,6 +262,15 @@ module ApplicationHelper
     )
 
     markdown.render(text).html_safe
+  end
+
+  # Generate the callback URL for Enable Banking OAuth (used in views and controller).
+  # In production, uses the standard Rails route.
+  # In development, uses DEV_WEBHOOKS_URL if set (e.g., ngrok URL).
+  def enable_banking_callback_url
+    return callback_enable_banking_items_url if Rails.env.production?
+
+    ENV.fetch("DEV_WEBHOOKS_URL", root_url).chomp("/") + "/enable_banking_items/callback"
   end
 
   # Formats quantity with adaptive precision based on the value size.
@@ -272,36 +303,42 @@ module ApplicationHelper
       return "/" if value.blank?
 
       path = value.to_s
-
-      if path.start_with?("http://", "https://")
-        begin
-          path = URI.parse(path).path
-        rescue URI::InvalidURIError
-          # Keep the original path as-is for non-parseable inputs.
-        end
-      end
-
+      path = URI.parse(path).path if path.start_with?("http://", "https://")
       script_name = request.script_name.to_s
-      if script_name.present? && path.start_with?(script_name)
-        path = path.delete_prefix(script_name)
-        path = "/#{path}" unless path.start_with?("/")
-      end
-
+      path = path.delete_prefix(script_name) if script_name.present? && path.start_with?(script_name)
       path = "/#{path}" unless path.start_with?("/")
       path = path.sub(%r{/+\z}, "")
-      path = "/" if path.empty?
+      path.presence || "/"
+    rescue URI::InvalidURIError
+      value.to_s
+    end
 
-      path
+    def ingress_prefix_link_hrefs(tags, selector)
+      return tags if request.script_name.blank?
+
+      fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
+      fragment.css(selector).each { |node| node["href"] = ingress_prefixed_path(node["href"]) if node["href"].present? }
+      fragment.to_html.html_safe
     end
 
     def prefix_importmap_values(imports)
       return imports unless imports.is_a?(Hash)
 
-      imports.transform_values do |value|
-        next value unless value.is_a?(String)
+      imports.transform_values { |value| value.is_a?(String) ? ingress_prefixed_path(value) : value }
+    end
 
-        ingress_prefixed_path(value)
-      end
+    def safe_lucide_icon(key, **opts)
+      lucide_icon(key, **opts)
+    rescue StandardError => e
+      Rails.logger.warn("[ApplicationHelper] Falling back to key for unknown icon #{key.inspect}: #{e.message}")
+      lucide_icon("key", **opts)
+    end
+
+    def normalize_icon_key(key)
+      normalized = key.to_s.strip
+      return normalized if normalized.blank?
+
+      normalized.downcase
     end
 
     def calculate_total(item, money_method, negate)

@@ -5,27 +5,33 @@ class Category < ApplicationRecord
   belongs_to :family
 
   has_many :budget_categories, dependent: :destroy
-  has_many :subcategories, class_name: "Category", foreign_key: :parent_id, dependent: :nullify
+  has_many :subcategories,
+         -> { order(:name) },
+         class_name: "Category",
+         foreign_key: :parent_id,
+         dependent: :nullify
   belongs_to :parent, class_name: "Category", optional: true
 
   validates :name, :color, :lucide_icon, :family, presence: true
+  validates :color, format: { with: /\A#[0-9A-Fa-f]{6}\z/ }
   validates :name, uniqueness: { scope: [ :family_id, :parent_id ] }
 
   validate :category_level_limit
-  validate :nested_category_matches_parent_classification
 
   before_save :inherit_color_from_parent
 
   scope :alphabetically, -> { order(:name) }
+  scope :recently_used, -> { where.not(last_used_at: nil).order(last_used_at: :desc) }
   scope :alphabetically_by_hierarchy, -> {
     left_joins(:parent)
       .order(Arel.sql("COALESCE(parents_categories.name, categories.name)"))
       .order(Arel.sql("parents_categories.name IS NOT NULL"))
-      .order(:name)
+      .order(:name, :id)
   }
   scope :roots, -> { where(parent_id: nil) }
-  scope :incomes, -> { where(classification: "income") }
-  scope :expenses, -> { where(classification: "expense") }
+  # Legacy scopes - classification removed; these now return all categories
+  scope :incomes, -> { all }
+  scope :expenses, -> { all }
 
   COLORS = %w[#e99537 #4da568 #6471eb #db5a54 #df4e92 #c44fe9 #eb5429 #61c9ea #805dee #6ad28a]
 
@@ -34,12 +40,83 @@ class Category < ApplicationRecord
   TRANSFER_COLOR = "#444CE7"
   PAYMENT_COLOR = "#db5a54"
   TRADE_COLOR = "#e99537"
-  UNCATEGORIZED_FILTER_TOKEN = "__uncategorized__"
+
+  ICON_KEYWORDS = {
+    /income|salary|paycheck|wage|earning/                          => "circle-dollar-sign",
+    /groceries|grocery|supermarket/                                => "shopping-bag",
+    /food|dining|restaurant|meal|lunch|dinner|breakfast/           => "utensils",
+    /coffee|cafe|café/                                             => "coffee",
+    /shopping|retail/                                              => "shopping-cart",
+    /transport|transit|commute|subway|metro/                       => "bus",
+    /parking/                                                      => "circle-parking",
+    /car|auto|vehicle/                                             => "car",
+    /gas|fuel|petrol/                                              => "fuel",
+    /flight|airline/                                               => "plane",
+    /travel|trip|vacation|holiday/                                 => "plane",
+    /hotel|lodging|accommodation/                                  => "hotel",
+    /movie|cinema|film|theater|theatre/                            => "film",
+    /music|concert/                                                => "music",
+    /game|gaming/                                                  => "gamepad-2",
+    /entertainment|leisure/                                        => "drama",
+    /sport|fitness|gym|workout|exercise/                           => "dumbbell",
+    /pharmacy|drug|medicine|pill|medication|dental|dentist/        => "pill",
+    /health|medical|clinic|doctor|physician/                       => "stethoscope",
+    /personal care|beauty|salon|spa|hair/                          => "scissors",
+    /mortgage|rent/                                                => "home",
+    /home|house|apartment|housing/                                 => "home",
+    /improvement|renovation|remodel/                               => "hammer",
+    /repair|maintenance/                                           => "wrench",
+    /electric|power|energy/                                        => "zap",
+    /water|sewage/                                                 => "waves",
+    /internet|cable|broadband|subscription|streaming/              => "wifi",
+    /utilities|utility/                                            => "lightbulb",
+    /phone|telephone/                                              => "phone",
+    /mobile|cell/                                                  => "smartphone",
+    /insurance/                                                    => "shield",
+    /gift|present/                                                 => "gift",
+    /donat|charity|nonprofit/                                      => "hand-helping",
+    /tax|irs|revenue/                                              => "landmark",
+    /loan|debt|credit card/                                        => "credit-card",
+    /service|professional/                                         => "briefcase",
+    /fee|charge/                                                   => "receipt",
+    /bank|banking/                                                 => "landmark",
+    /saving/                                                       => "piggy-bank",
+    /invest|stock|fund|portfolio/                                  => "trending-up",
+    /pet|dog|cat|animal|vet/                                       => "paw-print",
+    /education|school|university|college|tuition/                  => "graduation-cap",
+    /book|reading|library/                                         => "book",
+    /child|kid|baby|infant|daycare/                                => "baby",
+    /cloth|apparel|fashion|wear/                                   => "shirt",
+    /ticket/                                                       => "ticket"
+  }.freeze
 
   # Category name keys for i18n
   UNCATEGORIZED_NAME_KEY = "models.category.uncategorized"
   OTHER_INVESTMENTS_NAME_KEY = "models.category.other_investments"
   INVESTMENT_CONTRIBUTIONS_NAME_KEY = "models.category.investment_contributions"
+  DEFAULT_CATEGORY_TRANSLATION_KEYS = %w[
+    income
+    food_and_drink
+    groceries
+    shopping
+    transportation
+    travel
+    entertainment
+    healthcare
+    personal_care
+    home_improvement
+    mortgage_rent
+    utilities
+    subscriptions
+    insurance
+    sports_and_fitness
+    gifts_and_donations
+    taxes
+    loan_payments
+    services
+    fees
+    savings_and_investments
+  ].freeze
 
   class Group
     attr_reader :category, :subcategories
@@ -47,8 +124,10 @@ class Category < ApplicationRecord
     delegate :name, :color, to: :category
 
     def self.for(categories)
-      categories.select { |category| category.parent_id.nil? }.map do |category|
-        new(category, category.subcategories)
+      categories_by_parent_id = categories.to_a.group_by(&:parent_id)
+
+      categories_by_parent_id[nil].to_a.map do |category|
+        new(category, categories_by_parent_id[category.id].to_a)
       end
     end
 
@@ -59,6 +138,38 @@ class Category < ApplicationRecord
   end
 
   class << self
+    def ids_with_transactions(family:, category_ids:)
+      category_ids = Array(category_ids).compact
+      return {} if category_ids.empty?
+
+      family.transactions
+            .where(category_id: category_ids)
+            .distinct
+            .pluck(:category_id)
+            .index_with(true)
+    end
+
+    # Categories a family has manually assigned recently — a shortcut above the
+    # alphabetical list, not a replacement for it. See Transaction#record_category_usage!
+    # for where last_used_at is touched (only on a real human pick via one of the
+    # manual assignment controllers, not rule/import auto-assignment).
+    def recently_used_for(family:, excluding: [], limit: 4)
+      family.categories
+            .recently_used
+            .excluding(Array(excluding).compact)
+            .limit(limit)
+    end
+
+    def suggested_icon(name)
+      name_down = name.to_s.downcase
+
+      ICON_KEYWORDS.each do |pattern, icon|
+        return icon if name_down.match?(pattern)
+      end
+
+      "shapes"
+    end
+
     def icon_codes
       %w[
         ambulance apple award baby badge-dollar-sign banknote barcode bar-chart-3 bath
@@ -79,11 +190,10 @@ class Category < ApplicationRecord
       ]
     end
 
-    def bootstrap!(locale: I18n.locale)
-      default_categories(locale: locale).each do |name, color, icon, classification|
+    def bootstrap!
+      default_categories.each do |name, color, icon|
         find_or_create_by!(name: name) do |category|
           category.color = color
-          category.classification = classification
           category.lucide_icon = icon
         end
       end
@@ -136,43 +246,68 @@ class Category < ApplicationRecord
       end.uniq
     end
 
+    def localized_default_name_for(name)
+      i18n_key = default_category_translation_key_for(name)
+
+      i18n_key ? I18n.t(i18n_key, default: name) : name
+    end
+
     private
-      def default_categories(locale: I18n.locale)
-        [
-          [ t_default_category("income", locale), "#22c55e", "circle-dollar-sign", "income" ],
-          [ t_default_category("food_drink", locale), "#f97316", "utensils", "expense" ],
-          [ t_default_category("groceries", locale), "#407706", "shopping-bag", "expense" ],
-          [ t_default_category("shopping", locale), "#3b82f6", "shopping-cart", "expense" ],
-          [ t_default_category("transportation", locale), "#0ea5e9", "bus", "expense" ],
-          [ t_default_category("travel", locale), "#2563eb", "plane", "expense" ],
-          [ t_default_category("entertainment", locale), "#a855f7", "drama", "expense" ],
-          [ t_default_category("healthcare", locale), "#4da568", "pill", "expense" ],
-          [ t_default_category("personal_care", locale), "#14b8a6", "scissors", "expense" ],
-          [ t_default_category("home_improvement", locale), "#d97706", "hammer", "expense" ],
-          [ t_default_category("mortgage_rent", locale), "#b45309", "home", "expense" ],
-          [ t_default_category("utilities", locale), "#eab308", "lightbulb", "expense" ],
-          [ t_default_category("subscriptions", locale), "#6366f1", "wifi", "expense" ],
-          [ t_default_category("insurance", locale), "#0284c7", "shield", "expense" ],
-          [ t_default_category("sports_fitness", locale), "#10b981", "dumbbell", "expense" ],
-          [ t_default_category("gifts_donations", locale), "#61c9ea", "hand-helping", "expense" ],
-          [ t_default_category("taxes", locale), "#dc2626", "landmark", "expense" ],
-          [ t_default_category("loan_payments", locale), "#e11d48", "credit-card", "expense" ],
-          [ t_default_category("services", locale), "#7c3aed", "briefcase", "expense" ],
-          [ t_default_category("fees", locale), "#6b7280", "receipt", "expense" ],
-          [ t_default_category("savings_investments", locale), "#059669", "piggy-bank", "expense" ],
-          [ I18n.t(INVESTMENT_CONTRIBUTIONS_NAME_KEY, locale: locale), "#0d9488", "trending-up", "expense" ]
-        ]
+      def default_category_translation_key_for(name)
+        default_category_translation_keys_by_name[name.to_s]
       end
 
-      def t_default_category(key, locale)
-        I18n.t("models.category.defaults.#{key}", locale: locale)
+      def default_category_translation_keys_by_name
+        @default_category_translation_keys_by_name ||= begin
+          # Default categories store the translated name in the `name` column, so
+          # older families may have default names from any supported locale. This
+          # display-layer bridge maps those known labels back to their i18n key
+          # before rendering in the current locale. A future schema-level
+          # default_key would remove the ambiguity with user-created categories.
+          i18n_keys = DEFAULT_CATEGORY_TRANSLATION_KEYS.index_with { |key| "models.category.defaults.#{key}" }
+          i18n_keys["uncategorized"] = UNCATEGORIZED_NAME_KEY
+          i18n_keys["other_investments"] = OTHER_INVESTMENTS_NAME_KEY
+          i18n_keys["investment_contributions"] = INVESTMENT_CONTRIBUTIONS_NAME_KEY
+
+          LanguagesHelper::SUPPORTED_LOCALES.each_with_object({}) do |locale, mapping|
+            i18n_keys.each_value do |i18n_key|
+              translated_name = I18n.t(i18n_key, locale: locale, default: nil)
+              mapping[translated_name.to_s] ||= i18n_key if translated_name.present?
+            end
+          end
+        end
+      end
+
+      def default_categories
+        [
+          [ I18n.t("models.category.defaults.income"),                "#22c55e", "circle-dollar-sign" ],
+          [ I18n.t("models.category.defaults.food_and_drink"),        "#f97316", "utensils" ],
+          [ I18n.t("models.category.defaults.groceries"),             "#407706", "shopping-bag" ],
+          [ I18n.t("models.category.defaults.shopping"),              "#3b82f6", "shopping-cart" ],
+          [ I18n.t("models.category.defaults.transportation"),        "#0ea5e9", "bus" ],
+          [ I18n.t("models.category.defaults.travel"),                "#2563eb", "plane" ],
+          [ I18n.t("models.category.defaults.entertainment"),         "#a855f7", "drama" ],
+          [ I18n.t("models.category.defaults.healthcare"),            "#4da568", "pill" ],
+          [ I18n.t("models.category.defaults.personal_care"),         "#14b8a6", "scissors" ],
+          [ I18n.t("models.category.defaults.home_improvement"),      "#d97706", "hammer" ],
+          [ I18n.t("models.category.defaults.mortgage_rent"),         "#b45309", "home" ],
+          [ I18n.t("models.category.defaults.utilities"),             "#eab308", "lightbulb" ],
+          [ I18n.t("models.category.defaults.subscriptions"),         "#6366f1", "wifi" ],
+          [ I18n.t("models.category.defaults.insurance"),             "#0284c7", "shield" ],
+          [ I18n.t("models.category.defaults.sports_and_fitness"),    "#10b981", "dumbbell" ],
+          [ I18n.t("models.category.defaults.gifts_and_donations"),   "#61c9ea", "hand-helping" ],
+          [ I18n.t("models.category.defaults.taxes"),                 "#dc2626", "landmark" ],
+          [ I18n.t("models.category.defaults.loan_payments"),         "#e11d48", "credit-card" ],
+          [ I18n.t("models.category.defaults.services"),              "#7c3aed", "briefcase" ],
+          [ I18n.t("models.category.defaults.fees"),                  "#6b7280", "receipt" ],
+          [ I18n.t("models.category.defaults.savings_and_investments"), "#059669", "piggy-bank" ],
+          [ investment_contributions_name,                       "#0d9488", "trending-up" ]
+        ]
       end
   end
 
   def inherit_color_from_parent
-    if subcategory?
-      self.color = parent.color
-    end
+    self.color = parent.color if subcategory? && parent
   end
 
   def replace_and_destroy!(replacement)
@@ -183,15 +318,30 @@ class Category < ApplicationRecord
   end
 
   def parent?
-    subcategories.any?
+    if association(:subcategories).loaded?
+      subcategories.any?
+    else
+      subcategories.exists?
+    end
   end
 
   def subcategory?
-    parent.present?
+    parent_id.present? && parent.present?
   end
 
   def name_with_parent
-    subcategory? ? "#{parent.name} / #{name}" : name
+    return name unless subcategory?
+
+    parent_name = parent&.name
+    parent_name.present? ? "#{parent_name} > #{name}" : name
+  end
+
+  def display_name
+    self.class.localized_default_name_for(name)
+  end
+
+  def display_name_with_parent
+    subcategory? ? "#{parent.display_name} > #{display_name}" : display_name
   end
 
   # Predicate: is this the synthetic "Uncategorized" category?
@@ -211,14 +361,8 @@ class Category < ApplicationRecord
 
   private
     def category_level_limit
-      if (subcategory? && parent.subcategory?) || (parent? && subcategory?)
+      if (subcategory? && parent&.subcategory?) || (parent? && subcategory?)
         errors.add(:parent, "can't have more than 2 levels of subcategories")
-      end
-    end
-
-    def nested_category_matches_parent_classification
-      if subcategory? && parent.classification != classification
-        errors.add(:parent, "must have the same classification as its parent")
       end
     end
 

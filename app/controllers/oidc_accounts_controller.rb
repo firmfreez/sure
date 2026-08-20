@@ -7,23 +7,26 @@ class OidcAccountsController < ApplicationController
     @pending_auth = session[:pending_oidc_auth]
 
     if @pending_auth.nil?
-      redirect_to new_session_path, alert: "No pending OIDC authentication found"
+      redirect_to new_session_path, alert: t(".no_pending_oidc")
       return
     end
 
     @email = @pending_auth["email"]
     @user_exists = User.exists?(email: @email) if @email.present?
 
+    # Check for a pending invitation for this email
+    @pending_invitation = Invitation.pending.find_by(email: @email) if @email.present?
+
     # Determine whether we should offer JIT account creation for this
     # pending auth, based on JIT mode and allowed domains.
-    @allow_account_creation = !AuthConfig.jit_link_only? && AuthConfig.allowed_oidc_domain?(@email)
+    @allow_account_creation = @pending_invitation.present? || (!AuthConfig.jit_link_only? && AuthConfig.allowed_oidc_domain?(@email))
   end
 
   def create_link
     @pending_auth = session[:pending_oidc_auth]
 
     if @pending_auth.nil?
-      redirect_to new_session_path, alert: "No pending OIDC authentication found"
+      redirect_to new_session_path, alert: t(".no_pending_oidc")
       return
     end
 
@@ -72,7 +75,7 @@ class OidcAccountsController < ApplicationController
     @pending_auth = session[:pending_oidc_auth]
 
     if @pending_auth.nil?
-      redirect_to new_session_path, alert: "No pending OIDC authentication found"
+      redirect_to new_session_path, alert: t(".no_pending_oidc")
       return
     end
 
@@ -88,17 +91,20 @@ class OidcAccountsController < ApplicationController
     @pending_auth = session[:pending_oidc_auth]
 
     if @pending_auth.nil?
-      redirect_to new_session_path, alert: "No pending OIDC authentication found"
+      redirect_to new_session_path, alert: t(".no_pending_oidc")
       return
     end
 
     email = @pending_auth["email"]
 
+    # Check for a pending invitation for this email
+    invitation = Invitation.pending.find_by(email: email)
+
     # Respect global JIT configuration: in link_only mode or when the email
-    # domain is not allowed, block JIT account creation and send the user
-    # back to the login page with a clear message.
-    unless !AuthConfig.jit_link_only? && AuthConfig.allowed_oidc_domain?(email)
-      redirect_to new_session_path, alert: "SSO account creation is disabled. Please contact an administrator."
+    # domain is not allowed, block JIT account creation—unless there's a
+    # pending invitation for this user.
+    unless invitation.present? || (!AuthConfig.jit_link_only? && AuthConfig.allowed_oidc_domain?(email))
+      redirect_to new_session_path, alert: t(".account_creation_disabled")
       return
     end
 
@@ -115,24 +121,57 @@ class OidcAccountsController < ApplicationController
       skip_password_validation: true
     )
 
-    # Create new family for this user
-    @user.family = Family.new
+    if invitation.present?
+      # Accept the pending invitation: join the existing family
+      @user.family_id = invitation.family_id
+      @user.role = invitation.role
+    else
+      # Create new family for this user
+      @user.family = Family.new
 
-    # Use provider-configured default role, or fall back to admin for family creators
-    # First user of an instance always becomes super_admin regardless of provider config
-    provider_config = Rails.configuration.x.auth.sso_providers&.find { |p| p[:name] == @pending_auth["provider"] }
-    provider_default_role = provider_config&.dig(:settings, :default_role)
-    @user.role = User.role_for_new_family_creator(fallback_role: provider_default_role || :admin)
+      # New family creators must be able to administer their own family.
+      # Lower provider defaults are promoted to admin by role_for_new_family_creator,
+      # while intentional super_admin defaults remain supported.
+      provider_config = Rails.configuration.x.auth.sso_providers&.find { |p| p[:name] == @pending_auth["provider"] }
+      provider_default_role = provider_config&.dig(:settings, :default_role)
+      @user.role = User.role_for_new_family_creator(fallback_role: provider_default_role || :admin)
+    end
 
-    if @user.save
-      # Create the OIDC (or other SSO) identity
-      identity = OidcIdentity.create_from_omniauth(
-        build_auth_hash(@pending_auth),
-        @user
-      )
+    identity = nil
+    account_created = false
 
+    begin
+      account_created = ActiveRecord::Base.transaction do
+        unless @user.save
+          raise ActiveRecord::Rollback
+        end
+
+        # Mark invitation as accepted if one was used
+        invitation&.update!(accepted_at: Time.current)
+
+        # Joining an existing family via invitation must honor the family's
+        # default sharing policy, matching Invitation#accept_for. Without this a
+        # JIT SSO invitee lands in the family but sees none of its accounts.
+        @user.family.auto_share_existing_accounts_with(@user) if invitation.present?
+
+        # Create the OIDC (or other SSO) identity
+        identity = OidcIdentity.create_from_omniauth(
+          build_auth_hash(@pending_auth),
+          @user
+        )
+
+        true
+      end
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
+      # Expected persistence failures (e.g. a duplicate identity) roll the whole
+      # onboarding back and re-render the form. Unexpected errors propagate so
+      # they surface instead of being hidden as a form validation message.
+      @user.errors.add(:base, e.message)
+    end
+
+    if account_created
       # Only log JIT account creation if identity was successfully created
-      if identity.persisted?
+      if identity&.persisted?
         SsoAuditLog.log_jit_account_created!(
           user: @user,
           provider: @pending_auth["provider"],
@@ -144,7 +183,13 @@ class OidcAccountsController < ApplicationController
       session.delete(:pending_oidc_auth)
 
       @session = create_session_for(@user)
-      notice = accept_pending_invitation_for(@user) ? t("invitations.accept_choice.joined_household") : "Welcome! Your account has been created."
+      notice = if invitation.present?
+        t("invitations.accept_choice.joined_household")
+      elsif accept_pending_invitation_for(@user)
+        t("invitations.accept_choice.joined_household")
+      else
+        t(".account_created")
+      end
       redirect_to root_path, notice: notice
     else
       render :new_user, status: :unprocessable_entity

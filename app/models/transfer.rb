@@ -2,6 +2,10 @@ class Transfer < ApplicationRecord
   belongs_to :inflow_transaction, class_name: "Transaction"
   belongs_to :outflow_transaction, class_name: "Transaction"
 
+  has_many :fee_transactions, class_name: "Transaction", dependent: :destroy
+
+  attr_accessor :source_fee_amount, :destination_fee_amount, :tag_ids
+
   enum :status, { pending: "pending", confirmed: "confirmed" }
 
   validates :inflow_transaction_id, uniqueness: true
@@ -28,67 +32,40 @@ class Transfer < ApplicationRecord
     end
   end
 
-  def reject!
-    Transfer.transaction do
-      RejectedTransfer.find_or_create_by!(inflow_transaction_id: inflow_transaction_id, outflow_transaction_id: outflow_transaction_id)
-      destroy!
-    end
+  def has_source_fee?
+    derived_source_fee_amount > 0
   end
 
-  # Unlinks the transfer but keeps the underlying transactions as standalone entries.
-  def destroy!
-    Transfer.transaction do
-      inflow_transaction.update!(kind: "standard")
-      outflow_transaction.update!(kind: "standard")
-      super
-    end
+  def has_destination_fee?
+    derived_destination_fee_amount > 0
   end
 
-  # Permanently deletes the transfer and both underlying transaction entries.
-  def destroy_with_entries!
-    Transfer.transaction do
-      inflow_entry = inflow_transaction.entry
-      outflow_entry = outflow_transaction.entry
-
-      delete
-      inflow_entry.destroy!
-      outflow_entry.destroy!
-    end
+  def has_fees?
+    has_source_fee? || has_destination_fee?
   end
 
-  def confirm!
-    update!(status: "confirmed")
+  def total_fee
+    derived_source_fee_amount + derived_destination_fee_amount
   end
 
-  def date
-    inflow_transaction.entry.date
+  def derived_source_fee_amount
+    fee_transactions.joins(:entry).where(entries: { account_id: from_account.id }).sum("entries.amount")
   end
 
-  def sync_account_later
-    inflow_transaction&.entry&.sync_account_later
-    outflow_transaction&.entry&.sync_account_later
-  end
-
-  def to_account
-    inflow_transaction&.entry&.account
-  end
-
-  def from_account
-    outflow_transaction&.entry&.account
+  def derived_destination_fee_amount
+    fee_transactions.joins(:entry).where(entries: { account_id: to_account.id }).sum("entries.amount")
   end
 
   def amount_abs
-    inflow_transaction&.entry&.amount_money&.abs
+    inflow_transaction&.entry&.amount_money&.abs || Money.new(0, from_account&.currency || "USD")
   end
 
   def name
     acc = to_account
     if payment?
-      return I18n.t("models.transfer.payment", default: "Payment") unless acc
-      I18n.t("models.transfer.payment_to", account: acc.name, default: "Payment to #{acc.name}")
+      acc ? "Payment to #{acc.name}" : "Payment"
     else
-      return I18n.t("models.transfer.transfer", default: "Transfer") unless acc
-      I18n.t("models.transfer.transfer_to", account: acc.name, default: "Transfer to #{acc.name}")
+      acc ? "Transfer to #{acc.name}" : "Transfer"
     end
   end
 
@@ -118,15 +95,60 @@ class Transfer < ApplicationRecord
     to_account&.accountable_type == "Loan"
   end
 
+  def reject!
+    Transfer.transaction do
+      RejectedTransfer.find_or_create_by!(inflow_transaction_id: inflow_transaction_id, outflow_transaction_id: outflow_transaction_id)
+      destroy!
+    end
+  end
+
+  def destroy!
+    Transfer.transaction do
+      [ inflow_transaction, outflow_transaction ].each do |transaction|
+        next if transaction.nil?
+        next unless Transaction.exists?(transaction.id)
+        begin
+          transaction.update!(kind: "standard")
+        rescue ActiveRecord::RecordNotFound
+        rescue NoMethodError
+          next
+        end
+      end
+      super
+    end
+  end
+
+  def confirm!
+    update!(status: "confirmed")
+  end
+
+  def date
+    inflow_transaction&.entry&.date
+  end
+
+  def sync_account_later
+    inflow_transaction&.entry&.sync_account_later
+    outflow_transaction&.entry&.sync_account_later
+    fee_transactions.each { |t| t.entry&.sync_account_later }
+  end
+
+  def to_account
+    inflow_transaction&.entry&.account
+  end
+
+  def from_account
+    outflow_transaction&.entry&.account
+  end
+
   private
     def transfer_has_different_accounts
       return unless inflow_transaction&.entry && outflow_transaction&.entry
-      errors.add(:base, "Must be from different accounts") if to_account == from_account
+      errors.add(:base, :different_accounts) if to_account == from_account
     end
 
     def transfer_has_same_family
       return unless inflow_transaction&.entry && outflow_transaction&.entry
-      errors.add(:base, "Must be from same family") unless to_account&.family == from_account&.family
+      errors.add(:base, :same_family) unless to_account&.family == from_account&.family
     end
 
     def transfer_has_opposite_amounts
@@ -135,15 +157,13 @@ class Transfer < ApplicationRecord
       inflow_entry = inflow_transaction.entry
       outflow_entry = outflow_transaction.entry
 
-      inflow_amount = inflow_entry.amount
-      outflow_amount = outflow_entry.amount
+      inflow_amount_raw = inflow_entry.amount
+      outflow_amount_raw = outflow_entry.amount
+
+      errors.add(:base, :opposite_amounts) unless inflow_amount_raw.negative? && outflow_amount_raw.positive?
 
       if inflow_entry.currency == outflow_entry.currency
-        # For same currency, amounts must be exactly opposite
-        errors.add(:base, "Must have opposite amounts") if inflow_amount + outflow_amount != 0
-      else
-        # For different currencies, just check the signs are opposite
-        errors.add(:base, "Must have opposite amounts") unless inflow_amount.negative? && outflow_amount.positive?
+        errors.add(:base, :opposite_amounts) if inflow_amount_raw + outflow_amount_raw != 0
       end
     end
 
@@ -152,6 +172,6 @@ class Transfer < ApplicationRecord
 
       date_diff = (inflow_transaction.entry.date - outflow_transaction.entry.date).abs
       max_days = status == "confirmed" ? 30 : 4
-      errors.add(:base, "Must be within #{max_days} days") if date_diff > max_days
+      errors.add(:base, :within_days, count: max_days) if date_diff > max_days
     end
 end

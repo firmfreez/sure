@@ -1,0 +1,257 @@
+---
+ru:
+  questrade_items:
+    default_name: Questrade Соединение
+    sync_status:
+      no_accounts: Аккаунты не найдены
+      synced:
+        one: Аккаунт %{count} синхронизирован
+        other: Аккаунты %{count} синхронизированы.
+      synced_with_setup: "%{linked} синхронизирован, %{unlinked} требует настройки"
+    institution_summary:
+      none: Ни одно учреждение не подключено
+      count:
+        one: "%{count} учреждение"
+        other: "%{count} учреждения"
+    errors:
+      provider_not_configured: Поставщик Questrade не настроен
+    sync:
+      status:
+        importing: Импорт аккаунтов из Questrade...
+        processing: Обработка холдингов и деятельности...
+        calculating: Расчет остатков...
+        importing_data: Импорт данных аккаунта...
+        checking_setup: Проверка конфигурации аккаунта...
+        needs_setup: Аккаунты %{count} требуют настройки...
+      success: Синхронизация началась
+    panel:
+      eyebrow: Настройка · только рабочий стол
+      help_text: Документы Questrade API
+      disconnect: Отключить
+      disconnect_confirm: Отключить Questrade? Это удалит соединение и отвяжет синхронизированные учетные записи.
+      steps:
+        s1_html: Войдите на портал <a href="https://my.questrade.com" target="_blank" rel="noopener noreferrer" class="text-primary font-medium underline">Questrade</a> в браузере на рабочем столе. Настройки API недоступны в мобильном приложении.
+        s2: Откройте «Настройки» и в разделе «Общие настройки» отредактируйте настройки IQ API.
+        s3_html: В модальном окне доступа API нажмите <strong>Управление</strong> в разделе <strong>Мои приложения</strong>.
+        s4: Зарегистрируйте личное приложение с именем и описанием, а затем сохраните.
+        s5: Добавьте новое устройство и сгенерируйте токен.
+        s6: Вставьте сгенерированный токен ниже и сохраните.
+      setup_instructions: 'Инструкции по настройке:'
+      step_1: Посетите свою панель управления Questrade, чтобы получить свои учетные данные.
+      step_2: Введите свои учетные данные ниже и нажмите кнопку «Сохранить».
+      step_3: После успешного подключения перейдите на вкладку «Учетные записи», чтобы настроить новые учетные записи.
+      field_descriptions: 'Описание полей:'
+      optional: "(Необязательный)"
+      required: "(необходимый)"
+      optional_with_default: "(необязательно, по умолчанию %{default_value})"
+      save_button: Сохранить конфигурацию
+      update_button: Обновить конфигурацию
+      token_refresh_hint: Токены Questrade обновляются автоматически каждый раз при синхронизации ваших учетных записей. Если соединение не используется более 7 дней и устарело, вставьте сюда новый токен, чтобы повторно активировать его, не отключаясь.
+      status_configured_html: Настроен и готов к использованию. Посетите вкладку <a href="%{accounts_path}" class="link">Accounts</a>, чтобы управлять учетными записями и настраивать их.
+      status_not_configured: Не настроено
+      fields:
+        refresh_token:
+          label: Обновить токен
+          description: Ваш токен обновления Questrade
+          placeholder_new: Вставьте токен обновления сюда
+          placeholder_update: Введите новый токен обновления для обновления
+        api_server:
+          label: API-сервер
+          description: Ваш API-сервер Questrade
+          placeholder_new: Вставьте сюда API-сервер
+          placeholder_update: Введите новый сервер API для обновления
+    create:
+      success: Соединение Questrade успешно создано
+    update:
+      success: Соединение с Questrade обновлено
+    destroy:
+      success: Соединение с Questrade удалено.
+    index:
+      title: Questrade связи
+    loading:
+      loading_message: Загрузка учетных записей Questrade...
+      loading_title: Загрузка
+    link_accounts:
+      all_already_linked:
+        one: Выбранная учетная запись (%{names}) уже привязана.
+        other: 'Все выбранные %{count} аккаунты уже связаны: %{names}'
+      api_error: 'Ошибка API: %{message}'
+      invalid_account_names:
+        one: Невозможно связать аккаунт с пустым именем
+        other: Невозможно связать учетные записи %{count} с пустыми именами.
+      link_failed: Не удалось связать аккаунты.
+      no_accounts_selected: Пожалуйста, выберите хотя бы один аккаунт
+      no_api_key: Ключ Questrade API не найден. Пожалуйста, настройте его в настройках провайдера.
+      partial_invalid: Учетные записи %{created_count} успешно связаны, %{already_linked_count} уже были связаны, учетные записи %{invalid_count} имели неверные имена.
+      partial_success: 'Аккаунты %{created_count} успешно связаны. Аккаунты %{already_linked_count} уже были связаны: %{already_linked_names}'
+      success:
+        one: Аккаунт %{count} успешно связан.
+        other: Аккаунты %{count} успешно связаны.
+    questrade_item:
+      kind: Брокерские услуги
+      accounts_need_setup: Аккаунты требуют настройки
+      delete: Удалить соединение
+      deletion_in_progress: удаление в процессе...
+      error: Ошибка
+      more_accounts_available:
+        one: "%{count} доступен еще аккаунт"
+        other: "%{count} доступны дополнительные аккаунты"
+      no_accounts_description: У этого подключения пока нет связанных аккаунтов.
+      no_accounts_title: Нет аккаунтов
+      provider_name: Questrade
+      requires_update: Требуется обновление подключения
+      setup_action: Настройка новых учетных записей
+      setup_description: "%{linked} из %{total} связанных аккаунтов. Выберите типы учетных записей для недавно импортированных учетных записей Questrade."
+      setup_needed: Новые аккаунты готовы к настройке
+      status: Синхронизировано %{timestamp} назад
+      status_never: Никогда не синхронизировалось
+      status_with_summary: Последняя синхронизация %{timestamp} назад — %{summary}
+      syncing: Синхронизация...
+      total: Общий
+      unlinked: Отключено
+      update_credentials: Обновить учетные данные
+    select_accounts:
+      accounts_selected: выбранные аккаунты
+      api_error: 'Ошибка API: %{message}'
+      cancel: Отмена
+      configure_name_in_provider: Невозможно импортировать — укажите имя учетной записи в Questrade.
+      description: Выберите учетные записи, которые вы хотите связать с вашей учетной записью %{product_name}.
+      link_accounts: Связать выбранные аккаунты
+      no_accounts_found: Аккаунты не найдены. Пожалуйста, проверьте конфигурацию ключа API.
+      no_api_key: Ключ Questrade API не настроен. Пожалуйста, настройте его в настройках.
+      no_credentials_configured: Пожалуйста, сначала настройте свои учетные данные Questrade в настройках провайдера.
+      no_name_placeholder: "(Без имени)"
+      title: Выберите счета Questrade
+    select_existing_account:
+      page_title: Привяжите учетную запись Questrade
+      dialog_title: Ссылка на аккаунт Questrade
+      linking_label: Связывание
+      none_available: Нет несвязанных учетных записей Questrade.
+      buttons:
+        cancel: Отмена
+        link: Связь
+      account_already_linked: Эта учетная запись уже связана с провайдером
+      all_accounts_already_linked: Все учетные записи Questrade уже связаны
+      api_error: 'Ошибка API: %{message}'
+      balance_label: 'Баланс:'
+      cancel: Отмена
+      cancel_button: Отмена
+      configure_name_in_provider: Невозможно импортировать — укажите имя учетной записи в Questrade.
+      connect_hint: Подключите учетную запись Questrade, чтобы включить автоматическую синхронизацию.
+      description: Выберите учетную запись Questrade, чтобы связать ее с этой учетной записью. Транзакции будут синхронизироваться и дедуплицироваться автоматически.
+      header: Ссылка на Questrade
+      link_account: Связать аккаунт
+      link_button: Связать этот аккаунт
+      linking_to: 'Ссылка на:'
+      no_account_specified: Аккаунт не указан
+      no_accounts: Несвязанных учетных записей Questrade не обнаружено.
+      no_accounts_found: Аккаунты Questrade не найдены. Пожалуйста, проверьте конфигурацию ключа API.
+      no_api_key: Ключ Questrade API не настроен. Пожалуйста, настройте его в настройках.
+      no_credentials_configured: Пожалуйста, сначала настройте свои учетные данные Questrade в настройках провайдера.
+      no_name_placeholder: "(Без имени)"
+      settings_link: Зайдите в настройки провайдера
+      subtitle: Подключите эту учетную запись к одной из ваших учетных записей Questrade.
+      title: Свяжите %{account_name} с Questrade
+    link_existing_account:
+      account_already_linked: Эта учетная запись уже связана с провайдером
+      api_error: 'Ошибка API: %{message}'
+      invalid_account_name: Невозможно связать аккаунт с пустым именем
+      provider_account_already_linked: Эта учетная запись Questrade уже связана с другой учетной записью
+      provider_account_not_found: Аккаунт Questrade не найден
+      missing_parameters: Отсутствуют необходимые параметры
+      no_api_key: Ключ Questrade API не найден. Пожалуйста, настройте его в настройках провайдера.
+      success: Успешно связали %{account_name} с Questrade.
+    setup_accounts:
+      page_title: Настройка учетных записей Questrade
+      dialog_title: Настройте свои учетные записи Questrade
+      all_linked: Все учетные записи Questrade уже связаны.
+      import_as: Импортировать как
+      buttons:
+        cancel: Отмена
+        create: Создание учетных записей
+        done: Сделанный
+      types:
+        investment: Инвестиции
+        depository: Наличные/Депозитарий
+        skip: Пропустить этот аккаунт
+      account_type_label: 'Тип аккаунта:'
+      accounts_count:
+        one: Доступен аккаунт %{count}
+        other: Доступны аккаунты %{count}
+      all_accounts_linked: Все ваши учетные записи Questrade уже настроены.
+      api_error: 'Ошибка API: %{message}'
+      creating: Создание учетных записей...
+      fetch_failed: Не удалось получить аккаунты.
+      import_selected: Импортировать выбранные аккаунты
+      instructions: Выберите учетные записи, которые вы хотите импортировать из Questrade. Вы можете выбрать несколько учетных записей.
+      no_accounts: Для этого подключения Questrade не обнаружено несвязанных учетных записей.
+      no_accounts_to_setup: Нет учетных записей для настройки
+      no_api_key: Ключ Questrade API не настроен. Пожалуйста, проверьте настройки подключения.
+      select_all: Выбрать все
+      account_types:
+        skip: Пропустить этот аккаунт
+        depository: Текущий или сберегательный счет
+        credit_card: Кредитная карта
+        investment: Инвестиционный счет
+        crypto: Криптовалютный счет
+        loan: Кредит или ипотека
+        other_asset: Другой актив
+      subtype_labels:
+        depository: 'Подтип аккаунта:'
+        credit_card: ''
+        investment: 'Тип инвестиции:'
+        crypto: ''
+        loan: 'Тип кредита:'
+        other_asset: ''
+      subtype_messages:
+        credit_card: Кредитные карты будут автоматически настроены как счета кредитных карт.
+        other_asset: Никаких дополнительных опций для «Других активов» не требуется.
+        crypto: Криптовалютные счета будут созданы для отслеживания активов и транзакций.
+      subtypes:
+        depository:
+          checking: Проверка
+          savings: Экономия
+          hsa: Медицинский сберегательный счет
+          cd: Депозитный сертификат
+          money_market: Денежный рынок
+        investment:
+          brokerage: Брокерские услуги
+          pension: Пенсия
+          retirement: Выход на пенсию
+          401k: 401(к)
+          roth_401k: Рот 401(к)
+          403b: 403 (б)
+          tsp: План экономии сбережений
+          529_plan: 529 План
+          hsa: Медицинский сберегательный счет
+          mutual_fund: Взаимный фонд
+          ira: Традиционный IRA
+          roth_ira: Рот IRA
+          angel: Ангел
+        loan:
+          mortgage: Ипотека
+          student: Студенческий кредит
+          auto: Автокредит
+          other: Другой кредит
+      balance: Баланс
+      cancel: Отмена
+      choose_account_type: 'Выберите правильный тип учетной записи для каждой учетной записи Questrade:'
+      create_accounts: Создание учетных записей
+      creating_accounts: Создание учетных записей...
+      historical_data_range: 'Диапазон исторических данных:'
+      subtitle: Выберите способ импорта каждой учетной записи
+      sync_start_date_help: Выберите, как давно вы хотите синхронизировать историю транзакций.
+      sync_start_date_label: 'Начать синхронизацию транзакций из:'
+      title: Настройте свои учетные записи Questrade
+    setup_required:
+      title: Сначала подключите Questrade
+      not_configured_title: Questrade еще не подключен
+      not_configured_description: Добавьте подключение Questrade в настройках провайдера, а затем вернитесь сюда, чтобы связать учетные записи.
+      go_to_provider_settings: Зайти в настройки провайдера
+    complete_account_setup:
+      all_skipped: Все аккаунты пропущены. Никакие учетные записи не были созданы.
+      creation_failed: 'Не удалось создать учетные записи: %{error}.'
+      no_accounts: Нет учетных записей для настройки.
+      success: Аккаунты %{count} успешно созданы.
+    preload_accounts:
+      no_credentials_configured: Пожалуйста, сначала настройте свои учетные данные Questrade в настройках провайдера.

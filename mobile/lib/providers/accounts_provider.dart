@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/account.dart';
 import '../services/accounts_service.dart';
+import '../services/balance_sheet_service.dart';
 import '../services/offline_storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/log_service.dart';
 
 class AccountsProvider with ChangeNotifier {
   final AccountsService _accountsService = AccountsService();
+  final BalanceSheetService _balanceSheetService = BalanceSheetService();
   final OfflineStorageService _offlineStorage = OfflineStorageService();
   final LogService _log = LogService.instance;
 
@@ -19,11 +21,23 @@ class AccountsProvider with ChangeNotifier {
   Map<String, dynamic>? _pagination;
   ConnectivityService? _connectivityService;
 
+  // Summary / net worth data
+  String? _netWorthFormatted;
+  String? _assetsFormatted;
+  String? _liabilitiesFormatted;
+  String? _familyCurrency;
+  bool _isBalanceSheetStale = false;
+
   List<Account> get accounts => _accounts;
   bool get isLoading => _isLoading;
   bool get isInitializing => _isInitializing;
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get pagination => _pagination;
+  String? get netWorthFormatted => _netWorthFormatted;
+  String? get assetsFormatted => _assetsFormatted;
+  String? get liabilitiesFormatted => _liabilitiesFormatted;
+  String? get familyCurrency => _familyCurrency;
+  bool get isBalanceSheetStale => _isBalanceSheetStale;
 
   List<Account> get assetAccounts {
     final assets = _accounts.where((a) => a.isAsset).toList();
@@ -40,7 +54,8 @@ class AccountsProvider with ChangeNotifier {
   Map<String, double> get assetTotalsByCurrency {
     final totals = <String, double>{};
     for (var account in _accounts.where((a) => a.isAsset)) {
-      totals[account.currency] = (totals[account.currency] ?? 0.0) + account.balanceAsDouble;
+      totals[account.currency] =
+          (totals[account.currency] ?? 0.0) + account.balanceAsDouble;
     }
     return totals;
   }
@@ -48,7 +63,8 @@ class AccountsProvider with ChangeNotifier {
   Map<String, double> get liabilityTotalsByCurrency {
     final totals = <String, double>{};
     for (var account in _accounts.where((a) => a.isLiability)) {
-      totals[account.currency] = (totals[account.currency] ?? 0.0) + account.balanceAsDouble;
+      totals[account.currency] =
+          (totals[account.currency] ?? 0.0) + account.balanceAsDouble;
     }
     return totals;
   }
@@ -106,7 +122,8 @@ class AccountsProvider with ChangeNotifier {
         );
 
         if (result['success'] == true && result.containsKey('accounts')) {
-          final serverAccounts = (result['accounts'] as List<dynamic>?)?.cast<Account>() ?? [];
+          final serverAccounts =
+              (result['accounts'] as List<dynamic>?)?.cast<Account>() ?? [];
           _pagination = result['pagination'] as Map<String, dynamic>?;
 
           // Save to local cache
@@ -119,11 +136,18 @@ class AccountsProvider with ChangeNotifier {
         } else {
           // If server fetch failed but we have cached data, that's OK
           if (_accounts.isEmpty) {
-            _errorMessage = result['error'] as String? ?? 'Failed to fetch accounts';
+            _errorMessage =
+                result['error'] as String? ?? 'Failed to fetch accounts';
           }
         }
       } else if (!isOnline && _accounts.isEmpty) {
-        _errorMessage = 'You are offline. Please connect to the internet to load accounts.';
+        _errorMessage =
+            'You are offline. Please connect to the internet to load accounts.';
+      }
+
+      // Fetch balance sheet independently — works even with cached accounts
+      if (isOnline) {
+        await _fetchBalanceSheet(accessToken);
       }
 
       _isLoading = false;
@@ -131,30 +155,31 @@ class AccountsProvider with ChangeNotifier {
       notifyListeners();
       return _accounts.isNotEmpty;
     } catch (e) {
-      _log.error('AccountsProvider', 'Error in fetchAccounts: $e');
+      _log.error(
+        'AccountsProvider',
+        'fetchAccounts failed with ${e.runtimeType}',
+      );
       // If we have cached accounts, show them even if sync fails
       if (_accounts.isEmpty) {
         // Provide more specific error messages based on exception type
         if (e is SocketException) {
-          _errorMessage = 'Network error. Please check your internet connection and try again.';
-          _log.error('AccountsProvider', 'SocketException: $e');
+          _errorMessage =
+              'Network error. Please check your internet connection and try again.';
         } else if (e is TimeoutException) {
-          _errorMessage = 'Request timed out. Please check your connection and try again.';
-          _log.error('AccountsProvider', 'TimeoutException: $e');
+          _errorMessage =
+              'Request timed out. Please check your connection and try again.';
         } else if (e is FormatException) {
           _errorMessage = 'Server response error. Please try again later.';
-          _log.error('AccountsProvider', 'FormatException: $e');
-        } else if (e.toString().contains('401') || e.toString().contains('unauthorized')) {
+        } else if (e.toString().contains('401') ||
+            e.toString().contains('unauthorized')) {
           _errorMessage = 'unauthorized';
-          _log.error('AccountsProvider', 'Unauthorized error: $e');
         } else if (e.toString().contains('HandshakeException') ||
-                   e.toString().contains('certificate') ||
-                   e.toString().contains('SSL')) {
-          _errorMessage = 'Secure connection error. Please check your internet connection and try again.';
-          _log.error('AccountsProvider', 'SSL/Certificate error: $e');
+            e.toString().contains('certificate') ||
+            e.toString().contains('SSL')) {
+          _errorMessage =
+              'Secure connection error. Please check your internet connection and try again.';
         } else {
           _errorMessage = 'Something went wrong. Please try again.';
-          _log.error('AccountsProvider', 'Unhandled exception: $e');
         }
       }
       _isLoading = false;
@@ -164,11 +189,50 @@ class AccountsProvider with ChangeNotifier {
     }
   }
 
+  /// Fetches balance sheet data and updates formatted net worth, assets,
+  /// and liabilities values for display. On failure, marks the existing
+  /// values as stale rather than clearing them.
+  Future<void> _fetchBalanceSheet(String accessToken) async {
+    try {
+      final result =
+          await _balanceSheetService.getBalanceSheet(accessToken: accessToken);
+      if (result['success'] == true) {
+        _familyCurrency = result['currency'] as String?;
+        final netWorth = result['net_worth'] as Map<String, dynamic>?;
+        final assets = result['assets'] as Map<String, dynamic>?;
+        final liabilities = result['liabilities'] as Map<String, dynamic>?;
+        _netWorthFormatted = netWorth?['formatted'] as String?;
+        _assetsFormatted = assets?['formatted'] as String?;
+        _liabilitiesFormatted = liabilities?['formatted'] as String?;
+        _isBalanceSheetStale = false;
+      } else {
+        // Keep existing values but mark as stale
+        if (_netWorthFormatted != null) {
+          _isBalanceSheetStale = true;
+        }
+      }
+    } catch (e) {
+      _log.error(
+        'AccountsProvider',
+        'Balance sheet fetch failed with ${e.runtimeType}',
+      );
+      // Keep existing values but mark as stale
+      if (_netWorthFormatted != null) {
+        _isBalanceSheetStale = true;
+      }
+    }
+  }
+
   void clearAccounts() {
     _accounts = [];
     _pagination = null;
     _errorMessage = null;
     _isInitializing = true;
+    _netWorthFormatted = null;
+    _assetsFormatted = null;
+    _liabilitiesFormatted = null;
+    _familyCurrency = null;
+    _isBalanceSheetStale = false;
     notifyListeners();
   }
 

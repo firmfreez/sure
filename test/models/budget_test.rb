@@ -58,8 +58,35 @@ class BudgetTest < ActiveSupport::TestCase
     refute Budget.budget_date_valid?(3.years.ago.beginning_of_month, family: @family)
   end
 
-  test "budget_date_valid? does not allow future dates beyond current month" do
-    refute Budget.budget_date_valid?(2.months.from_now, family: @family)
+  test "budget_date_valid? allows future dates up to 2 years ahead" do
+    travel_to Date.current.beginning_of_month do
+      assert Budget.budget_date_valid?(Date.current.beginning_of_month + 1.month, family: @family)
+      assert Budget.budget_date_valid?(Date.current.beginning_of_month + 2.years, family: @family)
+    end
+  end
+
+  test "budget_date_valid? does not allow future dates beyond 2 years ahead" do
+    travel_to Date.current.beginning_of_month do
+      refute Budget.budget_date_valid?(Date.current.beginning_of_month + 2.years + 1.month, family: @family)
+    end
+  end
+
+  test "budget_date_valid? for custom month start allows dates up to 2 years ahead" do
+    @family.update!(month_start_day: 15)
+
+    travel_to Date.current.beginning_of_month do
+      cap_start = @family.current_custom_month_period.start_date + 2.years
+      assert Budget.budget_date_valid?(cap_start, family: @family)
+    end
+  end
+
+  test "budget_date_valid? for custom month start does not allow dates beyond 2 years ahead" do
+    @family.update!(month_start_day: 15)
+
+    travel_to Date.current.beginning_of_month do
+      beyond_cap = @family.current_custom_month_period.start_date + 2.years + 1.month
+      refute Budget.budget_date_valid?(beyond_cap, family: @family)
+    end
   end
 
   test "previous_budget_param returns nil when date is too old" do
@@ -75,6 +102,49 @@ class BudgetTest < ActiveSupport::TestCase
     assert_nil budget.previous_budget_param
   end
 
+  test "next_budget_param returns next month when current month budget is selected" do
+    travel_to Date.current.beginning_of_month do
+      budget = Budget.create!(
+        family: @family,
+        start_date: Date.current.beginning_of_month,
+        end_date: Date.current.end_of_month,
+        currency: "USD"
+      )
+
+      assert_equal Budget.date_to_param(Date.current.beginning_of_month + 1.month), budget.next_budget_param
+    end
+  end
+
+  test "next_budget_param returns nil at future cap" do
+    travel_to Date.current.beginning_of_month do
+      cap_start = Date.current.beginning_of_month + 2.years
+      budget = Budget.create!(
+        family: @family,
+        start_date: cap_start,
+        end_date: cap_start.end_of_month,
+        currency: "USD"
+      )
+
+      assert_nil budget.next_budget_param
+    end
+  end
+
+  test "next_budget_param returns nil at future cap for custom month start" do
+    @family.update!(month_start_day: 15)
+
+    travel_to Date.current.beginning_of_month do
+      cap_start = @family.current_custom_month_period.start_date + 2.years
+      budget = Budget.create!(
+        family: @family,
+        start_date: cap_start,
+        end_date: cap_start + 1.month - 1.day,
+        currency: "USD"
+      )
+
+      assert_nil budget.next_budget_param
+    end
+  end
+
   test "actual_spending nets refunds against expenses in same category" do
     family = families(:dylan_family)
     budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
@@ -82,8 +152,7 @@ class BudgetTest < ActiveSupport::TestCase
     healthcare = Category.create!(
       name: "Healthcare #{Time.now.to_f}",
       family: family,
-      color: "#e74c3c",
-      classification: "expense"
+      color: "#e74c3c"
     )
 
     budget.sync_budget_categories
@@ -129,8 +198,7 @@ class BudgetTest < ActiveSupport::TestCase
     category = Category.create!(
       name: "Returns Only #{Time.now.to_f}",
       family: family,
-      color: "#3498db",
-      classification: "expense"
+      color: "#3498db"
     )
 
     budget.sync_budget_categories
@@ -157,7 +225,116 @@ class BudgetTest < ActiveSupport::TestCase
     )
   end
 
-  test "actual_spending does not subtract uncategorized income" do
+  test "to_donut_segments_json only includes top-level budget categories" do
+    family = @family
+    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
+    budget.update!(budgeted_spending: 500, currency: family.currency)
+
+    parent_category = Category.create!(
+      name: "Transport #{Time.now.to_f}",
+      family: family,
+      color: "#6471eb"
+    )
+
+    child_category = Category.create!(
+      name: "Petrol #{Time.now.to_f}",
+      family: family,
+      parent: parent_category,
+      color: "#61c9ea"
+    )
+
+    standalone_category = Category.create!(
+      name: "Shopping #{Time.now.to_f}",
+      family: family,
+      color: "#df4e92"
+    )
+
+    budget.sync_budget_categories
+
+    parent_budget_category = budget.budget_categories.find_by!(category: parent_category)
+    child_budget_category = budget.budget_categories.find_by!(category: child_category)
+    standalone_budget_category = budget.budget_categories.find_by!(category: standalone_category)
+
+    parent_budget_category.update!(budgeted_spending: 150, currency: family.currency)
+    child_budget_category.update!(budgeted_spending: 50, currency: family.currency)
+    standalone_budget_category.update!(budgeted_spending: 100, currency: family.currency)
+
+    budget.stubs(:allocations_valid?).returns(true)
+    budget.stubs(:available_to_spend).returns(200)
+    budget.stubs(:budget_category_actual_spending).with(parent_budget_category).returns(63.11)
+    budget.stubs(:budget_category_actual_spending).with(standalone_budget_category).returns(25)
+    budget.stubs(:budget_category_actual_spending).with(budget.uncategorized_budget_category).returns(0)
+
+    segments = budget.to_donut_segments_json
+
+    segment_ids = segments.pluck(:id)
+    segments_by_id = segments.index_by { |segment| segment[:id] }
+
+    assert_equal 3, segments.size
+    assert_includes segment_ids, parent_budget_category.id
+    assert_includes segment_ids, standalone_budget_category.id
+    assert_includes segment_ids, "unused"
+    refute_includes segment_ids, child_budget_category.id
+
+    assert_equal 63.11, segments_by_id[parent_budget_category.id][:amount]
+    assert_equal 25, segments_by_id[standalone_budget_category.id][:amount]
+    assert_equal 200, segments_by_id["unused"][:amount]
+  end
+
+  test "to_donut_segments_json includes uncategorized spending" do
+    family = @family
+    account = Account.create!(
+      family: family,
+      accountable: Depository.new,
+      name: "Checking",
+      status: "active",
+      currency: "USD",
+      balance: 0
+    )
+
+    category = Category.create!(
+      name: "Groceries #{Time.now.to_f}",
+      family: family,
+      color: "#407706",
+      lucide_icon: "shopping-bag"
+    )
+
+    budget = Budget.create!(
+      family: family,
+      start_date: Date.current.beginning_of_month,
+      end_date: Date.current.end_of_month,
+      currency: "USD",
+      budgeted_spending: 100
+    )
+
+    BudgetCategory.create!(
+      budget: budget,
+      category: category,
+      budgeted_spending: 100,
+      currency: "USD"
+    )
+
+    Entry.create!(
+      account: account,
+      entryable: Transaction.create!(category: nil),
+      date: Date.current,
+      name: "Uncategorized donut spending",
+      amount: 125,
+      currency: "USD"
+    )
+
+    budget = Budget.find(budget.id)
+    uncategorized = budget.uncategorized_budget_category
+    segments = budget.to_donut_segments_json
+    uncategorized_segment = segments.find { |segment| segment[:id] == uncategorized.id }
+
+    assert_equal 125, budget.actual_spending
+    assert_equal 125, uncategorized.actual_spending
+    assert_not_nil uncategorized_segment
+    assert_equal 125, uncategorized_segment[:amount]
+  end
+
+  test "actual_spending subtracts uncategorized refunds" do
     family = families(:dylan_family)
     budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
     account = accounts(:depository)
@@ -177,7 +354,7 @@ class BudgetTest < ActiveSupport::TestCase
       account: account,
       entryable: Transaction.create!(category: nil),
       date: Date.current,
-      name: "Uncategorized income",
+      name: "Uncategorized refund",
       amount: -150,
       currency: "USD"
     )
@@ -185,126 +362,113 @@ class BudgetTest < ActiveSupport::TestCase
     budget = Budget.find(budget.id)
     budget.sync_budget_categories
 
-    spending_with_income = budget.actual_spending
+    # The uncategorized refund should reduce overall actual_spending
+    # Other fixtures may contribute spending, so check that the net
+    # uncategorized amount (400 - 150 = 250) is reflected by comparing
+    # with and without the refund rather than asserting an exact total.
+    spending_with_refund = budget.actual_spending
 
-    Entry.find_by(name: "Uncategorized income").destroy!
+    # Remove the refund and check spending increases
+    Entry.find_by(name: "Uncategorized refund").destroy!
     budget = Budget.find(budget.id)
-    spending_without_income = budget.actual_spending
+    spending_without_refund = budget.actual_spending
 
-    assert_equal spending_without_income, spending_with_income
+    assert_equal 150, spending_without_refund - spending_with_refund
   end
 
-  test "budget_category_actual_spending ignores uncategorized income" do
+  test "most_recent_initialized_budget returns latest initialized budget before this one" do
     family = families(:dylan_family)
-    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
-    account = accounts(:depository)
 
-    uncategorized_bc = budget.uncategorized_budget_category
-    baseline = budget.budget_category_actual_spending(uncategorized_bc)
-
-    Entry.create!(
-      account: account,
-      entryable: Transaction.create!(category: nil),
-      date: Date.current,
-      name: "Uncategorized test expense",
-      amount: 400,
+    # Create an older initialized budget (2 months ago)
+    older_budget = Budget.create!(
+      family: family,
+      start_date: 2.months.ago.beginning_of_month,
+      end_date: 2.months.ago.end_of_month,
+      budgeted_spending: 3000,
+      expected_income: 5000,
       currency: "USD"
     )
 
-    Entry.create!(
-      account: account,
-      entryable: Transaction.create!(category: nil),
-      date: Date.current,
-      name: "Uncategorized test income",
-      amount: -100,
+    # Create a middle uninitialized budget (1 month ago)
+    Budget.create!(
+      family: family,
+      start_date: 1.month.ago.beginning_of_month,
+      end_date: 1.month.ago.end_of_month,
       currency: "USD"
     )
 
-    budget = Budget.find(budget.id)
-    budget.sync_budget_categories
-    uncategorized_bc = budget.uncategorized_budget_category
+    current_budget = Budget.find_or_bootstrap(family, start_date: Date.current)
 
-    assert_equal baseline + 400, budget.budget_category_actual_spending(uncategorized_bc)
+    assert_equal older_budget, current_budget.most_recent_initialized_budget
   end
 
-  test "to_donut_segments_json includes uncategorized spending" do
-    family = families(:dylan_family)
-    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
-    account = family.accounts.create!(
-      accountable: Depository.new,
-      name: "Budget test account #{SecureRandom.hex(4)}",
-      status: "active",
-      currency: family.currency,
-      balance: 0
+  test "most_recent_initialized_budget returns nil when none exist" do
+    family = families(:empty)
+    budget = Budget.create!(
+      family: family,
+      start_date: Date.current.beginning_of_month,
+      end_date: Date.current.end_of_month,
+      currency: "USD"
     )
 
-    # Make allocations deterministic for this test so donut segments are rendered
-    # from real category data rather than the fallback "unused" segment.
-    budget.budget_categories.update_all(budgeted_spending: 0)
-    budget.budget_categories
-      .joins(:category)
-      .where(categories: { parent_id: nil })
-      .first
-      .update!(budgeted_spending: 500)
-    budget.update!(budgeted_spending: 1000)
-
-    Entry.create!(
-      account: account,
-      entryable: Transaction.create!(category: nil),
-      date: Date.current,
-      name: "Uncategorized donut expense",
-      amount: 200,
-      currency: family.currency
-    )
-
-    budget = Budget.find(budget.id)
-    budget.sync_budget_categories
-
-    uncategorized_bc = budget.uncategorized_budget_category
-    expected_uncategorized_spending = budget.budget_category_actual_spending(uncategorized_bc)
-    segments = budget.to_donut_segments_json
-
-    assert expected_uncategorized_spending.positive?
-    uncategorized_segment = segments.find { |segment| segment[:id].to_s == uncategorized_bc.id.to_s }
-    assert uncategorized_segment.present?, "Expected uncategorized segment id=#{uncategorized_bc.id.inspect}, got: #{segments.inspect}"
-    assert_equal expected_uncategorized_spending, uncategorized_segment[:amount]
+    assert_nil budget.most_recent_initialized_budget
   end
 
-  test "category_avg_monthly_expense includes subcategory averages for parent categories" do
+  test "copy_from copies budgeted_spending expected_income and matching category budgets" do
     family = families(:dylan_family)
-    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
 
-    parent = Category.create!(
-      name: "Transport Avg #{Time.now.to_f}",
-      family: family,
-      color: "#6471eb",
-      classification: "expense"
-    )
+    # Use past months to avoid fixture conflict (fixture :one is at Date.current for dylan_family)
+    source_budget = Budget.find_or_bootstrap(family, start_date: 2.months.ago)
+    source_budget.update!(budgeted_spending: 4000, expected_income: 6000)
+    source_bc = source_budget.budget_categories.find_by(category: categories(:food_and_drink))
+    source_bc.update!(budgeted_spending: 500)
 
-    fuel = Category.create!(
-      name: "Fuel Avg #{Time.now.to_f}",
-      family: family,
-      parent: parent,
-      classification: "expense"
-    )
+    target_budget = Budget.find_or_bootstrap(family, start_date: 1.month.ago)
+    assert_nil target_budget.budgeted_spending
 
-    parking = Category.create!(
-      name: "Parking Avg #{Time.now.to_f}",
-      family: family,
-      parent: parent,
-      classification: "expense"
-    )
+    target_budget.copy_from!(source_budget)
+    target_budget.reload
 
-    income_statement = mock
-    budget.stubs(:income_statement).returns(income_statement)
+    assert_equal 4000, target_budget.budgeted_spending
+    assert_equal 6000, target_budget.expected_income
 
-    income_statement.stubs(:avg_expense).with(category: parent).returns(577)
-    income_statement.stubs(:avg_expense).with(category: fuel).returns(4549)
-    income_statement.stubs(:avg_expense).with(category: parking).returns(4000)
+    target_bc = target_budget.budget_categories.find_by(category: categories(:food_and_drink))
+    assert_equal 500, target_bc.budgeted_spending
+  end
 
-    assert_equal 9126, budget.category_avg_monthly_expense(parent)
-    assert_equal 4549, budget.category_avg_monthly_expense(fuel)
-    assert_equal 4000, budget.category_avg_monthly_expense(parking)
+  test "copy_from skips categories that dont exist in target" do
+    family = families(:dylan_family)
+
+    source_budget = Budget.find_or_bootstrap(family, start_date: 2.months.ago)
+    source_budget.update!(budgeted_spending: 4000, expected_income: 6000)
+
+    # Create a category only in the source budget
+    temp_category = Category.create!(name: "Temp #{Time.now.to_f}", family: family, color: "#aaaaaa")
+    source_budget.budget_categories.create!(category: temp_category, budgeted_spending: 100, currency: "USD")
+
+    target_budget = Budget.find_or_bootstrap(family, start_date: 1.month.ago)
+
+    # Should not raise even though target doesn't have the temp category
+    assert_nothing_raised { target_budget.copy_from!(source_budget) }
+    assert_equal 4000, target_budget.reload.budgeted_spending
+  end
+
+  test "copy_from leaves new categories at zero" do
+    family = families(:dylan_family)
+
+    source_budget = Budget.find_or_bootstrap(family, start_date: 2.months.ago)
+    source_budget.update!(budgeted_spending: 4000, expected_income: 6000)
+
+    target_budget = Budget.find_or_bootstrap(family, start_date: 1.month.ago)
+
+    # Add a new category only to the target
+    new_category = Category.create!(name: "New #{Time.now.to_f}", family: family, color: "#bbbbbb")
+    target_budget.budget_categories.create!(category: new_category, budgeted_spending: 0, currency: "USD")
+
+    target_budget.copy_from!(source_budget)
+
+    new_bc = target_budget.budget_categories.find_by(category: new_category)
+    assert_equal 0, new_bc.budgeted_spending
   end
 
   test "previous_budget_param returns param when date is valid" do
@@ -316,5 +480,47 @@ class BudgetTest < ActiveSupport::TestCase
     )
 
     assert_not_nil budget.previous_budget_param
+  end
+
+  test "uncategorized budget category actual spending reflects uncategorized transactions" do
+    family = families(:dylan_family)
+    budget = Budget.find_or_bootstrap(family, start_date: Date.current.beginning_of_month)
+    account = accounts(:depository)
+
+    # Create an uncategorized expense
+    Entry.create!(
+      account: account,
+      entryable: Transaction.create!(category: nil),
+      date: Date.current,
+      name: "Uncategorized lunch",
+      amount: 75,
+      currency: "USD"
+    )
+
+    budget = Budget.find(budget.id)
+    budget.sync_budget_categories
+
+    uncategorized_bc = budget.uncategorized_budget_category
+    spending = budget.budget_category_actual_spending(uncategorized_bc)
+
+    # Must be > 0 — the nil-key collision between Uncategorized and
+    # Other Investments synthetic categories previously caused this to return 0
+    assert spending >= 75, "Uncategorized actual spending should include the $75 transaction, got #{spending}"
+  end
+
+  test "days_remaining counts today through the end of the period" do
+    budget = budgets(:one)
+
+    travel_to budget.start_date do
+      assert_equal (budget.end_date - budget.start_date).to_i + 1, budget.days_remaining
+    end
+
+    travel_to budget.end_date do
+      assert_equal 1, budget.days_remaining
+    end
+
+    travel_to budget.end_date + 1.day do
+      assert_equal 0, budget.days_remaining
+    end
   end
 end

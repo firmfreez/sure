@@ -16,17 +16,21 @@ class Transaction::Search
   attribute :tags, array: true
   attribute :active_accounts_only, :boolean, default: true
 
-  attr_reader :family
+  attr_reader :family, :accessible_account_ids
 
-  def initialize(family, filters: {})
+  def initialize(family, filters: {}, accessible_account_ids: nil)
     @family = family
+    @accessible_account_ids = accessible_account_ids
     super(filters)
   end
 
   def transactions_scope
     @transactions_scope ||= begin
       # This already joins entries + accounts. To avoid expensive double-joins, don't join them again (causes full table scan)
-      query = family.transactions
+      query = family.transactions.merge(Entry.excluding_split_parents)
+
+      # Scope to accessible accounts when provided (including an empty array, which should yield no results)
+      query = query.where(entries: { account_id: accessible_account_ids }) unless accessible_account_ids.nil?
 
       query = apply_active_accounts_filter(query, active_accounts_only)
       query = apply_category_filter(query, category_ids)
@@ -48,7 +52,7 @@ class Transaction::Search
   # because those transactions are retirement savings, not daily income/expenses.
   def totals
     @totals ||= begin
-      Rails.cache.fetch("transaction_search_totals/#{cache_key_base}") do
+      Rails.cache.fetch("transaction_search_totals/v2/#{cache_key_base}") do
         scope = transactions_scope
 
         # Exclude tax-advantaged accounts from totals calculation
@@ -65,6 +69,14 @@ class Transaction::Search
                       "COALESCE(SUM(CASE WHEN entries.amount < 0 AND transactions.kind NOT IN (?) THEN ABS(entries.amount * COALESCE(er.rate, 1)) ELSE 0 END), 0) as income_total",
                       Transaction::TRANSFER_KINDS
                     ]),
+                    ActiveRecord::Base.sanitize_sql_array([
+                      "COALESCE(SUM(CASE WHEN entries.amount < 0 AND transactions.kind IN (?) THEN ABS(entries.amount * COALESCE(er.rate, 1)) ELSE 0 END), 0) as transfer_inflow_total",
+                      Transaction::TRANSFER_KINDS
+                    ]),
+                    ActiveRecord::Base.sanitize_sql_array([
+                      "COALESCE(SUM(CASE WHEN entries.amount >= 0 AND transactions.kind IN (?) THEN ABS(entries.amount * COALESCE(er.rate, 1)) ELSE 0 END), 0) as transfer_outflow_total",
+                      Transaction::TRANSFER_KINDS
+                    ]),
                     "COUNT(entries.id) as transactions_count"
                   )
                   .joins(
@@ -77,9 +89,11 @@ class Transaction::Search
         result ||= Struct.new(:expense_total, :income_total, :transactions_count).new(0, 0, 0)
 
         Totals.new(
-          count: result.transactions_count.to_i,
-          income_money: Money.new(result.income_total, family.currency),
-          expense_money: Money.new(result.expense_total, family.currency)
+          count: result&.transactions_count.to_i,
+          income_money: Money.new((result&.income_total || 0), family.currency),
+          expense_money: Money.new((result&.expense_total || 0), family.currency),
+          transfer_inflow_money: Money.new((result&.transfer_inflow_total || 0), family.currency),
+          transfer_outflow_money: Money.new((result&.transfer_outflow_total || 0), family.currency)
         )
       end
     end
@@ -90,12 +104,13 @@ class Transaction::Search
       family.id,
       Digest::SHA256.hexdigest(attributes.sort.to_h.to_json), # cached by filters
       family.entries_cache_version,
-      Digest::SHA256.hexdigest(family.tax_advantaged_account_ids.sort.to_json) # stable across processes
+      Digest::SHA256.hexdigest(family.tax_advantaged_account_ids.sort.to_json), # stable across processes
+      accessible_account_ids ? Digest::SHA256.hexdigest(accessible_account_ids.sort.to_json) : "all"
     ].join("/")
   end
 
   private
-    Totals = Data.define(:count, :income_money, :expense_money)
+    Totals = Data.define(:count, :income_money, :expense_money, :transfer_inflow_money, :transfer_outflow_money)
 
     def apply_active_accounts_filter(query, active_accounts_only_filter)
       if active_accounts_only_filter
@@ -174,23 +189,14 @@ class Transaction::Search
       return query unless statuses.present?
       return query if statuses.uniq.sort == [ "confirmed", "pending" ] # Both selected = no filter
 
-      pending_condition = <<~SQL.squish
-        (transactions.extra -> 'simplefin' ->> 'pending')::boolean = true
-        OR (transactions.extra -> 'plaid' ->> 'pending')::boolean = true
-        OR (transactions.extra -> 'lunchflow' ->> 'pending')::boolean = true
-      SQL
-
-      confirmed_condition = <<~SQL.squish
-        (transactions.extra -> 'simplefin' ->> 'pending')::boolean IS DISTINCT FROM true
-        AND (transactions.extra -> 'plaid' ->> 'pending')::boolean IS DISTINCT FROM true
-        AND (transactions.extra -> 'lunchflow' ->> 'pending')::boolean IS DISTINCT FROM true
-      SQL
-
+      # Delegate to the model scopes so the provider list stays sourced from
+      # Transaction::PENDING_PROVIDERS. Previously this method hardcoded only
+      # simplefin/plaid/lunchflow, silently dropping enable_banking transactions.
       case statuses.sort
       when [ "pending" ]
-        query.where(pending_condition)
+        query.pending
       when [ "confirmed" ]
-        query.where(confirmed_condition)
+        query.excluding_pending
       else
         query
       end

@@ -12,6 +12,7 @@ Official Helm chart for deploying the Sure Rails application on Kubernetes. It s
 - Optional subcharts
   - CloudNativePG (operator) + Cluster CR for PostgreSQL with HA support
   - OT-CONTAINER-KIT redis-operator for Redis HA (replication by default, optional Sentinel)
+- Optional Pipelock AI agent security proxy (forward proxy + MCP reverse proxy with DLP, prompt injection, and tool poisoning detection)
 - Security best practices: runAsNonRoot, readOnlyRootFilesystem, optional existingSecret, no hardcoded secrets
 - Scalability
   - Replicas (web/worker), resources, topology spread constraints
@@ -637,6 +638,245 @@ hpa:
     targetCPUUtilizationPercentage: 70
 ```
 
+## Pipelock (AI agent security proxy)
+
+[Pipelock](https://github.com/luckyPipewrench/pipelock) is an optional security proxy that scans AI agent traffic for secret exfiltration, prompt injection, tool poisoning, and SSRF. It runs as a separate Deployment with two listeners:
+
+- **Forward proxy** (port 8888): Scans outbound HTTPS from Faraday-based AI clients. Auto-injected via `HTTPS_PROXY` env vars when enabled.
+- **MCP reverse proxy** (port 8889): Scans inbound MCP traffic from external AI assistants.
+
+Recent Pipelock releases add default-on flight recorder receipts, safe-by-default receipt verification, MCP `defer` authorization, request-policy scoring, request-body prompt-injection blocking, SPIFFE-strict inbound mediation envelopes, scanner attribution on MCP block receipts, trusted domain allowlisting, MCP tool redirect profiles, learn-and-lock behavioural contracts, the wedge-detection health watchdog, `pipelock explain`, `pipelock keys status`, `pipelock support bundle`, verified `pipelock update`, and `pipelock doctor` checks for inert exemptions. Browser Shield, process sandboxing, request policy, redaction, and attack assessment are available via `extraConfig` and CLI. See the [Pipelock changelog](https://github.com/luckyPipewrench/pipelock/releases) for details.
+
+### Enabling Pipelock
+
+```yaml
+pipelock:
+  enabled: true
+  image:
+    tag: "2.8.0"
+  mode: balanced   # strict, balanced, or audit
+```
+
+### Trusted domains
+
+In Kubernetes, services often have public DNS records that resolve to private IPs. Without `trustedDomains`, the SSRF scanner blocks this legitimate traffic. Add trusted domains to allow them through:
+
+```yaml
+pipelock:
+  trustedDomains:
+    - "api.internal.example.com"
+    - "*.corp.example.com"
+```
+
+### MCP tool redirect profiles
+
+Redirect profiles route matched MCP tool calls to an audited handler program instead of blocking. The handler returns a synthetic MCP response, keeping the agent's flow intact while enforcing policy:
+
+```yaml
+pipelock:
+  mcpToolPolicy:
+    enabled: true
+    action: redirect      # or use per-rule action overrides
+    rules:
+      - name: redirect-fetch
+        toolPattern: "^(fetch|web_fetch)$"
+        action: redirect
+        redirectProfile: safe-fetch
+    redirectProfiles:
+      safe-fetch:
+        exec: ["/pipelock", "internal-redirect", "fetch-proxy"]
+        reason: "Route fetch calls through audited proxy"
+```
+
+### Request body scanning (pipelock 2.5+)
+
+Pipelock 2.5 added prompt-injection detection on outbound request bodies (JSON, form-encoded, raw text, WebSocket frames). When enabled, findings hard-block non-provider destinations even when `action: warn`; trusted provider hosts (OpenAI, Anthropic, etc.) remain exempt through the response-scanning exemption list.
+
+```yaml
+pipelock:
+  requestBodyScanning:
+    enabled: true
+    action: warn          # warn or block
+    maxBodyBytes: 5242880 # 5 MB; fail-closed above this
+    scanHeaders: true
+    headerMode: sensitive # "sensitive" or "all"
+```
+
+Enabled by default with `action: warn`, matching Pipelock's balanced preset. Review findings in logs before flipping to `action: block`.
+
+### Health watchdog
+
+The wedge-detection watchdog returns 503 on `/health` when a subsystem heartbeat (proxy hot path, MCP listener, rules-engine reload watcher) goes stale. Enabled by default in pipelock; the chart exposes the controls so operators can opt into per-subsystem detail in the health payload:
+
+```yaml
+pipelock:
+  healthWatchdog:
+    enabled: true
+    intervalSeconds: 2
+    exposeSubsystems: true  # adds per-subsystem boolean map to /health
+```
+
+### Signed action receipts
+
+The flight recorder writes hash-chained, Ed25519-signed action receipts. The chart renders the `flight_recorder` config, but recording is inert until you mount a writable evidence directory and the signing key named by `signingKeyPath`.
+
+Generate the receipt key once:
+
+```bash
+# --out must be an absolute path; "$PWD/..." writes the key into the current directory.
+pipelock signing key generate --purpose receipt-signing --out "$PWD/flight-recorder-signing.key" --id sure-k8s
+kubectl create secret generic sure-pipelock-receipts \
+  --namespace sure \
+  --from-file=flight-recorder-signing.key=./flight-recorder-signing.key
+```
+
+If you do not have the `pipelock` binary installed, generate the key with the image instead: `docker run --rm -v "$PWD:/out" ghcr.io/luckypipewrench/pipelock:2.8.0 signing key generate --purpose receipt-signing --out /out/flight-recorder-signing.key --id sure-k8s`.
+
+Then mount persistent evidence storage and the key:
+
+```yaml
+pipelock:
+  flightRecorder:
+    enabled: true
+    dir: /var/lib/pipelock/evidence
+    signingKeyPath: /run/secrets/pipelock/flight-recorder-signing.key
+    requireReceipts: false
+    redact: true
+  extraVolumes:
+    - name: pipelock-evidence
+      persistentVolumeClaim:
+        claimName: sure-pipelock-evidence
+    - name: pipelock-receipt-key
+      secret:
+        secretName: sure-pipelock-receipts
+        # 0440 (group-read), not 0400: the chart runs Pipelock as uid 1000 with
+        # fsGroup 1000, so the secret file is owned root:1000. A 0400 file would
+        # be unreadable by the non-root process and Pipelock would crash on
+        # startup with a key-load error. 0440 lets the fsGroup read it.
+        defaultMode: 0440
+  extraVolumeMounts:
+    - name: pipelock-evidence
+      mountPath: /var/lib/pipelock/evidence
+    - name: pipelock-receipt-key
+      # Do not mount this under /etc/pipelock; the chart already mounts the
+      # Pipelock ConfigMap there.
+      mountPath: /run/secrets/pipelock
+      readOnly: true
+```
+
+Only set `requireReceipts: true` after confirming receipts are being written. With it enabled, allow-path traffic fails closed if Pipelock cannot sign or persist the receipt.
+
+### Validating your config
+
+Pipelock includes CLI tools for config validation and deployment diagnostics:
+
+```bash
+# Create and run a broader assessment workspace
+pipelock assess init --config pipelock.yaml
+
+# Score your config's security posture (0-100)
+pipelock audit score --config pipelock.yaml
+
+# Report whether configured protections are actually enforceable
+pipelock doctor
+
+# Explain a block and the exact config knob that scanner reads
+pipelock explain --config pipelock.yaml "https://example.com/path"
+```
+
+### Exposing MCP to external AI assistants
+
+When running in Kubernetes, external AI agents need network access to the MCP reverse proxy port. Enable the Pipelock Ingress:
+
+```yaml
+pipelock:
+  enabled: true
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+    hosts:
+      - host: pipelock.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts: [pipelock.example.com]
+        secretName: pipelock-tls
+```
+
+Security: The Ingress routes to port `mcp` (8889). Ensure `MCP_API_TOKEN` is set so the MCP endpoint requires authentication. The Ingress itself does not add auth.
+
+### Metrics (Prometheus)
+
+Pipelock exposes `/metrics` on the forward proxy port. Enable scraping with a ServiceMonitor:
+
+```yaml
+pipelock:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    portName: proxy   # matches Service port name for 8888
+    additionalLabels:
+      release: prometheus   # match your Prometheus Operator selector
+```
+
+### PodDisruptionBudget
+
+Protect Pipelock from node drains:
+
+```yaml
+pipelock:
+  pdb:
+    enabled: true
+    maxUnavailable: 1   # safe for single-replica; use minAvailable when replicas > 1
+```
+
+Note: Setting `minAvailable` with `replicas=1` blocks eviction entirely. Use `maxUnavailable` for single-replica deployments.
+
+### Structured logging
+
+```yaml
+pipelock:
+  logging:
+    format: json        # json or text
+    output: stdout
+    includeAllowed: false
+    includeBlocked: true
+```
+
+### Extra config (escape hatch)
+
+For Pipelock config sections not covered by structured values (session profiling, data budgets, kill switch, sandbox, reverse proxy, adaptive enforcement, request policy, redaction, etc.), use `extraConfig`:
+
+```yaml
+pipelock:
+  extraConfig:
+    session_profiling:
+      enabled: true
+      max_sessions: 1000
+    adaptive_enforcement:
+      enabled: true
+      exempt_domains:
+        - "*.example.com"
+    kill_switch:
+      api_listen: ":9090"    # dedicated port for kill switch API
+```
+
+These are appended verbatim to `pipelock.yaml`. Do not duplicate keys already rendered by the chart.
+
+### Requiring Pipelock for external assistants
+
+To enforce that Pipelock is enabled whenever the external AI assistant feature is active:
+
+```yaml
+pipelock:
+  requireForExternalAssistant: true
+```
+
+This causes `helm template` / `helm install` to fail if `rails.externalAssistant.enabled=true` and `pipelock.enabled=false`. Note: this only guards the `externalAssistant` path. Direct MCP access via `MCP_API_TOKEN` is configured through env vars and not detectable from Helm values.
+
 ## Security Notes
 
 - Never commit secrets in `values.yaml`. Use `rails.existingSecret` or a tool like Sealed Secrets.
@@ -660,6 +900,7 @@ See `values.yaml` for the complete configuration surface, including:
 - `migrations.*`: strategy job or initContainer
 - `simplefin.encryption.*`: enable + backfill options
 - `cronjobs.*`: custom CronJobs
+- `pipelock.*`: AI agent security proxy (forward proxy, MCP reverse proxy, DLP, injection scanning, request-body scanning, health watchdog, signed receipts, trusted domains, tool redirect profiles, logging, serviceMonitor, ingress, PDB, extraVolumes, extraVolumeMounts, extraConfig)
 - `service.*`, `ingress.*`, `serviceMonitor.*`, `hpa.*`
 
 ## Helm tests

@@ -1,33 +1,64 @@
 ---
 ru:
+  account:
+    entries:
+      destroy:
+        success: Запись успешно удалена.
   accounts:
     account:
+      change_simplefin_account: Изменить счёт SimpleFIN
+      complete_setup: Завершить настройку
+      default_label: По умолчанию
+      delete: Удалить счёт
+      disable: Отключить счёт
+      edit: Редактировать
+      enable: Включить счёт
+      exclude_from_reports: Исключить из всех отчётов
+      excluded_from_reports_indicator: Исключено из отчётов
+      include_in_reports: Включить в отчёты
       link_lunchflow: Связь с Lunch Flow
       link_provider: Ссылка на провайдера
-      unlink_provider: Отвязаться от провайдера
+      remove_default: Снять с умолчания
+      set_default: Установить по умолчанию
+      sharing: Совместное использование
       troubleshoot: Устранение неполадок
+      unlink_provider: Отвязаться от провайдера
     chart:
       data_not_available: Данные недоступны за выбранный период.
+    confirm_unlink:
+      confirm_button: Подтвердите и отмените связь
+      description_html: Вы собираетесь отменить связь <strong>%{account_name}</strong> с <strong>%{provider_name}</strong>. Это преобразует его в счет, созданную вручную.
+      title: Отвязать счет от провайдера?
+      warning_can_delete: После отвязки вы сможете при необходимости удалить счет.
+      warning_manual_updates: Вам нужно будет добавлять транзакции и обновлять балансы вручную.
+      warning_no_sync: Счет больше не будет автоматически синхронизироваться с вашим провайдером.
+      warning_title: Что это значит
+      warning_transactions_kept: Все существующие транзакции и балансы будут сохранены.
     create:
       success: Счет %{type} создан
     destroy:
-      success: Счет %{type} планируется удалить
       cannot_delete_linked: Невозможно удалить связанную счет. Пожалуйста, сначала отключите его.
+      failed: Не удалось удалить ресурс. Попробуйте позже.
+      success: Счет %{type} планируется удалить
     empty:
       empty_message: Добавьте счет через подключение, импорт или ввод вручную.
       new_account: Новый счет
       no_accounts: Счетов пока нет
     form:
-      balance: Текущий баланс
-      name_label: Имя счета
-      name_placeholder: Пример имени счета
       additional_details: Дополнительная информация
-      institution_name_label: Название учреждения
-      institution_name_placeholder: например, Чейз Банк
+      balance: 'Баланс на дату:'
+      exclude_from_reports: Исключить из всех отчётов
       institution_domain_label: Домен учреждения
       institution_domain_placeholder: например, Chase.com
+      institution_name_label: Название учреждения
+      institution_name_placeholder: например, Чейз Банк
+      name_label: Имя счета
+      name_placeholder: Пример имени счета
       notes_label: Примечания
       notes_placeholder: Храните дополнительную информацию, такую ​​как номера счетов, коды сортировки, IBAN, номера маршрутов и т. д.
+      opening_balance_date_label: Дата начального баланса
+      enable_category_matcher_label: Включить сопоставление категорий
+      enable_category_matcher_hint: Если этот параметр включен, к импортированным транзакциям применяется категория, предложенная поставщиком. Отключите, чтобы оставить новые транзакции без категории.
       submit: Сохранить счет
     index:
       accounts: Счета
@@ -35,9 +66,12 @@ ru:
         other_accounts: Другие счета
       new_account: Новый счет
       sync: Синхронизировать все
-    sync_all:
-      syncing: Синхронизация счетов...
+      cancel_sync: Отменить синхронизацию
     new:
+      container:
+        close: Закрыть
+        navigate: Перейти
+        select: Выбрать
       import_accounts: Импортировать счета
       method_selector:
         connected_entry: Связать счет
@@ -47,14 +81,15 @@ ru:
         manual_entry: Введите баланс счета
         title: Как бы вы хотели это добавить?
       title: Что бы вы хотели добавить?
+    not_authorized: У вас нет прав для управления этим счётом
+    select_provider:
+      already_linked: Счет уже привязан к провайдеру
+      description: Выберите, какого провайдера вы хотите использовать для связи %{account_name}
+      no_providers: Ни один провайдер в настоящее время не настроен
+      title: Выберите провайдера для связи
+    set_default:
+      depository_only: Только наличные и кредитные счета могут быть установлены по умолчанию.
     show:
-      tabs:
-        activity: Активность
-        overview: Обзор
-        holdings: Активы
-      activity_date:
-        end_of_day_balance_tooltip: Баланс на конец дня после всех транзакций и корректировок
-        no_balance_data: Нет данных о балансе за эту дату
       activity:
         amount: Количество
         balance: Баланс
@@ -73,6 +108,7 @@ ru:
         pending: В ожидании
         search:
           placeholder: Поиск записей по имени
+        search_placeholder: Поиск записей по названию
         status: Статус
         title: Активность
       chart:
@@ -81,9 +117,35 @@ ru:
         total_account_value: Общая стоимость счета
         holdings_value: Стоимость активов
         cash_value: Денежные средства
-        estimated_value: "Оценочная стоимость"
+        estimated_value: Оценочная стоимость
         debt_balance: Остаток долга
         remaining_principal_balance: Остаток основного долга
+      header:
+        complete_setup: Завершить настройку
+      limited_fx_history_warning: История обменных курсов доступна только с %{date}. Операции до этой даты используют приблизительные валютные конверсии — это может произойти, когда провайдер FX предлагает ограниченное историческое окно.
+      menu:
+        confirm_accept: Удалить "%{name}"
+        confirm_body_html: "<p>Удалив эту счет, вы сотрете историю ее стоимости, что повлияет на различные аспекты вашей учетной записи в целом. Это действие окажет непосредственное влияние на расчета вашего собственного капитала и графики учетной записи.</p><br /> <p>После удаления вы не сможете восстановить информацию об учетной записи, поскольку вам придется добавить ее как новую счет.</p>"
+        confirm_title: Удалить счет?
+        delete_account: Удалить счёт
+        edit: Редактировать
+        exclude_from_reports: Исключить из всех отчётов
+        import: Импорт транзакций
+        import_trades: Импортные сделки
+        import_transactions: Импорт транзакций
+        include_in_reports: Включить в отчёты
+        manage: Управление счетами
+        sharing: Совместное использование
+        statements: Выписки
+        delete: Удалить счет
+      tabs:
+        activity: Активность
+        holdings: Активы
+        overview: Обзор
+        statements: Выписки
+      activity_date:
+        end_of_day_balance_tooltip: Баланс на конец дня после всех транзакций и корректировок
+        no_balance_data: Нет данных о балансе за эту дату
       reconciliation:
         start_balance_label: Начальный баланс
         start_balance_tooltip: Баланс счета на начало дня
@@ -136,77 +198,66 @@ ru:
         crypto_market_changes_tooltip: Изменение стоимости из-за движения рынка
         crypto_end_balance_tooltip: Рассчитанный баланс после всей активности
         crypto_final_balance_tooltip: Итоговая стоимость криптоактивов за день
-      menu:
-        confirm_accept: Удалить "%{name}"
-        confirm_body_html: <p>Удалив эту счет, вы сотрете историю ее стоимости, что повлияет на различные аспекты вашей учетной записи в целом. Это действие окажет непосредственное влияние на расчета вашего собственного капитала и графики учетной записи.</p><br /> <p>После удаления вы не сможете восстановить информацию об учетной записи, поскольку вам придется добавить ее как новую счет.</p>
-        confirm_title: Удалить счет?
-        edit: Редактировать
-        delete: Удалить счет
-        import: Импорт транзакций
-        import_trades: Импортные сделки
-        import_transactions: Импорт транзакций
-        manage: Управление счетами
-    update:
-      success: Счет %{type} обновлен
     sidebar:
-      missing_data: Отсутствуют исторические данные
-      missing_data_description: '%{product} использует сторонних провайдеров для получения исторических обменных курсов, цен на ценные бумаги и т. д. Эти данные необходимы для расчета точных исторических остатков на счетах.'
       configure_providers: Настройте своих провайдеров здесь.
+      missing_data: Отсутствуют исторические данные
+      missing_data_description: "%{product} использует сторонних провайдеров для получения исторических обменных курсов, цен на ценные бумаги и т. д. Эти данные необходимы для расчета точных исторических остатков на счетах."
+      new_account: Новый счет
+      new_account_group: Новый %{account_group}
+      new_asset: Новый актив
+      new_debt: Новый долг
       tabs:
         all: Все
         assets: Ресурсы
         debts: Долги
-      new_asset: Новый актив
-      new_debt: Новый долг
-      new_account: Новый счет
-      new_account_group: Новый %{account_group}
-    types:
-      depository: Наличные
-      investment: Инвестиции
-      crypto: Крипто
-      property: Недвижимость
-      vehicle: Транспортное средство
-      other_asset: Другой актив
-      credit_card: Кредитная карта
-      loan: Заем
-      other_liability: Другая ответственность
-    tax_treatments:
-      taxable: облагаемый налогом
-      tax_deferred: Отложенный налог
-      tax_exempt: Освобождён от налогов
-      tax_advantaged: Налоговые льготы
-    tax_treatment_descriptions:
-      taxable: Прибыль, облагаемая налогом при реализации
-      tax_deferred: Взносы, подлежащие вычету, облагаются налогом при снятии средств
-      tax_exempt: Взносы после уплаты налогов, прибыль не облагается налогом
-      tax_advantaged: Специальные налоговые льготы с условиями
     subtype_regions:
-      us: Соединенные Штаты
-      ru: Россия
-      uk: Великобритания
-      ca: Канада
       au: Австралия
+      ca: Канада
       eu: Европа
       generic: Общий
-    confirm_unlink:
-      title: Отвязать счет от провайдера?
-      description_html: Вы собираетесь отменить связь <strong>%{account_name}</strong> с <strong>%{provider_name}</strong>. Это преобразует его в счет, созданную вручную.
-      warning_title: Что это значит
-      warning_no_sync: Счет больше не будет автоматически синхронизироваться с вашим провайдером.
-      warning_manual_updates: Вам нужно будет добавлять транзакции и обновлять балансы вручную.
-      warning_transactions_kept: Все существующие транзакции и балансы будут сохранены.
-      warning_can_delete: После отвязки вы сможете при необходимости удалить счет.
-      confirm_button: Подтвердите и отмените связь
+      in: Индия
+      uk: Великобритания
+      us: Соединенные Штаты
+      ru: Россия
+    sync_all:
+      syncing: Синхронизация счетов...
+    tax_treatment_descriptions:
+      tax_advantaged: Специальные налоговые льготы с условиями
+      tax_deferred: Взносы, подлежащие вычету, облагаются налогом при снятии средств
+      tax_exempt: Взносы после уплаты налогов, прибыль не облагается налогом
+      taxable: Прибыль, облагаемая налогом при реализации
+    tax_treatments:
+      tax_advantaged: Налоговые льготы
+      tax_deferred: Отложенный налог
+      tax_exempt: Освобождён от налогов
+      taxable: облагаемый налогом
+    types:
+      credit_card: Кредитная карта
+      crypto: Крипто
+      depository: Наличные
+      investment: Инвестиции
+      loan: Заем
+      other_asset: Другой актив
+      other_liability: Другая ответственность
+      property: Недвижимость
+      vehicle: Транспортное средство
+    types_plural:
+      credit_card: Кредитные карты
+      crypto: Крипто
+      depository: Наличные
+      investment: Инвестиции
+      loan: Кредиты
+      other_asset: Другие активы
+      other_liability: Другие обязательства
+      property: Недвижимость
+      vehicle: Транспорт
     unlink:
-      success: Связь с счетом успешно отменена. Теперь это ручной счет.
-      not_linked: Счет не привязан к провайдеру
       error: 'Не удалось отсоединить счет: %{error}.'
       generic_error: Произошла непредвиденная ошибка. Пожалуйста, попробуйте еще раз.
-    select_provider:
-      title: Выберите провайдера для связи
-      description: Выберите, какого провайдера вы хотите использовать для связи %{account_name}
-      already_linked: Счет уже привязан к провайдеру
-      no_providers: Ни один провайдер в настоящее время не настроен
+      not_linked: Счет не привязан к провайдеру
+      success: Связь с счетом успешно отменена. Теперь это ручной счет.
+    update:
+      success: Счет %{type} обновлен
   email_confirmations:
     new:
       invalid_token: Недействительная или просроченная ссылка для подтверждения.

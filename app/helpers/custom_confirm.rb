@@ -2,17 +2,24 @@
 # default browser confirm API via Turbo.
 class CustomConfirm
   class << self
+    # `body` is the one field the dialog renders as HTML — confirm_dialog_controller
+    # assigns it to innerHTML so bodies such as accounts' `confirm_body_html` can
+    # carry markup, while title and button label go through textContent. Every
+    # caller passes a user-named record here, so the name is escaped on its way
+    # into the body: without it a record named "<img src=x onerror=…>" executes
+    # as soon as someone opens the confirmation.
+    # `titleize` / `downcase` are English-shaped and stay applied to the record
+    # name so the English copy is unchanged; a locale that needs different
+    # casing can absorb it in its own string.
     def for_resource_deletion(resource_name, high_severity: false)
-      resource_label = I18n.t("shared.confirm_dialog.resources.#{resource_name}", default: resource_name.to_s.titleize)
-      resource_title = resource_label.to_s
-      resource_lower = resource_label.to_s.downcase
-
       new(
         destructive: true,
         high_severity: high_severity,
-        title: I18n.t("shared.confirm_dialog.resource_delete.title", resource: resource_title),
-        body: I18n.t("shared.confirm_dialog.resource_delete.body", resource: resource_lower),
-        btn_text: I18n.t("shared.confirm_dialog.resource_delete.confirm", resource: resource_title)
+        title: I18n.t("shared.custom_confirm.resource_deletion_title", resource: resource_name.titleize),
+        # Escaped, unlike the other two: this is the only field the dialog
+        # renders as HTML.
+        body: I18n.t("shared.custom_confirm.resource_deletion_body", resource: ERB::Util.html_escape(resource_name.downcase)),
+        btn_text: I18n.t("shared.custom_confirm.resource_deletion_btn_text", resource: resource_name.titleize)
       )
     end
   end
@@ -42,14 +49,14 @@ class CustomConfirm
     end
 
     def default_title
-      I18n.t("shared.confirm_dialog.title")
+      I18n.t("shared.custom_confirm.default_title")
     end
 
     def default_body
-      I18n.t("shared.confirm_dialog.body")
+      I18n.t("shared.custom_confirm.default_body")
     end
 
     def default_btn_text
-      I18n.t("shared.confirm_dialog.confirm")
+      I18n.t("shared.custom_confirm.default_btn_text")
     end
 end
