@@ -76,14 +76,34 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     doc = Nokogiri::HTML::Document.parse(response.body)
-    checkbox_values = doc.css("input[name='q[categories][]']").map { |node| node["value"] }
+    checkbox_values = doc.css("input[name='q[category_ids][]']").map { |node| node["value"] }
 
-    parent_index = checkbox_values.index(categories(:food_and_drink).name)
-    child_index = checkbox_values.index(categories(:subcategory).name)
+    parent_index = checkbox_values.index(categories(:food_and_drink).id)
+    child_index = checkbox_values.index(categories(:subcategory).id)
 
     assert_not_nil parent_index
     assert_not_nil child_index
     assert_equal parent_index + 1, child_index
+  end
+
+  test "category filter restores legacy names and submits category IDs" do
+    parent = categories(:food_and_drink)
+    get transactions_url(q: { categories: [ parent.name, Category.all_uncategorized_names.last ] })
+
+    assert_response :success
+    assert_select "input[name='q[category_ids][]'][value='#{parent.id}'][checked]"
+    assert_select "input[name='q[category_ids][]'][value='#{Category::UNCATEGORIZED_FILTER_TOKEN}'][checked]"
+    assert_select "input[name='q[categories][]']", count: 0
+  end
+
+  test "category filter gives explicit IDs precedence over legacy names" do
+    parent = categories(:food_and_drink)
+    child = categories(:subcategory)
+    get transactions_url(q: { categories: [ parent.name ], category_ids: [ child.id ] })
+
+    assert_response :success
+    assert_select "input[name='q[category_ids][]'][value='#{parent.id}'][checked]", count: 0
+    assert_select "input[name='q[category_ids][]'][value='#{child.id}'][checked]"
   end
 
   test "creates with transaction details" do

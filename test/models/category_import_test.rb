@@ -11,6 +11,26 @@ class CategoryImportTest < ActiveSupport::TestCase
     CSV
   end
 
+  test "round trip preserves same-name categories under different parents and their transactions" do
+    first_parent = categories(:food_and_drink)
+    second_parent = categories(:income)
+    first = @family.categories.create!(name: "Shared import name", parent: first_parent, color: first_parent.color)
+    second = @family.categories.create!(name: "Shared import name", parent: second_parent, color: second_parent.color)
+    transactions(:one).update!(category: second)
+    csv = CSV.generate do |output|
+      output << %w[name color parent_category icon]
+      [ first, second ].each { |category| output << [ category.name, category.color, category.parent.name, category.lucide_icon ] }
+    end
+    import = @family.imports.create!(type: "CategoryImport", raw_file_str: csv, col_sep: ",")
+    import.generate_rows_from_csv
+    assert_no_difference "Category.count" do
+      import.import!
+    end
+    assert_equal first_parent.id, first.reload.parent_id
+    assert_equal second_parent.id, second.reload.parent_id
+    assert_equal second.id, transactions(:one).reload.category_id
+  end
+
   test "imports categories from Sure export" do
     import = @family.imports.create!(type: "CategoryImport", raw_file_str: @csv, col_sep: ",")
     import.generate_rows_from_csv

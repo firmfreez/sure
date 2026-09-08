@@ -1,4 +1,15 @@
 module TransactionsHelper
+  def transaction_category_filter_checked?(category, query)
+    if query[:category_ids].present?
+      value = category.id.presence || Category::UNCATEGORIZED_FILTER_TOKEN
+      query[:category_ids].include?(value)
+    elsif category.persisted?
+      Array(query[:categories]).include?(category.name)
+    else
+      (Array(query[:categories]) & Category.all_uncategorized_names).any?
+    end
+  end
+
   def transaction_search_filters
     [
       { key: "account_filter", label: t("transactions.search.filters.account"), icon: "layers" },

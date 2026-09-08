@@ -421,7 +421,10 @@ class Budget < ApplicationRecord
   end
 
   def category_avg_monthly_expense(category)
-    income_statement.avg_expense(category: category)
+    own_average = income_statement.avg_expense(category: category)
+    return own_average unless category.parent?
+
+    own_average + category.subcategories.sum { |subcategory| income_statement.avg_expense(category: subcategory) }
   end
 
   def available_to_spend

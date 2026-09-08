@@ -1,5 +1,8 @@
 module Authentication
   extend ActiveSupport::Concern
+  include HomeAssistantAuthentication
+
+  HOME_ASSISTANT_PROVIDER = HomeAssistantAuthentication::PROVIDER
 
   included do
     before_action :set_request_details
@@ -19,10 +22,14 @@ module Authentication
       if session_record = find_session_by_cookie
         Current.session = session_record
       else
-        if self_hosted_first_login?
-          redirect_to new_registration_url
+        if (session_record = find_or_create_home_assistant_session)
+          Current.session = session_record
         else
-          redirect_to new_session_url
+          if self_hosted_first_login?
+            redirect_to new_registration_url
+          else
+            redirect_to new_session_url
+          end
         end
       end
     end

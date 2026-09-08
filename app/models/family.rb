@@ -527,7 +527,9 @@ class Family < ApplicationRecord
 
   # Used for invalidating entry related aggregation queries
   def entries_cache_version
-    "#{entries.count}-#{entries.maximum(:updated_at)&.to_f || 0}"
+    # Parent changes affect category rollups even when no entry was edited.
+    [ entries.count, entries.maximum(:updated_at)&.to_f || 0,
+      categories.count, categories.maximum(:updated_at)&.to_f || 0 ].join("-")
   end
 
   # Used for invalidating caches keyed on entries (e.g. the transactions
