@@ -26,6 +26,48 @@ class AccountActivityTest < ApplicationSystemTestCase
     )
   end
 
+  test "day shortcut prefills the date through expense income and transfer tabs" do
+    date = @valuation_entry.date
+    visit account_url(@account, tab: "activity")
+
+    within "##{dom_id(@account, "entries_#{date}")}" do
+      find("summary a[data-turbo-frame='modal']").click
+    end
+
+    within "turbo-frame#modal" do
+      assert_selector "input[name='entry[date]'][value='#{date.iso8601}']"
+      click_link "Income"
+      assert_selector "input[name='entry[nature]'][value='inflow']", visible: :all
+      assert_selector "input[name='entry[date]'][value='#{date.iso8601}']"
+      click_link "Transfer"
+      assert_selector "input[name='transfer[date]'][value='#{date.iso8601}']"
+      click_link "Expense"
+      assert_selector "input[name='entry[date]'][value='#{date.iso8601}']"
+    end
+  end
+
+  test "remembers the entered date and Today resets it across new forms" do
+    date = 5.days.ago.to_date
+    open_new_activity_transaction
+    find("input[name='entry[date]']").set(date)
+    wait_for_remembered_date(date)
+
+    open_new_activity_transaction
+    assert_equal date.iso8601, find("input[name='entry[date]']").value
+
+    click_link "Transfer"
+    assert_equal date.iso8601, find("input[name='transfer[date]']").value
+    click_button "Today"
+    assert_equal Date.current.iso8601, find("input[name='transfer[date]']").value
+    wait_for_remembered_date(Date.current)
+
+    click_link "Expense"
+    assert_equal Date.current.iso8601, find("input[name='entry[date]']").value
+
+    visit new_trade_url(account_id: accounts(:investment).id)
+    assert_equal Date.current.iso8601, find("input[name='model[date]']").value
+  end
+
   test "account activity shows duplicate action for a selected transaction" do
     visit account_url(@account, tab: "activity")
 
@@ -132,6 +174,22 @@ class AccountActivityTest < ApplicationSystemTestCase
   end
 
   private
+    def open_new_activity_transaction
+      visit account_url(@account, tab: "activity")
+      within "[data-testid='activity-menu']" do
+        click_button "New"
+        click_link "New transaction"
+      end
+    end
+
+    def wait_for_remembered_date(date)
+      page.document.synchronize do
+        unless users(:family_admin).reload.last_entry_date == date
+          raise Capybara::ExpectationNotMet, "Entry date preference has not been saved"
+        end
+      end
+    end
+
     def ensure_tailwind_build
       return if self.class.instance_variable_defined?(:@tailwind_css_built)
 

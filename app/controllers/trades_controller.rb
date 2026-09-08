@@ -8,6 +8,7 @@ class TradesController < ApplicationController
     @account = accessible_accounts.find_by(id: params[:account_id])
     @model = Current.family.entries.new(
       account: @account,
+      date: params[:date].presence || Current.user.last_entry_date,
       currency: @account ? @account.currency : Current.family.currency,
       entryable: Trade.new
     )
@@ -29,6 +30,7 @@ class TradesController < ApplicationController
     @model = Trade::CreateForm.new(create_params.merge(account: @account)).create
 
     if @model.persisted?
+      Current.user.remember_entry_date(@model.date.iso8601)
       # Mark manually created entries as user-modified to protect from sync
       if @model.is_a?(Entry)
         @model.lock_saved_attributes!

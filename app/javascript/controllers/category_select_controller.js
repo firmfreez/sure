@@ -54,7 +54,12 @@ export default class extends Controller {
     this.filter();
     this.hideParentPicker();
 
-    requestAnimationFrame(() => this.searchTarget.focus());
+    requestAnimationFrame(() => {
+      this.menuTarget.scrollIntoView({ block: "nearest" });
+      if (getComputedStyle(this.menuTarget).position !== "static") {
+        this.searchTarget.focus({ preventScroll: true });
+      }
+    });
   }
 
   close() {
@@ -70,6 +75,16 @@ export default class extends Controller {
 
     const rawQuery = this.searchTarget.value.trim();
     const query = rawQuery.toLowerCase();
+    const matchingParentIds = new Set();
+
+    for (const option of this.optionTargets) {
+      if (
+        option.dataset.categoryName.toLowerCase().includes(query) &&
+        option.dataset.categoryParentId
+      ) {
+        matchingParentIds.add(option.dataset.categoryParentId);
+      }
+    }
 
     let exactMatch = false;
     let anyVisible = false;
@@ -78,7 +93,10 @@ export default class extends Controller {
       const name = option.dataset.categoryName.toLowerCase();
       const matches = name.includes(query);
 
-      option.classList.toggle("hidden", !matches);
+      option.classList.toggle(
+        "hidden",
+        !matches && !matchingParentIds.has(option.dataset.categoryId),
+      );
       if (matches) anyVisible = true;
 
       if (name === query) exactMatch = true;
@@ -118,26 +136,24 @@ export default class extends Controller {
       return;
     }
 
-    if (!this.createFormTarget.classList.contains("hidden")) {
-      if (!this.creating) this.createCategory();
-      return;
-    }
-
-    // Nothing to create (locked, or the name exists already): pick the match.
+    // Enter selects an existing result; creating requires an explicit action.
     const query = this.searchTarget.value.trim().toLowerCase();
     if (!query) return;
 
-    const visible = this.optionTargets.filter(
-      (option) => !option.classList.contains("hidden"),
+    const matchingOptions = this.optionTargets.filter(
+      (option) =>
+        !option.classList.contains("hidden") &&
+        option.dataset.categoryName.toLowerCase().includes(query),
     );
     const match =
-      visible.find(
+      matchingOptions.find(
         (option) => option.dataset.categoryName.toLowerCase() === query,
-      ) ?? visible[0];
+      ) ?? matchingOptions[0];
     if (!match) return;
 
     this.selectOption(match);
     this.close();
+    this.buttonTarget.focus({ preventScroll: true });
     this.submitForm();
   }
 
@@ -153,6 +169,12 @@ export default class extends Controller {
     this.buttonTarget.focus();
   }
 
+  handleKeydown(event) {
+    if (event.key === "Escape" && this.isOpen && !event.defaultPrevented) {
+      this.escape(event);
+    }
+  }
+
   selectCategory(event) {
     event.preventDefault();
 
@@ -160,6 +182,7 @@ export default class extends Controller {
 
     this.selectOption(option);
     this.close();
+    this.buttonTarget.focus({ preventScroll: true });
     this.submitForm();
   }
 
@@ -285,6 +308,7 @@ export default class extends Controller {
       this.searchTarget.value = "";
       this.filter();
       this.close();
+      this.buttonTarget.focus({ preventScroll: true });
       this.submitForm();
     } finally {
       this.creating = false;

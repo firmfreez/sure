@@ -49,4 +49,13 @@ class MoneyFieldOperatorsTest < ApplicationSystemTestCase
     fill_in "Description", with: "Groceries"
     assert_no_selector OPERATOR_ROW
   end
+
+  test "a new account amount starts empty" do
+    visit new_depository_url
+
+    assert_field "account[balance]", with: ""
+    find_field("account[balance]").click
+    find_field("account[balance]").send_keys(:tab)
+    assert_field "account[balance]", with: ""
+  end
 end

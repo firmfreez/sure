@@ -102,9 +102,12 @@ en:
           total_value: Total value
         vs_available_history: vs. available history
       activity_date:
+        add_entry: "Add an entry on %{date}"
         balance_tooltip: "The end of day balance, after all transactions and adjustments"
         no_balance_data: "No balance data available for this date"
   ds:
+    date_field:
+      today: Today
     alert:
       variants:
         info: Info

@@ -32,8 +32,9 @@ module AccountsHelper
   # Returns the account id segment from `/accounts/<id>(/...)?`, or nil.
   # Used as a cache-key component so the sidebar's active-link styling is
   # correct without busting the cache for every unrelated path change.
+  # PATH_INFO excludes the Home Assistant ingress mount in SCRIPT_NAME.
   def sidebar_active_account_id
-    match = request.path.match(%r{\A/accounts/([\w-]+)})
+    match = request.path_info.match(%r{\A/accounts/([\w-]+)(?:/|\z)})
     match && match[1]
   end
 
@@ -56,12 +57,14 @@ module AccountsHelper
       end
 
     [
-      family.build_cache_key("account_sidebar_tabs_v5", invalidate_on_data_updates: true),
+      family.build_cache_key("account_sidebar_tabs_v6", invalidate_on_data_updates: true),
       Current.user&.id,
       shares_version,
       active_tab,
       mobile,
       I18n.locale,
+      # Cached links include the session-specific ingress mount.
+      request.script_name,
       sidebar_active_account_id,
       # Fold the per-user "start expanded by default" preference into the key
       # so toggling it in Settings busts the 12h fragment cache immediately

@@ -7,20 +7,27 @@ class Settings::PreferencesController < ApplicationController
     @budget_shares = @user.budget_shares_given.index_by(&:viewer_id)
   end
 
-  # Writes per-user boolean preferences stored in the JSONB `users.preferences`
+  # Writes per-user preferences stored in the JSONB `users.preferences`
   # column. Mirrors Settings::AppearancesController#update so the toggle card on
   # the Preferences page can submit directly without going through the broader
   # UsersController#update flow (which expects a full user form payload).
   def update
     @user = Current.user
-    user_params = params.permit(user: [ :preview_features_enabled ]).fetch(:user, {})
+    user_params = params.permit(user: [ :preview_features_enabled, :last_entry_date ]).fetch(:user, {})
 
-    @user.with_locked_preferences do |updated_prefs|
-      if user_params.key?(:preview_features_enabled)
+    if user_params.key?(:last_entry_date) && !@user.remember_entry_date(user_params[:last_entry_date])
+      return head :unprocessable_entity
+    end
+
+    if user_params.key?(:preview_features_enabled)
+      @user.with_locked_preferences do |updated_prefs|
         updated_prefs["preview_features_enabled"] =
           ActiveModel::Type::Boolean.new.cast(user_params[:preview_features_enabled])
       end
     end
-    redirect_to settings_preferences_path
+    respond_to do |format|
+      format.html { redirect_to settings_preferences_path }
+      format.json { head :no_content }
+    end
   end
 end

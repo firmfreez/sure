@@ -1,29 +1,22 @@
 class CategoryImport < Import
   def import!
     transaction do
-      rows.each do |row|
+      # Import roots first so child rows inherit the final parent attributes.
+      # Identity includes parent_id: temporarily flattening categories by name
+      # would overwrite a same-name sibling from another branch of the tree.
+      root_rows, child_rows = rows.to_a.partition { |row| row.category_parent.blank? }
+      (root_rows + child_rows).each do |row|
         category_name = row.name.to_s.strip
-        category = family.categories.find_or_initialize_by(name: category_name)
-        category.color = row.category_color.presence || category.color || Category::UNCATEGORIZED_COLOR
-        category.lucide_icon = row.category_icon.presence || category.lucide_icon || "shapes"
-        category.parent = nil
-        category.save!
-
-        ensure_placeholder_category(row.category_parent)
-      end
-
-      rows.each do |row|
-        category = family.categories.find_by!(name: row.name.to_s.strip)
-        parent = ensure_placeholder_category(row.category_parent)
-
-        if parent && parent == category
-          errors.add(:base, :own_parent, name: category.name)
+        if category_name == row.category_parent.to_s.strip
+          errors.add(:base, :own_parent, name: category_name)
           raise ActiveRecord::RecordInvalid.new(self)
         end
 
-        next if category.parent == parent
-
-        category.update!(parent: parent)
+        parent = ensure_placeholder_category(row.category_parent)
+        category = family.categories.find_or_initialize_by(name: category_name, parent_id: parent&.id)
+        category.color = row.category_color.presence || category.color || Category::UNCATEGORIZED_COLOR
+        category.lucide_icon = row.category_icon.presence || category.lucide_icon || "shapes"
+        category.save!
       end
     end
   end
@@ -114,7 +107,7 @@ class CategoryImport < Import
       trimmed_name = name.to_s.strip
       return if trimmed_name.blank?
 
-      family.categories.find_or_create_by!(name: trimmed_name) do |placeholder|
+      family.categories.roots.find_or_create_by!(name: trimmed_name) do |placeholder|
         placeholder.color = Category::UNCATEGORIZED_COLOR
         placeholder.lucide_icon = "shapes"
       end

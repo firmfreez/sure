@@ -15,8 +15,26 @@ class TransactionsController < ApplicationController
   def new
     prefill_params_from_duplicate!
     super
+    @entry.date ||= Current.user.last_entry_date
+    @entry.name = params[:draft_name] if params[:draft_name].is_a?(String)
+    if params[:draft_amount].is_a?(String)
+      @entry.amount = params[:draft_amount]
+      @draft_amount = @entry.amount&.to_s("F")
+    end
     apply_duplicate_attributes!
     set_new_transaction_form_options
+  end
+
+  def destroy
+    transfer = @entry.transaction.transfer
+    return super unless transfer
+
+    transfer.accounts_for_destruction.each do |account|
+      return unless require_account_permission!(account)
+    end
+
+    transfer.destroy_with_entries!
+    refresh_after_destroy account_path(@entry.account), notice: t("account.entries.destroy.success")
   end
 
   def index
@@ -158,6 +176,7 @@ class TransactionsController < ApplicationController
     @entry = account.entries.new(entry_params_with_idempotency_key(idempotency_key))
 
     if @entry.save
+      Current.user.remember_entry_date(@entry.date.iso8601)
       @entry.sync_account_later
       @entry.lock_saved_attributes!
       @entry.mark_user_modified!
@@ -202,6 +221,7 @@ class TransactionsController < ApplicationController
       @entry.sync_account_later if sync_needed
 
       notes_changed = @entry.saved_change_to_notes?
+      Account::BalanceRefresh.call(@entry.account)
 
       # Reload to ensure fresh state for turbo stream rendering
       @entry.reload
@@ -686,11 +706,21 @@ class TransactionsController < ApplicationController
     end
 
     def respond_with_created_entry(entry)
+      Account::BalanceRefresh.call(entry.account)
       flash[:notice] = t(".created")
+      return_path = if params[:return_to] == "selected_account"
+        account_path(entry.account)
+      else
+        safe_return_to(params[:return_to])
+      end
 
       respond_to do |format|
-        format.html { redirect_back_or_to account_path(entry.account) }
-        format.turbo_stream { stream_redirect_back_or_to(account_path(entry.account)) }
+        format.html do
+          return_path ? redirect_to(return_path) : redirect_back_or_to(account_path(entry.account))
+        end
+        format.turbo_stream do
+          return_path ? stream_redirect_to(return_path) : stream_redirect_back_or_to(account_path(entry.account))
+        end
       end
     end
 
@@ -797,7 +827,7 @@ class TransactionsController < ApplicationController
                 :start_date, :end_date, :search, :amount,
                 :amount_operator, :active_accounts_only,
                 accounts: [], account_ids: [],
-                categories: [], merchants: [], types: [], tags: [], status: [], ai_status: [],
+                categories: [], category_ids: [], merchants: [], types: [], tags: [], status: [], ai_status: [],
                 attachment_status: []
               )
               .to_h

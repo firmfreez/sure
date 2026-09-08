@@ -3,6 +3,7 @@ ru:
   UI:
     account:
       activity_date:
+        add_entry: Добавить операцию за %{date}
         balance_tooltip: Баланс на конец дня, после всех операций и корректировок
         no_balance_data: Нет данных о балансе на эту дату
       activity_feed:
@@ -84,6 +85,8 @@ ru:
     period_picker:
       aria_label: "Период: %{period}"
   ds:
+    date_field:
+      today: Сегодня
     alert:
       variants:
         destructive: Ошибка

@@ -125,7 +125,7 @@
         <div class="min-w-0 flex-1">
           <p class="text-sm font-medium text-primary truncate"><%= category_display_name %></p>
           <p class="text-sm text-secondary font-medium privacy-sensitive">
-            <%= t("budget_categories.budget_category_form.monthly_average", amount: budget_category.median_monthly_expense_money.format(precision: 0)) %>
+            <%= t("budget_categories.budget_category_form.monthly_average", amount: budget_category.avg_monthly_expense_money.format(precision: 0)) %>
           </p>
         </div>
 

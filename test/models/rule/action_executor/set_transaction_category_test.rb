@@ -24,6 +24,6 @@ class Rule::ActionExecutor::SetTransactionCategoryTest < ActiveSupport::TestCase
       value: categories(:subcategory).id
     )
 
-    assert_equal categories(:subcategory).name, action.value_display
+    assert_equal categories(:subcategory).name_with_parent, action.value_display
   end
 end

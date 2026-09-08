@@ -6,15 +6,18 @@ class Balance::Materializer
 
   attr_reader :account, :strategy, :security_ids
 
-  def initialize(account, strategy:, security_ids: nil, window_start_date: nil)
+  def initialize(account, strategy:, security_ids: nil, window_start_date: nil, strict_fx: false)
     @account = account
     @strategy = strategy
     @security_ids = security_ids
     @window_start_date = window_start_date
+    @strict_fx = strict_fx
   end
 
   def materialize_balances
-    Balance.transaction do
+    # Serialize calculations with immediate refreshes after manual operations.
+    # Reload under the lock so a queued sync cannot persist an older snapshot.
+    account.with_lock do
       materialize_holdings
       calculate_balances
 
@@ -110,9 +113,9 @@ class Balance::Materializer
 
     def calculator
       @calculator ||= if strategy == :reverse
-        Balance::ReverseCalculator.new(account)
+        Balance::ReverseCalculator.new(account, strict_fx: @strict_fx)
       else
-        Balance::ForwardCalculator.new(account, window_start_date: @window_start_date)
+        Balance::ForwardCalculator.new(account, window_start_date: @window_start_date, strict_fx: @strict_fx)
       end
     end
 end

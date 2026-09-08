@@ -8,7 +8,7 @@ import HwComboboxController from "controllers/hw_combobox_controller";
 // (e.g. "AAPL"). We abort the previous in-flight request whenever a new one fires,
 // so stale Turbo Stream responses never reach the DOM.
 const originalFilterAsync = HwComboboxController.prototype._filterAsync;
-HwComboboxController.prototype._filterAsync = async function(inputType) {
+HwComboboxController.prototype._filterAsync = async function (inputType) {
   if (this._searchAbortController) {
     this._searchAbortController.abort();
   }
@@ -18,7 +18,7 @@ HwComboboxController.prototype._filterAsync = async function(inputType) {
     q: this._fullQuery,
     input_type: inputType,
     for_id: this.element.dataset.asyncId,
-    callback_id: this._enqueueCallback()
+    callback_id: this._enqueueCallback(),
   };
 
   const url = new URL(this.asyncSrcValue, window.location.origin);
@@ -29,12 +29,13 @@ HwComboboxController.prototype._filterAsync = async function(inputType) {
   try {
     const response = await fetch(url.toString(), {
       headers: {
-        "Accept": "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
+        Accept: "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
         "X-Requested-With": "XMLHttpRequest",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')
+          ?.content,
       },
       signal: this._searchAbortController.signal,
-      credentials: "same-origin"
+      credentials: "same-origin",
     });
 
     if (response.ok) {
@@ -64,20 +65,56 @@ document.addEventListener("turbo:load", ({ detail: { url } }) => {
   }
 });
 
+function closeOpenDialogs() {
+  document.querySelectorAll("dialog[open]").forEach((dialog) => {
+    if (typeof dialog.close === "function") dialog.close();
+  });
+
+  // Clear frame content so modal/drawer disappears immediately before navigation finishes.
+  ["modal", "drawer"].forEach((frameId) => {
+    const frame = document.getElementById(frameId);
+    if (frame) frame.innerHTML = "";
+  });
+}
+
+Turbo.StreamActions.refresh_page = () => {
+  closeOpenDialogs();
+  window.location.reload();
+};
+
 Turbo.StreamActions.redirect = function () {
+  closeOpenDialogs();
+  const targetUrl = new URL(this.target, window.location.origin);
+  const currentUrl = new URL(window.location.href);
+
+  if (
+    targetUrl.pathname === currentUrl.pathname &&
+    targetUrl.search === currentUrl.search &&
+    targetUrl.hash === currentUrl.hash
+  ) {
+    window.location.reload();
+    return;
+  }
+
   // Use "replace" to avoid adding form submission to browser history
-  Turbo.visit(this.target, { action: "replace" });
+  Turbo.visit(targetUrl.toString(), { action: "replace" });
 };
 
 // Register service worker for PWA offline support
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker')
-      .then(registration => {
-        console.log('Service Worker registered with scope:', registration.scope);
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register(
+        `${document.querySelector('meta[name="sure-base-path"]')?.content || ""}/service-worker`,
+      )
+      .then((registration) => {
+        console.log(
+          "Service Worker registered with scope:",
+          registration.scope,
+        );
       })
-      .catch(error => {
-        console.log('Service Worker registration failed:', error);
+      .catch((error) => {
+        console.log("Service Worker registration failed:", error);
       });
   });
 }

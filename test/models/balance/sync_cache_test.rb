@@ -314,6 +314,19 @@ class Balance::SyncCacheTest < ActiveSupport::TestCase
     assert_equal [ "EUR->USD" ], log.metadata["missing_rate_pairs"]
   end
 
+  test "strict FX mode rejects a holding without an exchange rate" do
+    security = Security.create!(ticker: "TST", name: "Test")
+    @account.holdings.create!(security: security, date: Date.current, qty: 1, price: 100, amount: 100, currency: "EUR")
+    ExchangeRate.stubs(:find_or_fetch_rate).returns(nil)
+
+    error = assert_raises(Money::ConversionError) do
+      Balance::SyncCache.new(@account, strict_fx: true).get_holdings_value(Date.current)
+    end
+
+    assert_equal "EUR", error.from_currency
+    assert_equal "USD", error.to_currency
+  end
+
   test "records no holding diagnostic when every holding converts" do
     ExchangeRate.create!(from_currency: "EUR", to_currency: "USD", date: Date.current, rate: 1.5)
 

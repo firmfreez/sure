@@ -8,7 +8,7 @@
       </span>
     <% end %>
 
-    <%= render partial: "categories/badge", locals: { category: category } %>
+    <%= render partial: "categories/badge", locals: { category: category, wrap_on_mobile: true } %>
   </div>
 
   <% unless Current.user&.guest? %>

@@ -11,6 +11,26 @@ class Settings::PreferencesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "JSON update remembers only the signed in user's entry date" do
+    date = 5.days.ago.to_date
+
+    patch settings_preferences_url, params: { user: { id: users(:family_member).id, last_entry_date: date.iso8601 } }, as: :json
+
+    assert_response :no_content
+    assert_equal date, users(:family_admin).reload.last_entry_date
+    assert_nil users(:family_member).reload.last_entry_date
+  end
+
+  test "invalid date preference is rejected without changing the saved date" do
+    date = 5.days.ago.to_date
+    users(:family_admin).remember_entry_date(date.iso8601)
+
+    patch settings_preferences_url, params: { user: { last_entry_date: "2026-02-30" } }, as: :json
+
+    assert_response :unprocessable_entity
+    assert_equal date, users(:family_admin).reload.last_entry_date
+  end
+
   test "admins see the investing-as-spending toggle" do
     get settings_preferences_url
 

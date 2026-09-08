@@ -21,4 +21,37 @@ class StyledFormBuilderTest < ActionView::TestCase
     assert_nil fragment.at(".form-field")
     assert_includes fragment.at("input[type=file]")["class"].split, "hidden"
   end
+
+  test "a new money field leaves the default zero amount empty" do
+    account = Account.new(balance: 0, currency: "USD")
+
+    assert_nil money_input(account)["value"]
+    assert_nil money_input(nil, value: 0)["value"]
+  end
+
+  test "a new money field keeps a prefilled nonzero amount" do
+    account = Account.new(balance: 123.45, currency: "USD")
+
+    assert_equal "123.45", money_input(account)["value"]
+  end
+
+  test "an existing money field keeps its saved zero amount" do
+    account = accounts(:depository)
+    account.balance = 0
+
+    assert_equal "0.00", money_input(account)["value"]
+  end
+
+  test "a rejected form keeps the submitted zero amount" do
+    account = Account.new(balance: 0, currency: "USD")
+    account.errors.add(:name, :blank)
+
+    assert_equal "0.00", money_input(account)["value"]
+  end
+
+  private
+    def money_input(account, **options)
+      builder = StyledFormBuilder.new(:account, account, self, {})
+      Nokogiri::HTML.fragment(builder.money_field(:balance, **options)).at("[data-money-field-target='amount']")
+    end
 end

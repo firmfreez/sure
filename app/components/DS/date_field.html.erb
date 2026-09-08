@@ -1,0 +1,8 @@
+<div class="flex items-center gap-2" data-controller="DS--date-field"
+     data-DS--date-field-time-zone-value="<%= Time.zone.tzinfo.name %>"
+     data-DS--date-field-save-url-value="<%= remember ? settings_preferences_path : nil %>">
+  <div class="min-w-0 flex-1">
+    <%= form.date_field attribute, **field_options %>
+  </div>
+  <%= render DS::Button.new(text: t("ds.date_field.today"), variant: :secondary, data: { action: "DS--date-field#today" }) %>
+</div>

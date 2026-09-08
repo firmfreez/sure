@@ -30,6 +30,16 @@ class FamilyTest < ActiveSupport::TestCase
     assert_equal evening_utc.in_time_zone(Time.zone).to_date, family.local_date(evening_utc)
   end
 
+  test "category reparenting invalidates entry aggregation cache" do
+    family = families(:dylan_family)
+    category = categories(:subcategory)
+    before = family.entries_cache_version
+    travel_to 1.second.from_now do
+      category.update!(parent: categories(:income))
+    end
+    assert_not_equal before, family.reload.entries_cache_version
+  end
+
   test "investment_contributions_category creates category when missing" do
     family = families(:dylan_family)
     family.categories.where(name: Category.investment_contributions_name).destroy_all

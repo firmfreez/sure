@@ -56,20 +56,29 @@ class Loan < ApplicationRecord
     high: 8..
   }.freeze
 
-  # The contracted repayment, for a loan that has exactly one.
-  #
-  # Deliberately still nil for a variable loan even though it now has a
-  # schedule: such a loan does not HAVE a single monthly payment, and quoting
-  # the one it opened with would be a stale figure presented as a current one.
-  # Answering it properly means re-amortising today's balance at today's rate,
-  # which needs the projection this engine does not yet carry.
+  # Recalculate the fixed payment from the current balance and remaining term.
+  # Contractual schedules and payoff projections retain their original principal.
   def monthly_payment
-    return nil if term_months.nil? || interest_rate.nil? || rate_type.nil? || rate_type != FIXED_RATE_TYPE
-    # Non-positive, not just zero: `amortizable?` rejects both, so anything that
-    # slips past here would fall through to a nil schedule instead of a payment.
-    return Money.new(0, account.currency) if original_balance.amount <= 0 || term_months <= 0
+    return nil if account.nil? || term_months.nil? || interest_rate.nil? || rate_type != FIXED_RATE_TYPE
+    return nil if term_months > Loan::Simulator::MAX_PERIODS
+    return Money.new(0, account.currency) if term_months <= 0
 
-    amortization_schedule&.periodic_payment
+    principal = account.balance_money.amount
+    months = remaining_term_months
+    return Money.new(0, account.currency) if principal <= 0 || months <= 0
+
+    AmortizationSchedule.new(
+      principal: principal,
+      annual_rate: interest_rate,
+      term_months: months,
+      start_date: Time.zone.today,
+      currency: account.currency,
+      day_count_convention: day_count_convention
+    ).periodic_payment
+  end
+
+  def remaining_term_months
+    remaining_months(as_of: Time.zone.today)
   end
 
   # A loan can be amortised once we know what was borrowed, at what rate, and

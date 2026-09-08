@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/we-promise/sure.git",
+  "upstream_commit": "a6767e93114a0db5136ea91512bd985018597322",
+  "protected_migrations": {
+    "20260225000000_hide_ai_sidebar_by_default.rb": "ddacbaa361e6be71dabe25ffa7bfdc91dbcca025cdf75ee253ce9777c635ea43",
+    "20260227190005_add_category_scoped_name_uniqueness_indexes.rb": "24eb6e5a5e9739f4f9d6ff3b73ca2c3a6f8ad0750240bf425c7e0d12c2fc95fa",
+    "20260312081000_add_cascade_delete_to_chat_messages_and_tool_calls.rb": "393ea9c6e6705f743468d9b80c4692a4a0dd470787602c17244f82b82d5a5822",
+    "20260403090000_change_users_default_period_to_current_month.rb": "a9a3946560044d87b0b2f08d5b99e3e97fccc739aa11be62e01522bcdf6e165b",
+    "20260727115959_merge_duplicate_tag_and_category_names.rb": "6ce25708258306e26a0fdc226e3d17a94631de9eaab4a777c83dfa7eb1ed9e76",
+    "20260727120000_add_family_name_index_to_tags_and_categories.rb": "7c1fb13305b1b814fe0581cbbcdac6afd62f010a108922026444199a51002b01",
+    "20260820160000_restore_category_scoped_name_uniqueness.rb": "5479935c59391764eebb868b65f1b1809a355d85f09f60112305a4c7b174ca59"
+  }
+}

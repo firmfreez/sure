@@ -7,9 +7,73 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     sign_in users(:family_admin)
   end
 
+  test "new transfer restores the amount and keeps the transaction name hidden" do
+    get new_transfer_url(draft_amount: "123.45", draft_name: "Rent & utilities")
+
+    assert_response :success
+    assert_select "input[name='transfer[amount]'][value='123.45']"
+    assert_select "input[type=hidden][name=draft_name][value=?]", "Rent & utilities"
+    assert_select "input[name='transfer[name]']", count: 0
+  end
+
+  test "new transfer prefills the date and keeps it when switching to transactions" do
+    users(:family_admin).remember_entry_date(1.week.ago.to_date.iso8601)
+    date = 3.days.ago.to_date
+    account = accounts(:depository)
+    return_to = account_path(account, tab: "activity")
+
+    get new_transfer_url(from_account_id: account.id, date: date, return_to: return_to)
+
+    assert_response :success
+    assert_select "input[name='transfer[date]'][value=?]", date.iso8601
+    %w[inflow outflow].each do |nature|
+      assert_select "a[href=?]", new_transaction_path(account_id: account.id, date: date, nature: nature, return_to: return_to)
+    end
+  end
+
+  test "new transfer defaults to the user's last entry date" do
+    date = 5.days.ago.to_date
+    users(:family_admin).remember_entry_date(date.iso8601)
+
+    get new_transfer_url
+
+    assert_response :success
+    assert_select "input[name='transfer[date]'][value=?]", date.iso8601
+    assert_select "button[type=button]", text: "Today"
+  end
+
+  test "cannot delete a transfer when the destination account is read only" do
+    sign_in users(:family_member)
+
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
+      delete transfer_url(transfers(:one))
+    end
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
+  end
+
+  test "deleting a transfer deletes both account entries" do
+    assert_difference "Transfer.count", -1 do
+      assert_difference [ "Entry.count", "Transaction.count" ], -2 do
+        delete transfer_url(transfers(:one))
+      end
+    end
+  end
+
+  test "Turbo deletion refreshes the current page without redirecting to transactions" do
+    assert_difference "Transfer.count", -1 do
+      delete transfer_url(transfers(:one)), as: :turbo_stream
+    end
+
+    assert_response :success
+    assert_turbo_stream action: "refresh_page"
+    assert_nil response.headers["Location"]
+    assert_equal I18n.t("transfers.destroy.success"), flash[:notice]
+  end
+
   test "should get new" do
     get new_transfer_url
     assert_response :success
+    assert_select "input[name='transfer[amount]'][value]", count: 0
   end
 
   test "excludes disabled accounts from the new transfer form" do
@@ -20,6 +84,62 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_no_match disabled_account.name, response.body
+  end
+
+  test "creation returns to the originating account for HTML and Turbo" do
+    return_path = account_path(accounts(:credit_card), tab: "activity")
+
+    [ :html, :turbo_stream ].each do |format|
+      post transfers_url(format: format), params: {
+        return_to: return_path,
+        transfer: { from_account_id: accounts(:depository).id, to_account_id: accounts(:credit_card).id,
+                    date: Date.current, amount: 100 }
+      }, headers: { "HTTP_REFERER" => transactions_url }
+
+      if format == :html
+        assert_redirected_to return_path
+      else
+        assert_response :success
+        assert_select "turbo-stream[action='redirect'][target=?]", return_path
+      end
+    end
+  end
+
+  test "new transfer preserves return destination when switching to an expense" do
+    account = accounts(:depository)
+    return_path = account_path(account, tab: "activity")
+    get new_transfer_url(from_account_id: account.id, return_to: return_path)
+
+    assert_response :success
+    assert_select "input[name='return_to'][value=?]", return_path
+    assert_select "a[href=?]", new_transaction_path(nature: "outflow", account_id: account.id, return_to: return_path)
+  end
+
+  test "dashboard transfer creation opens the selected source account" do
+    account = accounts(:depository)
+
+    [ :html, :turbo_stream ].each do |format|
+      post transfers_url(format: format), params: {
+        return_to: "selected_account",
+        transfer: { from_account_id: account.id, to_account_id: accounts(:credit_card).id,
+                    date: Date.current, amount: 100 }
+      }, headers: { "HTTP_REFERER" => root_url }
+
+      if format == :html
+        assert_redirected_to account_path(account)
+      else
+        assert_response :success
+        assert_select "turbo-stream[action='redirect'][target=?]", account_path(account)
+      end
+    end
+  end
+
+  test "dashboard destination survives switching transaction types" do
+    get new_transfer_url(return_to: "selected_account")
+
+    assert_response :success
+    assert_select "input[name='return_to'][value='selected_account']"
+    assert_select "a[href=?]", new_transaction_path(nature: "inflow", return_to: "selected_account")
   end
 
   test "can create transfers" do
@@ -727,12 +847,13 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to transactions_url
   end
 
-  test "can unlink a match when only one side is accessible" do
+  test "cannot delete both transfer entries when only one side is accessible" do
     transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: member_loan)
 
-    assert_difference -> { Transfer.count }, -1 do
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
       delete transfer_url(transfer)
     end
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
   end
 
   test "cannot unlink a match from one side when a fee sits in the other account" do
@@ -749,6 +870,16 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     assert Transfer.exists?(transfer.id)
     assert Transaction.exists?(writable_fee.id)
     assert Transaction.exists?(unwritable_fee.id)
+  end
+
+  test "cannot delete a transfer with a fee in an unwritable account" do
+    transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: accounts(:credit_card))
+    attach_fee(transfer, account: member_loan)
+
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
+      delete transfer_url(transfer)
+    end
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
   end
 
   test "can reject a match from one side when its fees sit in a writable account" do

@@ -1,8 +1,9 @@
 class Balance::BaseCalculator
   attr_reader :account
 
-  def initialize(account)
+  def initialize(account, strict_fx: false)
     @account = account
+    @strict_fx = strict_fx
   end
 
   def calculate
@@ -37,7 +38,7 @@ class Balance::BaseCalculator
 
   private
     def sync_cache
-      @sync_cache ||= Balance::SyncCache.new(account)
+      @sync_cache ||= Balance::SyncCache.new(account, strict_fx: @strict_fx)
     end
 
     def holdings_value_for_date(date)

@@ -43,3 +43,6 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Private database and Git recovery artifacts
+/.ha-upgrade-backups/

@@ -1,3 +1,4 @@
+import { resetInlineSelectPosition } from "utils/select_menu";
 import { Controller } from "@hotwired/stimulus"
 import { autoUpdate } from "@floating-ui/dom"
 
@@ -129,7 +130,20 @@ export default class extends Controller {
   }
 
   select(event) {
-    const selectedElement = event.currentTarget
+    this.applySelection(event.currentTarget)
+    this.focusTriggerWithoutReopening()
+    this.close()
+  }
+
+  setValue(value) {
+    const option = this.optionTargets.find(option => option.dataset.value === value)
+    if (!option) return false
+
+    this.applySelection(option)
+    return true
+  }
+
+  applySelection(selectedElement) {
     const value = selectedElement.dataset.value
     const label = selectedElement.dataset.filterName || selectedElement.textContent.trim()
 
@@ -156,9 +170,6 @@ export default class extends Controller {
       detail: { value, label },
       bubbles: true
     }))
-
-    this.focusTriggerWithoutReopening()
-    this.close()
   }
 
   focusSearch() {
@@ -358,6 +369,8 @@ export default class extends Controller {
 
   updatePosition() {
     if (!this.buttonTarget || !this.menuTarget || !this.isOpen) return
+
+    if (resetInlineSelectPosition(this.menuTarget)) return;
 
     const container = this.getScrollParent(this.element)
     const containerRect = container.getBoundingClientRect()

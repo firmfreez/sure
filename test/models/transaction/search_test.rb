@@ -13,6 +13,31 @@ class Transaction::SearchTest < ActiveSupport::TestCase
     @family.accounts.each { |account| account.entries.delete_all }
   end
 
+  test "stable uncategorized token selects uncategorized transactions but excludes transfers" do
+    wanted = create_transaction(account: @checking_account, amount: 10, kind: "standard")
+    transfer = create_transaction(account: @checking_account, amount: 20, kind: "funds_movement")
+    results = Transaction::Search.new(@family, filters: { category_ids: [ Category::UNCATEGORIZED_FILTER_TOKEN ] }).transactions_scope.pluck(:id)
+    assert_includes results, wanted.entryable_id
+    assert_not_includes results, transfer.entryable_id
+  end
+
+  test "category IDs distinguish same-name children and expand only the selected parent" do
+    parent = categories(:food_and_drink)
+    other_parent = categories(:income)
+    child = @family.categories.create!(name: "Shared name", parent: parent, color: parent.color)
+    other_child = @family.categories.create!(name: "Shared name", parent: other_parent, color: other_parent.color)
+    wanted = create_transaction(account: @checking_account, amount: 10, category: child)
+    unwanted = create_transaction(account: @checking_account, amount: 20, category: other_child)
+
+    [ child.id, parent.id ].each do |id|
+      results = Transaction::Search.new(@family, filters: { category_ids: [ id ] }).transactions_scope.pluck(:id)
+      assert_includes results, wanted.entryable_id
+      assert_not_includes results, unwanted.entryable_id
+    end
+    assert_empty Transaction::Search.new(@family, filters: { category_ids: [ "invalid" ] }).transactions_scope
+    assert_empty Transaction::Search.new(families(:empty), filters: { category_ids: [ child.id ] }).transactions_scope
+  end
+
   test "search filters by transaction types using kind enum" do
     # Create different types of transactions using the helper method
     standard_entry = create_transaction(

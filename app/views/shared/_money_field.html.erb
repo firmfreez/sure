@@ -1,4 +1,4 @@
-<%# locals: (form:, amount_method:, currency_method:, **options) %>
+<%# locals: (form:, amount_method:, input_value:, currency_method:, **options) %>
 
 <% currency_value = if options[:currency_value_override].present?
                      options[:currency_value_override]
@@ -63,12 +63,7 @@
           inline: true,
           placeholder: options[:placeholder] || "100",
           inputmode: "decimal",
-          value: if options[:value]
-            sprintf("%.#{options[:precision].presence || currency.default_precision}f", options[:value])
-          elsif form.object && form.object.respond_to?(amount_method)
-            val = form.object.public_send(amount_method)
-            sprintf("%.#{options[:precision].presence || currency.default_precision}f", val) if val.present?
-          end,
+          value: (sprintf("%.#{options[:precision].presence || currency.default_precision}f", input_value) if input_value.present?),
           step: options[:step] || currency.step,
           disabled: options[:disabled],
           autofocus: options[:autofocus],

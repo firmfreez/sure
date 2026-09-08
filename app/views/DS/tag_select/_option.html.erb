@@ -1,5 +1,5 @@
 <button type="button"
-        class="filterable-item text-primary text-sm cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-container-inset-hover <%= "bg-container-inset" if selected %>"
+        class="filterable-item text-primary text-sm cursor-pointer flex items-center gap-2 px-3 py-3 sm:py-2 min-h-12 sm:min-h-0 text-left rounded-lg hover:bg-container-inset-hover <%= "bg-container-inset" if selected %>"
         role="option"
         aria-selected="<%= selected %>"
         tabindex="-1"
@@ -12,11 +12,12 @@
   <span class="check-icon w-5 shrink-0 <%= "hidden" unless selected %>">
     <%= view_helpers.icon("check") %>
   </span>
-  <span data-tag-select-badge>
+  <span data-tag-select-badge class="min-w-0 flex-1">
     <%= render DS::Pill.new(
           label: tag.name,
           marker: false,
           size: :md,
+          wrap_on_mobile: true,
           custom_color: tag.color
         ) %>
   </span>

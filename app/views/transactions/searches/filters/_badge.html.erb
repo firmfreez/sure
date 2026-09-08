@@ -11,6 +11,10 @@
         <% end %>
       </p>
     </div>
+  <% elsif param_key == "category_ids" %>
+    <div class="flex items-center gap-2">
+      <p><%= param_value == Category::UNCATEGORIZED_FILTER_TOKEN ? Category.uncategorized.name : Current.family.categories.find_by(id: param_value)&.name_with_parent %></p>
+    </div>
   <% elsif param_key == "search" %>
     <div class="flex items-center gap-2">
       <%= icon "text" %>

@@ -6,8 +6,27 @@ class Transactions::BulkDeletionsController < ApplicationController
     entries_scope = Current.family.entries
                       .where(account_id: writable_account_ids)
                       .where(parent_entry_id: nil)
-    destroyed = entries_scope.destroy_by(id: bulk_delete_params[:entry_ids])
-    destroyed.map(&:account).uniq.each(&:sync_later)
+    destroyed = []
+    accounts_to_sync = []
+    entries_scope.where(id: bulk_delete_params[:entry_ids]).each do |entry|
+      unless Entry.exists?(entry.id)
+        destroyed << entry
+        next
+      end
+
+      transfer = entry.entryable.is_a?(Transaction) ? entry.transaction.transfer : nil
+      if transfer
+        next unless transfer.accounts_for_destruction.all? { |account| writable_account_ids.include?(account.id) }
+
+        transfer.destroy_with_entries!
+      else
+        entry.destroy!
+        accounts_to_sync << entry.account
+      end
+      destroyed << entry
+    end
+    Account::BalanceRefresh.call(accounts_to_sync)
+    accounts_to_sync.uniq.each(&:sync_later)
     redirect_back_or_to transactions_url, notice: "#{destroyed.count} transaction#{destroyed.count == 1 ? "" : "s"} deleted"
   end
 

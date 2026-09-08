@@ -24,7 +24,7 @@
         <%= render DS::Link.new(
           text: t("pages.dashboard.cashflow_sankey.add_transaction"),
           icon: "plus",
-          href: new_transaction_path,
+          href: new_transaction_path(return_to: "selected_account"),
           frame: :modal
         ) %>
       </div>

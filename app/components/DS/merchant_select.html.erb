@@ -44,7 +44,7 @@
          <%= "disabled" if disabled %>>
 
   <% unless disabled %>
-    <div class="absolute z-50 p-1.5 w-full min-w-32 rounded-lg shadow-lg shadow-border-xs bg-container mt-1.5 transition duration-150 ease-out -translate-y-1 opacity-0 hidden"
+    <div class="static sm:absolute border border-secondary sm:border-0 z-50 p-1.5 w-full min-w-32 rounded-lg shadow-lg shadow-border-xs bg-container mt-1.5 transition duration-150 ease-out -translate-y-1 opacity-0 hidden"
          data-merchant-select-target="menu">
       <div class="flex items-center bg-container border border-secondary rounded-lg mb-1 focus-ring-within transition-shadow">
         <%= render DS::SearchInput.new(
@@ -58,14 +58,14 @@
             ) %>
       </div>
 
-      <div class="flex flex-col gap-0.5 max-h-64 overflow-auto"
+      <div class="flex flex-col gap-0.5 max-h-64 overflow-auto overscroll-contain"
            id="<%= menu_id %>"
            role="listbox"
            tabindex="-1"
            data-merchant-select-target="listbox">
         <% if include_blank.present? %>
           <button type="button"
-                  class="filterable-item text-primary text-sm cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-container-inset-hover <%= "bg-container-inset" if selected_id.blank? %>"
+                  class="filterable-item text-primary text-sm cursor-pointer flex items-center gap-2 px-3 py-3 sm:py-2 min-h-12 sm:min-h-0 rounded-lg hover:bg-container-inset-hover <%= "bg-container-inset" if selected_id.blank? %>"
                   role="option"
                   aria-selected="<%= selected_id.blank? %>"
                   tabindex="-1"
@@ -88,7 +88,7 @@
       </div>
 
       <button type="button"
-              class="hidden text-primary text-sm cursor-pointer items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-container-inset-hover"
+              class="hidden text-primary text-sm cursor-pointer items-center gap-2 px-3 py-3 sm:py-1.5 min-h-12 sm:min-h-0 rounded-lg hover:bg-container-inset-hover"
               data-merchant-select-target="createForm"
               data-action="click->merchant-select#createMerchant">
         <%= helpers.icon("plus") %>

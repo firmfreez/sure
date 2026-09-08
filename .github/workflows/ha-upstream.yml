@@ -1,0 +1,43 @@
+name: HA upstream compatibility
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ha_upgrade_ci
+        ports:
+          - 5432:5432
+        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ruby/setup-ruby@97ecb7b512899eb71ab1bf2310a624c6f1589ac6 # v1.308.0
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+      - name: Check protected migrations and explicit review
+        run: ruby bin/ha-upstream check
+      - name: Test isolated update preparation
+        run: bundle exec ruby test/ha/upstream_test.rb
+      - name: Upgrade historical synthetic HA database
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ha_upgrade_ci # pipelock:ignore
+        run: bundle exec ruby script/ha_upgrade_rehearsal.rb

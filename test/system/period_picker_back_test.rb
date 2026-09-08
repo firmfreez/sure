@@ -2,6 +2,7 @@ require "application_system_test_case"
 
 class PeriodPickerBackTest < ApplicationSystemTestCase
   setup do
+    users(:family_admin).update!(default_period: "last_30_days")
     sign_in users(:family_admin)
   end
 
