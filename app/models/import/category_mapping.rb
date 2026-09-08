@@ -7,12 +7,19 @@ class Import::CategoryMapping < Import::Mapping
         import.rows.map(&:category).uniq
       end
 
-      # For hierarchical QIF keys like "Home:Home Improvement", look up the child
-      # name ("Home Improvement") since category names are unique per family.
-      lookup_names = unique_values.map { |v| leaf_category_name(v) }
-      categories = import.family.categories.where(name: lookup_names).index_by(&:name)
+      categories = import.family.categories.includes(:parent).to_a
+      unique_values.index_with do |value|
+        next if value.blank?
 
-      unique_values.index_with { |value| categories[leaf_category_name(value)] }
+        parts = value.to_s.split(":", 2).map(&:strip)
+        matches = if parts.length == 2
+          categories.select { |category| category.name == parts.last && category.parent&.name == parts.first }
+        else
+          categories.select { |category| category.name == value }
+        end
+        # Ambiguous flat names require an explicit user choice, never a random ID.
+        matches.one? ? matches.first : nil
+      end
     end
 
     private
@@ -62,22 +69,15 @@ class Import::CategoryMapping < Import::Mapping
       # Ensure parent is a top-level category (subcategories cannot have children in Sure).
       parent = import.family.categories.roots.find_by(name: parent_name)
 
-      if parent.nil?
-        existing = import.family.categories.find_by(name: parent_name)
-        if existing&.subcategory?
-          parent = existing.parent
-        else
-          parent = create_root_category!(parent_name)
-        end
-      end
+      parent ||= create_root_category!(parent_name)
 
-      self.mappable = import.family.categories.find_or_create_by!(name: child_name) do |cat|
+      self.mappable = import.family.categories.find_or_create_by!(name: child_name, parent_id: parent.id) do |cat|
         cat.parent = parent
         cat.color = parent.color
         cat.lucide_icon = Category.suggested_icon(child_name)
       end
     else
-      self.mappable = import.family.categories.find_or_create_by!(name: key) do |cat|
+      self.mappable = import.family.categories.roots.find_or_create_by!(name: key) do |cat|
         cat.color = Category::COLORS.sample
         cat.lucide_icon = Category.suggested_icon(key)
       end

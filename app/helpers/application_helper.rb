@@ -74,7 +74,11 @@ module ApplicationHelper
   end
 
   def page_active?(path)
-    current_page?(path) || (request.path.start_with?(path) && path != "/")
+    normalized_request_path = normalize_active_path(request.path)
+    normalized_path = normalize_active_path(path)
+
+    normalized_request_path == normalized_path ||
+      (normalized_request_path.start_with?(normalized_path) && normalized_path != "/")
   end
 
   # Wraps a nav-item hash so a single call performs both halves of a
@@ -211,6 +215,49 @@ module ApplicationHelper
     Chat.default_model
   end
 
+  def omniauth_provider_path(provider_name)
+    "#{request.script_name.to_s.sub(%r{/+\z}, "")}/auth/#{provider_name}"
+  end
+
+  def ingress_prefixed_path(path)
+    return path if path.blank?
+
+    script_name = request.script_name.to_s.sub(%r{/+\z}, "")
+    return path if script_name.blank? || path.match?(%r{\A(?:[a-z][a-z0-9+.-]*:|//)}i)
+
+    normalized_path = path.start_with?("/") ? path : "/#{path}"
+    return normalized_path if normalized_path == script_name || normalized_path.start_with?("#{script_name}/")
+
+    "#{script_name}#{normalized_path}"
+  end
+
+  def ingress_asset_path(source, **options)
+    ingress_prefixed_path(asset_path(source, **options))
+  end
+
+  def ingress_stylesheet_link_tag(*sources, **options)
+    ingress_prefix_link_hrefs(stylesheet_link_tag(*sources, **options), "link[rel='stylesheet']")
+  end
+
+  def ingress_combobox_style_tag
+    ingress_prefix_link_hrefs(combobox_style_tag, "link[rel='stylesheet']")
+  end
+
+  def ingress_javascript_importmap_tags
+    tags = javascript_importmap_tags
+    return tags if request.script_name.blank?
+
+    fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
+    if (importmap = fragment.at_css("script[type='importmap']"))&.content.present?
+      data = JSON.parse(importmap.content)
+      data["imports"] = prefix_importmap_values(data["imports"])
+      data["scopes"] = data["scopes"].transform_values { |imports| prefix_importmap_values(imports) } if data["scopes"].is_a?(Hash)
+      importmap.content = JSON.generate(data)
+    end
+    fragment.css("link[rel='modulepreload']").each { |node| node["href"] = ingress_prefixed_path(node["href"]) if node["href"].present? }
+    fragment.to_html.html_safe
+  end
+
   # Renders Markdown text using Redcarpet
   def markdown(text)
     return "" if text.blank?
@@ -273,6 +320,34 @@ module ApplicationHelper
   end
 
   private
+    def normalize_active_path(value)
+      return "/" if value.blank?
+
+      path = value.to_s
+      path = URI.parse(path).path if path.start_with?("http://", "https://")
+      script_name = request.script_name.to_s
+      path = path.delete_prefix(script_name) if script_name.present? && (path == script_name || path.start_with?("#{script_name}/"))
+      path = "/#{path}" unless path.start_with?("/")
+      path = path.sub(%r{/+\z}, "")
+      path.presence || "/"
+    rescue URI::InvalidURIError
+      value.to_s
+    end
+
+    def ingress_prefix_link_hrefs(tags, selector)
+      return tags if request.script_name.blank?
+
+      fragment = Nokogiri::HTML::DocumentFragment.parse(tags)
+      fragment.css(selector).each { |node| node["href"] = ingress_prefixed_path(node["href"]) if node["href"].present? }
+      fragment.to_html.html_safe
+    end
+
+    def prefix_importmap_values(imports)
+      return imports unless imports.is_a?(Hash)
+
+      imports.transform_values { |value| value.is_a?(String) ? ingress_prefixed_path(value) : value }
+    end
+
     def safe_lucide_icon(key, **opts)
       lucide_icon(key, **opts)
     rescue StandardError => e

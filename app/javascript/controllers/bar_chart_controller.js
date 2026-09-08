@@ -15,8 +15,9 @@ export default class extends Controller {
   static values = {
     data: Array,
     currency: { type: String, default: "USD" },
-    incomeLabel: { type: String, default: "Income" },
-    expenseLabel: { type: String, default: "Expenses" },
+    locale: String,
+    incomeLabel: String,
+    expenseLabel: String,
   };
 
   _resizeObserver = null;
@@ -180,7 +181,7 @@ export default class extends Controller {
 
   _formatCurrency(value) {
     try {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat(this.localeValue || undefined, {
         style: "currency",
         currency: this.currencyValue,
         maximumFractionDigits: 0,

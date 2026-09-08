@@ -9,9 +9,9 @@
         data-category-name="<%= category.name %>"
         data-category-display-label="<%= category.name %>"
         data-action="click->category-select#selectCategory"
-        class="flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg hover:bg-container-inset-hover <%= "bg-container-inset" if selected %>">
+        class="flex shrink-0 items-center gap-2 w-full px-3 py-3 sm:py-1.5 min-h-12 sm:min-h-0 text-left text-sm rounded-lg hover:bg-container-inset-hover <%= "bg-container-inset" if selected %>">
 
-  <span class="check-icon w-4 <%= "invisible" unless selected %>">
+  <span class="check-icon w-4 shrink-0 <%= "invisible" unless selected %>">
     <%= view_helpers.icon("check") %>
   </span>
 
@@ -23,10 +23,10 @@
     </span>
   <% end %>
 
-  <span data-category-select-badge>
+  <span data-category-select-badge class="min-w-0 flex-1">
     <%= view_helpers.render partial: "categories/badge",
                             formats: [ :html ],
-                            locals: { category: category } %>
+                            locals: { category: category, wrap_on_mobile: true } %>
 
   </span>
 </button>

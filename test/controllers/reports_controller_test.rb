@@ -434,9 +434,9 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     get reports_path(period_type: :monthly, start_date: start_date, end_date: end_date)
     assert_response :ok
 
-    expense_href = transactions_path(q: { categories: [ expense_category.name ], start_date: start_date, end_date: end_date })
-    income_href = transactions_path(q: { categories: [ income_category.name ], start_date: start_date, end_date: end_date })
-    uncategorized_href = transactions_path(q: { categories: [ Category.uncategorized.name ], start_date: start_date, end_date: end_date })
+    expense_href = transactions_path(q: { category_ids: [ expense_category.id ], start_date: start_date, end_date: end_date })
+    income_href = transactions_path(q: { category_ids: [ income_category.id ], start_date: start_date, end_date: end_date })
+    uncategorized_href = transactions_path(q: { category_ids: [ Category::UNCATEGORIZED_FILTER_TOKEN ], start_date: start_date, end_date: end_date })
 
     assert_select "tr[data-category='category-#{expense_category.id}'] a[href=?]", expense_href, text: expense_category.name
     assert_select "tr[data-category='category-#{income_category.id}'] a[href=?]", income_href, text: income_category.name
@@ -449,7 +449,7 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr.group\\/category-row[data-category='category-#{expense_category.id}'] td div.relative a[class*='before:absolute'][class*='before:inset-0']"
   end
 
-  test "index uncategorized category link uses localized name that Search accepts" do
+  test "index uncategorized category link uses stable token with localized label" do
     start_date = Date.current.beginning_of_month
     end_date = Date.current.end_of_month
     account = @family.accounts.first
@@ -462,7 +462,7 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     get reports_path(period_type: :monthly, start_date: start_date, end_date: end_date)
     assert_response :ok
 
-    href = transactions_path(q: { categories: [ localized_name ], start_date: start_date, end_date: end_date })
+    href = transactions_path(q: { category_ids: [ Category::UNCATEGORIZED_FILTER_TOKEN ], start_date: start_date, end_date: end_date })
     assert_select "tr[data-category='category-uncategorized'] a[href=?]", href, text: localized_name
   end
 

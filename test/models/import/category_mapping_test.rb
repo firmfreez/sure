@@ -5,6 +5,21 @@ class Import::CategoryMappingTest < ActiveSupport::TestCase
     @mapping = import_mappings(:one)
   end
 
+  test "hierarchical imports distinguish same-name children and flat ambiguity needs selection" do
+    import = @mapping.import
+    mappings = [ "Auto:Insurance", "Home:Insurance" ].map do |key|
+      mapping = import.mappings.create!(key: key, create_when_empty: true, type: "Import::CategoryMapping")
+      mapping.create_mappable!
+      mapping
+    end
+    assert_not_equal mappings.first.mappable_id, mappings.last.mappable_id
+    import.stubs(:rows).returns([ Struct.new(:category).new("Auto:Insurance"), Struct.new(:category).new("Home:Insurance"), Struct.new(:category).new("Insurance") ])
+    result = Import::CategoryMapping.mappables_by_key(import)
+    assert_equal mappings.first.mappable_id, result["Auto:Insurance"].id
+    assert_equal mappings.last.mappable_id, result["Home:Insurance"].id
+    assert_nil result["Insurance"]
+  end
+
   test "selectable_values groups subcategories immediately after their parent" do
     options = @mapping.selectable_values
 
@@ -23,7 +38,7 @@ class Import::CategoryMappingTest < ActiveSupport::TestCase
     assert_equal Import::Mapping::CREATE_NEW_KEY, options.first.last
   end
 
-  test "create_mappable! uses root parent when parent_name matches an existing subcategory" do
+  test "create_mappable! creates a distinct root when its name matches an existing subcategory" do
     import = @mapping.import
 
     # First, create a mapping where "Insurance" becomes a subcategory under "Auto"
@@ -42,7 +57,7 @@ class Import::CategoryMappingTest < ActiveSupport::TestCase
 
     add_sub = import.family.categories.find_by!(name: "ADD")
     assert add_sub.subcategory?
-    assert_equal "Auto", add_sub.parent.name
+    assert_equal "Insurance", add_sub.parent.name
   end
 
   test "create_mappable! atomically creates shared root parent during concurrent imports" do

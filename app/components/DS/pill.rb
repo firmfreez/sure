@@ -63,7 +63,7 @@ class DS::Pill < DesignSystemComponent
   # - `mono: true` applies `font-mono` for technical labels (queue names,
   #   IDs, latencies) where tabular alignment aids scanning.
   def initialize(label: nil, tone: :violet, style: :soft, size: :sm, show_dot: nil, dot_only: false, title: nil, icon: nil, marker: true, custom_color: nil,
-                 truncate: false, label_testid: nil, icon_size: "xs", mono: false)
+                 truncate: false, label_testid: nil, icon_size: "xs", mono: false, wrap_on_mobile: false)
     resolved_tone = SEMANTIC_TONE_ALIASES.fetch(tone.to_sym, tone.to_sym)
     @label = label || I18n.t("ds.pill.default_label", default: "Beta")
     @tone = TONES.include?(resolved_tone) ? resolved_tone : :violet
@@ -78,6 +78,7 @@ class DS::Pill < DesignSystemComponent
     @marker = marker
     @custom_color = custom_color
     @truncate = truncate
+    @wrap_on_mobile = wrap_on_mobile
     @label_testid = label_testid
     @icon_size = icon_size
     @mono = mono
@@ -168,7 +169,7 @@ class DS::Pill < DesignSystemComponent
       "inline-flex items-center align-middle font-medium",
       # Truncating pills must be allowed to shrink (and let the label span
       # ellipsize); everything else keeps its intrinsic width.
-      truncate ? "max-w-full min-w-0" : "whitespace-nowrap shrink-0",
+      (truncate || @wrap_on_mobile) ? "max-w-full min-w-0" : "whitespace-nowrap shrink-0",
       "border leading-none"
     ]
     base << "font-mono" if mono
@@ -193,5 +194,11 @@ class DS::Pill < DesignSystemComponent
       base << (size == :md ? "px-2 py-1 text-sm gap-1.5" : "px-1.5 py-0.5 text-xs gap-1")
     end
     class_names(*base)
+  end
+
+  def label_classes
+    return "min-w-0 whitespace-normal break-words leading-normal sm:truncate" if @wrap_on_mobile
+
+    "min-w-0 truncate" if truncate
   end
 end

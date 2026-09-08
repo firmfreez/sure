@@ -34,9 +34,10 @@ module EntryableResource
     return unless require_account_permission!(@entry.account)
 
     @entry.destroy!
+    Account::BalanceRefresh.call(@entry.account)
     @entry.sync_account_later
 
-    redirect_back_or_to account_path(@entry.account), notice: t("account.entries.destroy.success")
+    refresh_after_destroy account_path(@entry.account), notice: t("account.entries.destroy.success")
   end
 
   private

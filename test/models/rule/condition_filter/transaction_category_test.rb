@@ -22,6 +22,6 @@ class Rule::ConditionFilter::TransactionCategoryTest < ActiveSupport::TestCase
 
     child_label, = options.find { |_label, id| id == categories(:subcategory).id }
 
-    assert_equal categories(:subcategory).name, child_label
+    assert_equal categories(:subcategory).name_with_parent, child_label
   end
 end

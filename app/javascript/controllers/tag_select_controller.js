@@ -1,3 +1,4 @@
+import { resetInlineSelectPosition } from "utils/select_menu";
 import { autoUpdate } from "@floating-ui/dom";
 import { Controller } from "@hotwired/stimulus";
 
@@ -409,6 +410,8 @@ export default class extends Controller {
 
   updatePosition() {
     if (!this.hasButtonTarget || !this.hasMenuTarget || !this.isOpen) return;
+
+    if (resetInlineSelectPosition(this.menuTarget)) return;
 
     const container = this.getScrollParent(this.element);
     const containerRect = container.getBoundingClientRect();

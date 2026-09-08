@@ -74,7 +74,7 @@
                 <div class="flex items-center gap-1 min-w-0">
                   <div class="truncate flex-shrink">
                     <%= link_to(
-                          entry.name,
+                          transaction_display_name(entry),
                           open_path,
                           data: {
                             turbo_frame: "drawer",

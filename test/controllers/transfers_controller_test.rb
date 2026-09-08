@@ -5,6 +5,34 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     sign_in users(:family_admin)
   end
 
+  test "cannot delete a transfer when the destination account is read only" do
+    sign_in users(:family_member)
+
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
+      delete transfer_url(transfers(:one))
+    end
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
+  end
+
+  test "deleting a transfer deletes both account entries" do
+    assert_difference "Transfer.count", -1 do
+      assert_difference [ "Entry.count", "Transaction.count" ], -2 do
+        delete transfer_url(transfers(:one))
+      end
+    end
+  end
+
+  test "Turbo deletion refreshes the current page without redirecting to transactions" do
+    assert_difference "Transfer.count", -1 do
+      delete transfer_url(transfers(:one)), as: :turbo_stream
+    end
+
+    assert_response :success
+    assert_turbo_stream action: "refresh_page"
+    assert_nil response.headers["Location"]
+    assert_equal I18n.t("transfers.destroy.success"), flash[:notice]
+  end
+
   test "should get new" do
     get new_transfer_url
     assert_response :success
@@ -18,6 +46,62 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_no_match disabled_account.name, response.body
+  end
+
+  test "creation returns to the originating account for HTML and Turbo" do
+    return_path = account_path(accounts(:credit_card), tab: "activity")
+
+    [ :html, :turbo_stream ].each do |format|
+      post transfers_url(format: format), params: {
+        return_to: return_path,
+        transfer: { from_account_id: accounts(:depository).id, to_account_id: accounts(:credit_card).id,
+                    date: Date.current, amount: 100 }
+      }, headers: { "HTTP_REFERER" => transactions_url }
+
+      if format == :html
+        assert_redirected_to return_path
+      else
+        assert_response :success
+        assert_select "turbo-stream[action='redirect'][target=?]", return_path
+      end
+    end
+  end
+
+  test "new transfer preserves return destination when switching to an expense" do
+    account = accounts(:depository)
+    return_path = account_path(account, tab: "activity")
+    get new_transfer_url(from_account_id: account.id, return_to: return_path)
+
+    assert_response :success
+    assert_select "input[name='return_to'][value=?]", return_path
+    assert_select "a[href=?]", new_transaction_path(nature: "outflow", account_id: account.id, return_to: return_path)
+  end
+
+  test "dashboard transfer creation opens the selected source account" do
+    account = accounts(:depository)
+
+    [ :html, :turbo_stream ].each do |format|
+      post transfers_url(format: format), params: {
+        return_to: "selected_account",
+        transfer: { from_account_id: account.id, to_account_id: accounts(:credit_card).id,
+                    date: Date.current, amount: 100 }
+      }, headers: { "HTTP_REFERER" => root_url }
+
+      if format == :html
+        assert_redirected_to account_path(account)
+      else
+        assert_response :success
+        assert_select "turbo-stream[action='redirect'][target=?]", account_path(account)
+      end
+    end
+  end
+
+  test "dashboard destination survives switching transaction types" do
+    get new_transfer_url(return_to: "selected_account")
+
+    assert_response :success
+    assert_select "input[name='return_to'][value='selected_account']"
+    assert_select "a[href=?]", new_transaction_path(nature: "inflow", return_to: "selected_account")
   end
 
   test "can create transfers" do

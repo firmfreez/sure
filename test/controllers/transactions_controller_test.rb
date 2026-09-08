@@ -8,6 +8,36 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     @entry = entries(:transaction)
   end
 
+  test "cannot delete a transfer leg when the other account is read only" do
+    sign_in users(:family_member)
+
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
+      delete transaction_url(entries(:transfer_out))
+    end
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
+  end
+
+  %i[transfer_in transfer_out].each do |side|
+    test "deleting #{side} removes both sides of the transfer" do
+      assert_difference "Transfer.count", -1 do
+        assert_difference [ "Entry.count", "Transaction.count" ], -2 do
+          delete transaction_url(entries(side))
+        end
+      end
+    end
+  end
+
+  %i[transaction transfer_in transfer_out].each do |entry_name|
+    test "Turbo deletion of #{entry_name} refreshes the current page" do
+      delete transaction_url(entries(entry_name)), as: :turbo_stream
+
+      assert_response :success
+      assert_turbo_stream action: "refresh_page"
+      assert_nil response.headers["Location"]
+      assert_not Entry.exists?(entries(entry_name).id)
+    end
+  end
+
   # Bills has always linked out to transactions. Until now nothing linked back,
   # so a transaction that settled a bill was a dead end. The link-back is part
   # of the preview-gated bills surface, so the viewer needs the flag.
@@ -76,14 +106,81 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     doc = Nokogiri::HTML::Document.parse(response.body)
-    checkbox_values = doc.css("input[name='q[categories][]']").map { |node| node["value"] }
+    checkbox_values = doc.css("input[name='q[category_ids][]']").map { |node| node["value"] }
 
-    parent_index = checkbox_values.index(categories(:food_and_drink).name)
-    child_index = checkbox_values.index(categories(:subcategory).name)
+    parent_index = checkbox_values.index(categories(:food_and_drink).id)
+    child_index = checkbox_values.index(categories(:subcategory).id)
 
     assert_not_nil parent_index
     assert_not_nil child_index
     assert_equal parent_index + 1, child_index
+  end
+
+  test "category filter restores legacy names and submits category IDs" do
+    parent = categories(:food_and_drink)
+    get transactions_url(q: { categories: [ parent.name, Category.all_uncategorized_names.last ] })
+
+    assert_response :success
+    assert_select "input[name='q[category_ids][]'][value='#{parent.id}'][checked]"
+    assert_select "input[name='q[category_ids][]'][value='#{Category::UNCATEGORIZED_FILTER_TOKEN}'][checked]"
+    assert_select "input[name='q[categories][]']", count: 0
+  end
+
+  test "category filter gives explicit IDs precedence over legacy names" do
+    parent = categories(:food_and_drink)
+    child = categories(:subcategory)
+    get transactions_url(q: { categories: [ parent.name ], category_ids: [ child.id ] })
+
+    assert_response :success
+    assert_select "input[name='q[category_ids][]'][value='#{parent.id}'][checked]", count: 0
+    assert_select "input[name='q[category_ids][]'][value='#{child.id}'][checked]"
+  end
+
+  test "income and expense creation return to the originating account for HTML and Turbo" do
+    return_path = account_path(@entry.account, tab: "activity")
+
+    %w[inflow outflow].product([ :html, :turbo_stream ]).each do |nature, format|
+      post transactions_url(format: format), params: {
+        return_to: return_path,
+        entry: { account_id: @entry.account_id, name: "Account transaction", date: Date.current,
+                 currency: "USD", amount: 100, nature: nature, entryable_type: "Transaction",
+                 entryable_attributes: { category_id: categories(:food_and_drink).id } }
+      }, headers: { "HTTP_REFERER" => transactions_url }
+
+      if format == :html
+        assert_redirected_to return_path
+      else
+        assert_response :success
+        assert_select "turbo-stream[action='redirect'][target=?]", return_path
+      end
+    end
+  end
+
+  test "new transaction preserves return destination when switching to a transfer" do
+    return_path = account_path(@entry.account, tab: "activity")
+    get new_transaction_url(account_id: @entry.account_id, return_to: return_path)
+
+    assert_response :success
+    assert_select "input[name='return_to'][value=?]", return_path
+    assert_select "a[href=?]", new_transfer_path(from_account_id: @entry.account_id, return_to: return_path)
+  end
+
+  test "dashboard income and expense creation open the selected account" do
+    %w[inflow outflow].product([ :html, :turbo_stream ]).each do |nature, format|
+      post transactions_url(format: format), params: {
+        return_to: "selected_account",
+        entry: { account_id: @entry.account_id, name: "Dashboard transaction", date: Date.current,
+                 currency: "USD", amount: 100, nature: nature, entryable_type: "Transaction",
+                 entryable_attributes: { category_id: categories(:food_and_drink).id } }
+      }, headers: { "HTTP_REFERER" => root_url }
+
+      if format == :html
+        assert_redirected_to account_path(@entry.account)
+      else
+        assert_response :success
+        assert_select "turbo-stream[action='redirect'][target=?]", account_path(@entry.account)
+      end
+    end
   end
 
   test "creates with transaction details" do
@@ -1239,6 +1336,7 @@ end
   end
 
   test "creates transaction without custom exchange rate" do
+    ExchangeRate.stubs(:find_or_fetch_rate).returns(nil)
     account = @user.family.accounts.create!(
       name: "USD Account",
       currency: "USD",
@@ -1265,6 +1363,8 @@ end
 
     created_entry = Entry.order(:created_at).last
     assert_nil created_entry.transaction.extra["exchange_rate"]
+    assert_redirected_to account_url(account)
+    assert_enqueued_with(job: SyncJob)
   end
 
   test "index preloads transfer counterparty entry and account to avoid N+1" do

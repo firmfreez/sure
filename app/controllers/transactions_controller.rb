@@ -19,6 +19,18 @@ class TransactionsController < ApplicationController
     set_new_transaction_form_options
   end
 
+  def destroy
+    transfer = @entry.transaction.transfer
+    return super unless transfer
+
+    [ transfer.from_account, transfer.to_account ].uniq.each do |account|
+      return unless require_account_permission!(account)
+    end
+
+    transfer.destroy_with_entries!
+    refresh_after_destroy account_path(@entry.account), notice: t("account.entries.destroy.success")
+  end
+
   def index
     @q = search_params
     @accessible_account_ids = Current.user.accessible_accounts.pluck(:id)
@@ -193,6 +205,7 @@ class TransactionsController < ApplicationController
       @entry.sync_account_later
 
       notes_changed = @entry.saved_change_to_notes?
+      Account::BalanceRefresh.call(@entry.account)
 
       # Reload to ensure fresh state for turbo stream rendering
       @entry.reload
@@ -621,11 +634,21 @@ class TransactionsController < ApplicationController
     end
 
     def respond_with_created_entry(entry)
+      Account::BalanceRefresh.call(entry.account)
       flash[:notice] = t(".created")
+      return_path = if params[:return_to] == "selected_account"
+        account_path(entry.account)
+      else
+        safe_return_to(params[:return_to])
+      end
 
       respond_to do |format|
-        format.html { redirect_back_or_to account_path(entry.account) }
-        format.turbo_stream { stream_redirect_back_or_to(account_path(entry.account)) }
+        format.html do
+          return_path ? redirect_to(return_path) : redirect_back_or_to(account_path(entry.account))
+        end
+        format.turbo_stream do
+          return_path ? stream_redirect_to(return_path) : stream_redirect_back_or_to(account_path(entry.account))
+        end
       end
     end
 
@@ -677,7 +700,7 @@ class TransactionsController < ApplicationController
                 :start_date, :end_date, :search, :amount,
                 :amount_operator, :active_accounts_only,
                 accounts: [], account_ids: [],
-                categories: [], merchants: [], types: [], tags: [], status: []
+                categories: [], category_ids: [], merchants: [], types: [], tags: [], status: []
               )
               .to_h
               .compact_blank

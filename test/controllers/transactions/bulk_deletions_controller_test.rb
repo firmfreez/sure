@@ -6,6 +6,22 @@ class Transactions::BulkDeletionsControllerTest < ActionDispatch::IntegrationTes
     @entry = entries(:transaction)
   end
 
+  test "bulk deletion preserves both sides when the other account is read only" do
+    sign_in users(:family_member)
+
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
+      post transactions_bulk_deletion_url, params: { bulk_delete: { entry_ids: [ entries(:transfer_out).id ] } }
+    end
+  end
+
+  test "bulk deleting one side deletes the complete transfer" do
+    assert_difference "Transfer.count", -1 do
+      assert_difference [ "Entry.count", "Transaction.count" ], -2 do
+        post transactions_bulk_deletion_url, params: { bulk_delete: { entry_ids: [ entries(:transfer_in).id ] } }
+      end
+    end
+  end
+
   test "bulk delete" do
     transactions = @user.family.entries.transactions
     delete_count = transactions.size

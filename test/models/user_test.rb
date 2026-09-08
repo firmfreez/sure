@@ -429,7 +429,7 @@ class UserTest < ActiveSupport::TestCase
     Setting.openai_access_token = previous
   end
 
-  test "new admin defaults show_ai_sidebar to true even when AI is not available" do
+  test "new admin preserves HA default of a hidden AI sidebar" do
     Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
     previous = Setting.openai_access_token
     with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: nil, EXTERNAL_ASSISTANT_TOKEN: nil do
@@ -442,13 +442,13 @@ class UserTest < ActiveSupport::TestCase
         role: :admin
       )
       assert user.save, user.errors.full_messages.to_sentence
-      assert user.show_ai_sidebar?
+      assert_not user.show_ai_sidebar?
     end
   ensure
     Setting.openai_access_token = previous
   end
 
-  test "new member defaults show_ai_sidebar to true when AI is available" do
+  test "new member preserves HA default of a hidden AI sidebar" do
     Rails.application.config.app_mode.stubs(:self_hosted?).returns(false)
     user = User.new(
       family: families(:empty),
@@ -458,7 +458,7 @@ class UserTest < ActiveSupport::TestCase
       role: :member
     )
     assert user.save, user.errors.full_messages.to_sentence
-    assert user.show_ai_sidebar?
+    assert_not user.show_ai_sidebar?
   end
 
   test "new guest defaults show_ai_sidebar to false when AI is not available" do

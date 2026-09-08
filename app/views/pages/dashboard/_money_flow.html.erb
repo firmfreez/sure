@@ -25,7 +25,7 @@
 
       <%= render DS::Menu.new(variant: :button, placement: "bottom-end", max_height: "18rem") do |menu| %>
         <% menu.with_button(type: "button", class: pill_button_class, aria: { label: t(".month_picker_aria_label") }) do %>
-          <span class="capitalize"><%= I18n.l(money_flow_data[:month], format: :month_year) %></span>
+          <span class="capitalize"><%= LocalizedDate.month_year(money_flow_data[:month]) %></span>
           <%= icon("chevron-down", size: "sm") %>
         <% end %>
 
@@ -33,7 +33,7 @@
           <% month = Date.current.beginning_of_month - i.months %>
           <% menu.with_item(
                variant: :link,
-               text: I18n.l(month, format: :month_year).capitalize,
+               text: LocalizedDate.month_year(month).capitalize,
                href: root_path({ money_flow_month: month.iso8601, money_flow_account_ids: money_flow_data[:account_ids] }.compact),
                frame: "dashboard_sections",
                selected: month == money_flow_data[:month]
@@ -96,6 +96,7 @@
 
       <div class="w-full h-44 privacy-sensitive"
         data-controller="bar-chart"
+        data-bar-chart-locale-value="<%= I18n.locale.to_s.tr("_", "-") %>"
         data-bar-chart-data-value="<%= money_flow_data[:bars].to_json %>"
         data-bar-chart-currency-value="<%= Current.family.currency %>"
         data-bar-chart-income-label-value="<%= t(".income") %>"
@@ -104,7 +105,7 @@
     </div>
 
     <div class="w-full space-y-4<%= " xl:w-2/5" unless stacked %>">
-      <p class="text-sm font-medium text-primary capitalize"><%= I18n.l(money_flow_data[:month], format: :month_year) %></p>
+      <p class="text-sm font-medium text-primary capitalize"><%= LocalizedDate.month_year(money_flow_data[:month]) %></p>
 
       <div class="flex items-center justify-between text-sm">
         <span class="text-secondary"><%= t(".balance") %></span>

@@ -13,7 +13,7 @@
       <%= render DS::Link.new(
         icon: "plus",
         text: t("pages.dashboard.new"),
-        href: new_account_path,
+        href: new_transaction_path(return_to: "selected_account"),
         frame: :modal,
         class: "hidden lg:inline-flex"
       ) %>
@@ -21,7 +21,7 @@
       <%= render DS::Link.new(
           variant: "icon-inverse",
           icon: "plus",
-          href: new_account_path,
+          href: new_transaction_path(return_to: "selected_account"),
           frame: :modal,
           class: "rounded-full lg:hidden"
         ) %>

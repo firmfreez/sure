@@ -1,6 +1,7 @@
 <%# locals: (entry:, account_currencies:, manual_accounts:, categories:, merchants:, tags:) %>
 
 <%= styled_form_with model: entry, url: transactions_path, class: "space-y-4", data: { controller: "transaction-form", action: "turbo:before-cache@document->transaction-form#refreshIdempotencyKey pageshow@window->transaction-form#refreshIdempotencyKeyIfPersisted", transaction_form_exchange_rate_url_value: exchange_rate_path, transaction_form_account_currencies_value: account_currencies.to_json } do |f| %>
+  <%= hidden_field_tag :return_to, params[:return_to] if params[:return_to].is_a?(String) %>
   <% if entry.errors.any? %>
     <%= render "shared/form_errors", model: entry %>
   <% end %>

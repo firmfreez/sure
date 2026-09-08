@@ -26,6 +26,7 @@ end %>
     data-controller="app-layout privacy-mode sidebar-resize"
     data-app-layout-expanded-sidebar-class="<%= expanded_sidebar_class %>"
     data-app-layout-collapsed-sidebar-class="<%= collapsed_sidebar_class %>"
+    data-app-layout-base-path-value="<%= request.script_name %>"
     data-app-layout-user-id-value="<%= Current.user.id %>">
     <%= link_to t("layouts.application.skip_to_main"), "#main",
         class: "sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-lg focus:bg-container focus:text-primary focus:shadow-border-xs" %>
@@ -55,7 +56,7 @@ end %>
       <% end %>
 
       <%= link_to home_path, class: "block" do %>
-        <%= image_tag "logomark-color.svg", class: "w-9 h-9 mx-auto" %>
+        <%= image_tag ingress_asset_path("logomark-color.svg"), class: "w-9 h-9 mx-auto" %>
       <% end %>
 
       <div class="flex items-center gap-1">
@@ -78,7 +79,7 @@ end %>
       <nav class="h-full flex flex-col shrink-0 w-[84px] py-4">
         <div class="pl-2 mb-3">
           <%= link_to home_path, class: "block" do %>
-            <%= image_tag "logomark-color.svg", class: "w-9 h-9 mx-auto" %>
+            <%= image_tag ingress_asset_path("logomark-color.svg"), class: "w-9 h-9 mx-auto" %>
           <% end %>
         </div>
 

@@ -22,5 +22,9 @@ en:
           opposite_amounts: "Must have opposite amounts"
           within_days: "Must be within %{count} days"
   transfer:
+    label: Transfer
+    payment: Payment
     name: Transfer to %{to_account}
+    name_from: Transfer from %{from_account}
+    payment_name_from: Payment from %{from_account}
     payment_name: Payment to %{to_account}
