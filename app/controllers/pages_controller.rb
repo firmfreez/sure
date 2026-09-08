@@ -675,7 +675,7 @@ class PagesController < ApplicationController
         current_total: Money.new(current_total, currency),
         previous_total: Money.new(previous_total, currency),
         delta: Money.new(current_total - previous_total, currency),
-        previous_label: I18n.l(previous_month_start, format: :month_year).capitalize,
+        previous_label: LocalizedDate.month_year(previous_month_start).capitalize,
         previous_comparison_day: previous_comparison_day,
         date_range_short: spending_trend_compact_date_range(current_period),
         category_options: category_filter.options,

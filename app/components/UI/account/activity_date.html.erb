@@ -22,6 +22,16 @@
           <div class="flex items-center gap-2">
             <span class="font-medium privacy-sensitive"><%= end_balance_money.format %></span>
             <%= render DS::Tooltip.new(text: t("UI.account.activity_date.balance_tooltip"), placement: "left", size: "sm", as: :span) %>
+            <% if can_add_entry? %>
+              <%= render DS::Link.new(
+                    variant: :icon,
+                    size: :sm,
+                    icon: "plus",
+                    href: new_entry_path,
+                    frame: :modal,
+                    title: t("UI.account.activity_date.add_entry", date: I18n.l(date, format: :long)),
+                    aria: { label: t("UI.account.activity_date.add_entry", date: I18n.l(date, format: :long)) }) %>
+            <% end %>
           </div>
           <%= helpers.icon "chevron-down", class: "group-open:rotate-180" %>
         </div>

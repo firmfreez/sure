@@ -93,9 +93,17 @@ class StyledFormBuilder < ActionView::Helpers::FormBuilder
   end
 
   def money_field(amount_method, options = {})
+    input_value = options.fetch(:value) do
+      object.public_send(amount_method) if object.respond_to?(amount_method)
+    end
+    if input_value.respond_to?(:zero?) && input_value.zero? && !object&.persisted? && object&.errors.blank?
+      input_value = nil
+    end
+
     @template.render partial: "shared/money_field", locals: {
       form: self,
       amount_method:,
+      input_value:,
       currency_method: options[:currency_method] || :currency,
       **options
     }

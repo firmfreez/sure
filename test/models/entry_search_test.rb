@@ -33,6 +33,32 @@ class EntrySearchTest < ActiveSupport::TestCase
     assert_not_includes result_ids, valuation.id
   end
 
+  test "category IDs distinguish same-name children and take precedence over names" do
+    parent = categories(:food_and_drink)
+    child = @family.categories.create!(name: "Shared name", parent: parent, color: parent.color)
+    other_child = @family.categories.create!(name: "Shared name", parent: categories(:income), color: parent.color)
+    wanted = create_transaction(account: @account, amount: 10, category: child)
+    other = create_transaction(account: @account, amount: 20, category: other_child)
+
+    [ child.id, parent.id ].each do |id|
+      result_ids = @account.entries.search({ category_ids: [ id ], categories: [ other_child.name ] }, @family).pluck(:id)
+      assert_includes result_ids, wanted.id
+      assert_not_includes result_ids, other.id
+    end
+  end
+
+  test "uncategorized category ID excludes transfer legs and non-Transaction entries" do
+    wanted = create_transaction(account: @account, amount: 10)
+    transfer = create_transaction(account: @account, amount: 20, kind: "funds_movement")
+    valuation = create_valuation(account: @account)
+
+    result_ids = @account.entries.search({ category_ids: [ Category::UNCATEGORIZED_FILTER_TOKEN ] }, @family).pluck(:id)
+
+    assert_includes result_ids, wanted.id
+    assert_not_includes result_ids, transfer.id
+    assert_not_includes result_ids, valuation.id
+  end
+
   test "type filter excludes non-Transaction entries" do
     expense = create_transaction(account: @account, amount: 100, kind: "standard")
     valuation = create_valuation(account: @account)

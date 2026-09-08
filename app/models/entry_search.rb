@@ -12,6 +12,7 @@ class EntrySearch
   attribute :start_date, :string
   attribute :end_date, :string
   attribute :categories, array: true
+  attribute :category_ids, array: true
   attribute :tags, array: true
   attribute :merchants, array: true
 
@@ -123,7 +124,11 @@ class EntrySearch
       # non-Transaction entries explicitly here instead of relying on that.
       query = query.joins("LEFT JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
       query = query.where(entries: { entryable_type: "Transaction" })
-      query = Transaction::Search.apply_category_filter(query, categories, family)
+      query = if category_ids.present?
+        Transaction::Search.apply_category_ids_filter(query, category_ids, family)
+      else
+        Transaction::Search.apply_category_filter(query, categories, family)
+      end
       query = Transaction::Search.apply_type_filter(query, types)
       query = Transaction::Search.apply_merchant_filter(query, merchants)
       query = Transaction::Search.apply_tag_filter(query, tags)
@@ -134,6 +139,6 @@ class EntrySearch
 
   private
     def transaction_specific_filters?
-      categories.present? || types.present? || merchants.present? || tags.present?
+      categories.present? || category_ids.present? || types.present? || merchants.present? || tags.present?
     end
 end

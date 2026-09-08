@@ -8,7 +8,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repository: ghcr.io/we-promise/sure
+  repository: ghcr.io/firmfreez/sure
   # Defaults to Chart.appVersion when empty
   tag: ""
   pullPolicy: IfNotPresent

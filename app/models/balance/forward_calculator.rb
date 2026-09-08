@@ -1,6 +1,6 @@
 class Balance::ForwardCalculator < Balance::BaseCalculator
-  def initialize(account, window_start_date: nil)
-    super(account)
+  def initialize(account, window_start_date: nil, strict_fx: false)
+    super(account, strict_fx: strict_fx)
     @window_start_date = window_start_date
     @fell_back = nil  # unknown until calculate is called
   end

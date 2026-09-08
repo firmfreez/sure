@@ -8,6 +8,7 @@ class TransfersController < ApplicationController
 
   def new
     @transfer = Transfer.new
+    @transfer_date = Entry.type_for_attribute("date").cast(params[:date]) || Current.user.last_entry_date
     @from_account_id = params[:from_account_id]
     @tags = Current.family.tags.alphabetically
   end
@@ -50,10 +51,21 @@ class TransfersController < ApplicationController
     ).create
 
     if @transfer.persisted?
+      Current.user.remember_entry_date(@transfer.date.iso8601)
+      Account::BalanceRefresh.call([ @transfer.from_account, @transfer.to_account ])
       success_message = "Transfer created"
+      return_path = if params[:return_to] == "selected_account"
+        account_path(@transfer.from_account)
+      else
+        safe_return_to(params[:return_to])
+      end
       respond_to do |format|
-        format.html { redirect_back_or_to transactions_path, notice: success_message }
-        format.turbo_stream { stream_redirect_back_or_to transactions_path, notice: success_message }
+        format.html do
+          return_path ? redirect_to(return_path, notice: success_message) : redirect_back_or_to(transactions_path, notice: success_message)
+        end
+        format.turbo_stream do
+          return_path ? stream_redirect_to(return_path, notice: success_message) : stream_redirect_back_or_to(transactions_path, notice: success_message)
+        end
       end
     else
       @from_account_id = transfer_params[:from_account_id]
@@ -102,6 +114,8 @@ class TransfersController < ApplicationController
       update_investment_contribution
     end
 
+    Account::BalanceRefresh.call([ @transfer.from_account, @transfer.to_account ])
+
     respond_to do |format|
       format.html { redirect_back_or_to transactions_url, notice: t(".success") }
       format.turbo_stream do
@@ -134,10 +148,12 @@ class TransfersController < ApplicationController
   end
 
   def destroy
-    return unless require_account_permission!(unlink_permission_account, redirect_path: transactions_url)
+    @transfer.accounts_for_destruction.each do |account|
+      return unless require_account_permission!(account, redirect_path: transactions_url)
+    end
 
-    @transfer.destroy!
-    redirect_back_or_to transactions_url, notice: t(".success")
+    @transfer.destroy_with_entries!
+    refresh_after_destroy transactions_url, notice: t(".success")
   end
 
   def mark_as_recurring
@@ -201,10 +217,9 @@ class TransfersController < ApplicationController
 
   private
     def set_transfer
-      # Finds the transfer and ensures the user has access to it. Unlinking
-      # (reject/destroy) only needs access to one side, so a user can undo a
-      # match against an account that is not shared with them. Any other
-      # update edits both entries, so it needs access to both sides.
+      # Rejection can unlink a match visible from either side. Deletion checks
+      # write access to all affected accounts before removing their entries.
+      # Other updates need access to both sides.
       accessible_transaction_ids = Current.family.transactions
         .joins(entry: :account)
         .merge(Account.accessible_by(Current.user))
@@ -244,7 +259,7 @@ class TransfersController < ApplicationController
       end
     end
 
-    # Unlinking (reject/destroy) needs write access to one endpoint, plus every
+    # Rejecting a match needs write access to one endpoint, plus every
     # account holding a fee transaction, since destroying the transfer deletes
     # those fees. Returns the account to run the permission check against: the
     # first one the user cannot write to, or a writable endpoint.

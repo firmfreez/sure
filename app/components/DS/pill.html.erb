@@ -15,8 +15,8 @@
       <span class="inline-block shrink-0 rounded-full"
             style="width: <%= dot_size_px %>px; height: <%= dot_size_px %>px; background-color: <%= dot_color %>;"></span>
     <% end %>
-    <% if truncate || label_testid %>
-      <%= tag.span label, class: ("min-w-0 truncate" if truncate), data: (label_testid ? { testid: label_testid } : nil) %>
+    <% if label_classes || label_testid %>
+      <%= tag.span label, class: label_classes, data: (label_testid ? { testid: label_testid } : nil) %>
     <% else %>
       <%= label %>
     <% end %>

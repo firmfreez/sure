@@ -35,7 +35,7 @@
 
       <%= render DS::Menu.new(variant: :button, placement: "bottom-end", max_height: "18rem") do |menu| %>
         <% menu.with_button(type: "button", class: pill_button_class, aria: { label: t(".month_picker_aria_label") }) do %>
-          <span class="capitalize"><%= I18n.l(data[:month], format: :month_year) %></span>
+          <span class="capitalize"><%= LocalizedDate.month_year(data[:month]) %></span>
           <%= icon("chevron-down", size: "sm") %>
         <% end %>
 
@@ -43,7 +43,7 @@
           <% month = Date.current.beginning_of_month - i.months %>
           <% menu.with_item(
                variant: :link,
-               text: I18n.l(month, format: :month_year).capitalize,
+               text: LocalizedDate.month_year(month).capitalize,
                href: root_path(other_view_params.merge(spending_month: month.iso8601, spending_category_ids: data[:category_ids]).compact),
                frame: "dashboard_sections",
                selected: month == data[:month],
@@ -90,7 +90,7 @@
     <div class="flex items-center gap-3 min-w-0">
       <span class="w-1 h-10 rounded-full bg-success shrink-0"></span>
       <div class="min-w-0">
-        <p class="text-sm text-primary capitalize truncate"><%= I18n.l(data[:month], format: :month_year) %></p>
+        <p class="text-sm text-primary capitalize truncate"><%= LocalizedDate.month_year(data[:month]) %></p>
         <p class="flex flex-wrap items-baseline gap-x-2">
           <span class="font-medium text-lg tabular-nums text-primary privacy-sensitive whitespace-nowrap"><%= format_money data[:current_total] %></span>
           <span class="text-sm tabular-nums privacy-sensitive whitespace-nowrap <%= data[:delta].negative? ? "text-success" : (data[:delta].zero? ? "text-secondary" : "text-destructive") %>">
@@ -120,9 +120,10 @@
     <div class="w-full min-h-52 privacy-sensitive"
       style="height: var(--dash-widget-h, 13rem);"
       data-controller="spending-chart"
+      data-spending-chart-locale-value="<%= I18n.locale.to_s.tr("_", "-") %>"
       data-spending-chart-data-value="<%= chart_data.to_json %>"
       data-spending-chart-currency-value="<%= Current.family.currency %>"
-      data-spending-chart-current-label-value="<%= I18n.l(data[:month], format: :month_year).capitalize %>"
+      data-spending-chart-current-label-value="<%= LocalizedDate.month_year(data[:month]).capitalize %>"
       data-spending-chart-previous-label-value="<%= previous_label %>">
     </div>
   <% else %>

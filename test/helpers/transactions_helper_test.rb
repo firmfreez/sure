@@ -162,4 +162,32 @@ class TransactionsHelperTest < ActionView::TestCase
   test "investment_activity_label_name falls back to the stored label when it has no translation" do
     assert_equal "Legacy Label", investment_activity_label_name("Legacy Label")
   end
+
+  test "localizes stored transfer and payment names in both directions" do
+    transfer = transfers(:one)
+
+    I18n.with_locale(:ru) do
+      { "Transfer" => "Перевод", "Payment" => "Платеж" }.each do |prefix, label|
+        outflow = transfer.outflow_transaction.entry
+        outflow.name = "#{prefix} to #{transfer.to_account.name}"
+        assert_equal "#{label} на #{transfer.to_account.name}", transaction_display_name(outflow)
+
+        inflow = transfer.inflow_transaction.entry
+        inflow.name = "#{prefix} from #{transfer.from_account.name}"
+        assert_equal "#{label} со счета #{transfer.from_account.name}", transaction_display_name(inflow)
+      end
+    end
+  end
+
+  test "preserves custom transfer names and ordinary transaction names" do
+    I18n.with_locale(:ru) do
+      entry = transfers(:one).outflow_transaction.entry
+      entry.name = "На общие расходы"
+      assert_equal entry.name, transaction_display_name(entry)
+
+      entry = transactions(:one).entry
+      entry.name = "Transfer to Savings"
+      assert_equal entry.name, transaction_display_name(entry)
+    end
+  end
 end

@@ -258,7 +258,7 @@ class Budget < ApplicationRecord
         end_date: I18n.l(end_date, format: :long)
       )
     else
-      I18n.t("budgets.name.month_year", month: I18n.l(start_date, format: :month_year))
+      I18n.t("budgets.name.month_year", month: LocalizedDate.month_year(start_date))
     end
   end
 
@@ -427,7 +427,10 @@ class Budget < ApplicationRecord
   end
 
   def category_avg_monthly_expense(category)
-    income_statement.avg_expense(category: category)
+    own_average = income_statement.avg_expense(category: category)
+    return own_average unless category.parent?
+
+    own_average + category.subcategories.sum { |subcategory| income_statement.avg_expense(category: subcategory) }
   end
 
   def available_to_spend

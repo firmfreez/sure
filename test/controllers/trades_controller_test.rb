@@ -8,6 +8,27 @@ class TradesControllerTest < ActionDispatch::IntegrationTest
     @entry = entries(:trade)
   end
 
+  test "new trade prefills the selected activity date" do
+    @user.remember_entry_date(1.week.ago.to_date.iso8601)
+    date = 3.days.ago.to_date
+
+    get new_trade_url(account_id: accounts(:investment).id, date: date)
+
+    assert_response :success
+    assert_select "input[type='date'][value=?]", date.iso8601
+  end
+
+  test "new trade defaults to the user's last entry date" do
+    date = 5.days.ago.to_date
+    @user.remember_entry_date(date.iso8601)
+
+    get new_trade_url(account_id: accounts(:investment).id)
+
+    assert_response :success
+    assert_select "input[name='model[date]'][value=?]", date.iso8601
+    assert_select "button[type=button]", text: "Today"
+  end
+
   # The header used to read the amount's sign and call every trade a buy or a
   # sell, so an inbound transfer — Questrade journals one, and so do the
   # self-custody wallets — was shown as a purchase it never was.

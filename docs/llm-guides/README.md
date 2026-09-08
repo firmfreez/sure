@@ -7,6 +7,7 @@ being changed. These guides hold the detailed conventions and procedures.
 | --- | --- |
 | Understand the domain and write Rails code | [Architecture and conventions](architecture.md) |
 | Set up an environment, run checks or prepare a PR | [Development and verification](development.md) |
+| Update the Home Assistant fork from upstream | [HA upstream updates](../hosting/ha-upstream.md) |
 | Write behavioral tests and fixtures | [Testing](testing.md) |
 | Change design tokens or `DS::*` primitives | [Design system](design-system.md) |
 | Change views, components, CSS, Stimulus or localization | [UI](ui.md) |

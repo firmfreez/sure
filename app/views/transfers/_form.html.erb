@@ -1,5 +1,6 @@
 <% account_currencies = Current.family.accounts.map { |a| [a.id, a.currency] }.to_h.to_json %>
-<%= styled_form_with model: transfer, class: "space-y-4", data: { turbo_frame: "_top", controller: "transfer-form", transfer_form_exchange_rate_url_value: exchange_rate_path, transfer_form_account_currencies_value: account_currencies } do |f| %>
+<%= styled_form_with model: transfer, class: "space-y-4", data: { turbo_frame: "_top", controller: "transfer-form transaction-type-tabs", transfer_form_exchange_rate_url_value: exchange_rate_path, transfer_form_account_currencies_value: account_currencies } do |f| %>
+  <%= hidden_field_tag :return_to, params[:return_to] if params[:return_to].is_a?(String) %>
   <% if transfer.errors.present? %>
     <div class="text-destructive flex items-center gap-2">
       <%= icon "circle-alert", size: "sm" %>
@@ -29,7 +30,7 @@
 
   <% if show_type_tabs %>
     <section>
-      <%= render "shared/transaction_type_tabs", active_tab: "transfer", account_id: @from_account_id %>
+      <%= render "shared/transaction_type_tabs", active_tab: "transfer", account_id: @from_account_id, date: transfer.date || @transfer_date %>
     </section>
   <% end %>
 
@@ -37,7 +38,15 @@
     <%= f.collection_select :from_account_id, @accounts, :id, :name, { prompt: t(".select_account"), label: t(".from"), selected: @from_account_id, variant: :logo, searchable: true }, { required: true, data: { transfer_form_target: "fromAccount", action: "change->transfer-form#checkCurrencyDifference" } } %>
     <%= f.collection_select :to_account_id, @accounts, :id, :name, { prompt: t(".select_account"), label: t(".to"), variant: :logo, searchable: true }, { required: true, data: { transfer_form_target: "toAccount", action: "change->transfer-form#checkCurrencyDifference" } } %>
 
-    <%= f.date_field :date, value: transfer.inflow_transaction&.entry&.date || Date.current, label: t(".date"), required: true, max: Date.current, data: { transfer_form_target: "date", action: "change->transfer-form#checkCurrencyDifference" } %>
+    <%= render DS::DateField.new(
+      form: f,
+      value: transfer.date || @transfer_date || Date.current,
+      label: t(".date"),
+      remember: true,
+      required: true,
+      min: Entry.min_supported_date,
+      max: Date.current,
+      data: { transfer_form_target: "date", transaction_type_tabs_target: "date", action: "change->transfer-form#checkCurrencyDifference change->transaction-type-tabs#updateDateLinks" }) %>
 
     <%= f.number_field :amount, label: t(".source_amount"), required: true, min: 0, placeholder: "100", step: 0.00000001, data: { transfer_form_target: "amount", action: "input->transfer-form#onSourceAmountChange" } %>
 

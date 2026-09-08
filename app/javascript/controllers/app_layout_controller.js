@@ -3,13 +3,16 @@ import { Controller } from "@hotwired/stimulus";
 // Connects to data-controller="dialog"
 export default class extends Controller {
   static targets = ["leftSidebar", "rightSidebar", "mobileSidebar"];
-  static values = { userId: String };
   static classes = [
     "expandedSidebar",
     "collapsedSidebar",
     "expandedTransition",
     "collapsedTransition",
   ];
+  static values = {
+    userId: String,
+    basePath: String,
+  };
 
   openMobileSidebar() {
     this.mobileSidebarTarget.classList.remove("hidden");
@@ -42,8 +45,14 @@ export default class extends Controller {
   }
 
   #toggleSidebarWidth(el, isCurrentlyOpen, side) {
-    const expandedClasses = side === "left" ? [...this.expandedSidebarClasses, "border-r"] : [...this.expandedSidebarClasses, "border-l"];
-    const collapsedClasses = side === "left" ? [...this.collapsedSidebarClasses, "border-r-0"] : [...this.collapsedSidebarClasses, "border-l-0"];
+    const expandedClasses =
+      side === "left"
+        ? [...this.expandedSidebarClasses, "border-r"]
+        : [...this.expandedSidebarClasses, "border-l"];
+    const collapsedClasses =
+      side === "left"
+        ? [...this.collapsedSidebarClasses, "border-r-0"]
+        : [...this.collapsedSidebarClasses, "border-l-0"];
 
     if (isCurrentlyOpen) {
       el.classList.remove(...expandedClasses);
@@ -57,7 +66,12 @@ export default class extends Controller {
   }
 
   #updateUserPreference(field, value) {
-    fetch(`/users/${this.userIdValue}`, {
+    const basePath = (this.basePathValue || "").replace(/\/+$/, "");
+    const url = basePath
+      ? `${basePath}/users/${this.userIdValue}`
+      : `/users/${this.userIdValue}`;
+
+    fetch(url, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",

@@ -523,6 +523,19 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#account-activity-filters li", count: 2
   end
 
+  test "show accepts category IDs from the shared activity filter" do
+    category = categories(:food_and_drink)
+    wanted = create_transaction(name: "Wanted", amount: 50, account: @account, category: category)
+    other = create_transaction(name: "Other", amount: 60, account: @account)
+
+    get account_url(@account), params: { q: { category_ids: [ category.id ] } }
+
+    assert_response :success
+    assert_select "##{dom_id(wanted)}"
+    assert_select "##{dom_id(other)}", count: 0
+    assert_select "input[name='q[category_ids][]'][value=?][checked]", category.id
+  end
+
   test "show renders badge delete links that preserve the other active filters" do
     get account_url(@account), params: { q: { categories: [ "Food & Drink" ], search: "grocery" } }
 

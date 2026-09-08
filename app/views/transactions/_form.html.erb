@@ -1,13 +1,14 @@
 <%# locals: (entry:, account_currencies:, manual_accounts:, categories:, merchants:, tags:) %>
 <% auto_generate_names = Current.family.auto_generate_transaction_names? %>
 
-<%= styled_form_with model: entry, url: transactions_path, class: "space-y-4", data: { controller: auto_generate_names ? "transaction-form transaction-name-preview category-suggestion" : "transaction-form category-suggestion", action: "formdata->category-suggestion#syncName hw-combobox:selection->category-suggestion#onNameSuggestionSelected turbo:before-cache@document->transaction-form#refreshIdempotencyKey pageshow@window->transaction-form#refreshIdempotencyKeyIfPersisted", transaction_form_exchange_rate_url_value: exchange_rate_path, transaction_form_account_currencies_value: account_currencies.to_json } do |f| %>
+<%= styled_form_with model: entry, url: transactions_path, class: "space-y-4", data: { controller: auto_generate_names ? "transaction-form transaction-type-tabs transaction-name-preview category-suggestion" : "transaction-form transaction-type-tabs category-suggestion", action: "formdata->category-suggestion#syncName hw-combobox:selection->category-suggestion#onNameSuggestionSelected turbo:before-cache@document->transaction-form#refreshIdempotencyKey pageshow@window->transaction-form#refreshIdempotencyKeyIfPersisted", transaction_form_exchange_rate_url_value: exchange_rate_path, transaction_form_account_currencies_value: account_currencies.to_json } do |f| %>
+  <%= hidden_field_tag :return_to, params[:return_to] if params[:return_to].is_a?(String) %>
   <% if entry.errors.any? %>
     <%= render "shared/form_errors", model: entry %>
   <% end %>
 
-  <section data-controller="transaction-type-tabs">
-    <%= render "shared/transaction_type_tabs", active_tab: params[:nature] == "inflow" ? "income" : "expense", account_id: params[:account_id] %>
+  <section>
+    <%= render "shared/transaction_type_tabs", active_tab: params[:nature] == "inflow" ? "income" : "expense", account_id: params[:account_id], date: entry.date %>
 
     <%= f.hidden_field :nature, value: params[:nature] || "outflow", data: { "transaction-type-tabs-target": "natureField" } %>
     <%= f.hidden_field :entryable_type, value: "Transaction" %>
@@ -61,13 +62,15 @@
       <% end %>
     </div>
 
-    <%= f.date_field :date,
+    <%= render DS::DateField.new(
+      form: f,
       label: t(".date"),
+      remember: true,
       required: true,
       min: Entry.min_supported_date,
       max: Date.current,
       value: f.object.date || Date.current,
-      data: { transaction_form_target: "date", action: "change->transaction-form#checkCurrencyDifference" } %>
+      data: { transaction_form_target: "date", transaction_type_tabs_target: "date", action: "change->transaction-form#checkCurrencyDifference change->transaction-type-tabs#updateDateLinks" }) %>
 
     <% convert_input = capture do %>
       <%= f.fields_for :entryable do |ef| %>

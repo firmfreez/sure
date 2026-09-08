@@ -1,4 +1,4 @@
-<%# locals: (category:) %>
+<%# locals: (category:, wrap_on_mobile: false) %>
 <% category ||= Category.uncategorized %>
 
 <%# Canonical category badge: DS::Pill in badge mode carrying the category's
@@ -15,6 +15,7 @@
         marker: false,
         size: :md,
         truncate: true,
+        wrap_on_mobile: wrap_on_mobile,
         label_testid: "category-name",
         title: category.display_name) %>
 </div>

@@ -23,7 +23,7 @@ class Category < ApplicationRecord
 
   validates :name, :color, :lucide_icon, :family, presence: true
   validates :color, format: { with: /\A#[0-9A-Fa-f]{6}\z/ }
-  validates :name, uniqueness: { scope: :family_id }
+  validates :name, uniqueness: { scope: [ :family_id, :parent_id ] }
   validates :name, exclusion: { in: [ UNCATEGORIZED_FILTER_VALUE ] }
 
   validate :category_level_limit
@@ -51,6 +51,7 @@ class Category < ApplicationRecord
 
   COLORS = %w[#e99537 #4da568 #6471eb #db5a54 #df4e92 #c44fe9 #eb5429 #61c9ea #805dee #6ad28a]
 
+  UNCATEGORIZED_FILTER_TOKEN = UNCATEGORIZED_FILTER_VALUE
   UNCATEGORIZED_COLOR = "#737373"
   OTHER_INVESTMENTS_COLOR = "#e99537"
   TRANSFER_COLOR = "#444CE7"
@@ -167,7 +168,7 @@ class Category < ApplicationRecord
     def self.select_options(categories, indent: true)
       self.for(categories).flat_map do |group|
         [ [ group.category.name, group.category.id ] ] +
-          group.subcategories.map { |sub| [ indent ? "↳ #{sub.name}" : sub.name, sub.id ] }
+          group.subcategories.map { |sub| [ indent ? "↳ #{sub.name}" : sub.name_with_parent, sub.id ] }
       end
     end
 

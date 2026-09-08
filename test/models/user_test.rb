@@ -593,7 +593,7 @@ class UserTest < ActiveSupport::TestCase
     Setting.openai_access_token = previous
   end
 
-  test "new admin defaults show_ai_sidebar to true even when AI is not available" do
+  test "new admin preserves HA default of a hidden AI sidebar" do
     Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
     previous = Setting.openai_access_token
     with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: nil, EXTERNAL_ASSISTANT_TOKEN: nil, EXTERNAL_ASSISTANT_MODEL: nil do
@@ -606,13 +606,13 @@ class UserTest < ActiveSupport::TestCase
         role: :admin
       )
       assert user.save, user.errors.full_messages.to_sentence
-      assert user.show_ai_sidebar?
+      assert_not user.show_ai_sidebar?
     end
   ensure
     Setting.openai_access_token = previous
   end
 
-  test "new member defaults show_ai_sidebar to true when AI is available" do
+  test "new member preserves HA default of a hidden AI sidebar" do
     Rails.application.config.app_mode.stubs(:self_hosted?).returns(false)
     user = User.new(
       family: families(:empty),
@@ -622,7 +622,7 @@ class UserTest < ActiveSupport::TestCase
       role: :member
     )
     assert user.save, user.errors.full_messages.to_sentence
-    assert user.show_ai_sidebar?
+    assert_not user.show_ai_sidebar?
   end
 
   test "new guest defaults show_ai_sidebar to false when AI is not available" do
@@ -1390,6 +1390,32 @@ class UserTest < ActiveSupport::TestCase
     assert api_key.reload.revoked?
     assert token.reload.revoked_at.present?
     assert grant.reload.revoked_at.present?
+  end
+
+  test "remembers an entry date while preserving other preferences" do
+    @user.update!(preferences: { "preview_features_enabled" => true })
+    date = 5.days.ago.to_date
+
+    assert @user.remember_entry_date(date.iso8601)
+
+    assert_equal date, @user.reload.last_entry_date
+    assert @user.preview_features_enabled?
+  end
+
+  test "invalid entry dates do not replace the remembered date" do
+    date = 5.days.ago.to_date
+    @user.remember_entry_date(date.iso8601)
+
+    [ "", "invalid", "2026-02-30", 31.years.ago.to_date.iso8601, Date.tomorrow.iso8601 ].each do |value|
+      assert_not @user.remember_entry_date(value)
+      assert_equal date, @user.reload.last_entry_date
+    end
+  end
+
+  test "invalid stored entry dates fall back to no preference" do
+    @user.update!(preferences: { "last_entry_date" => "invalid" })
+
+    assert_nil @user.last_entry_date
   end
 
   test "update_manual_account_order keeps other groups and only accessible accounts" do

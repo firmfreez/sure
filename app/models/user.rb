@@ -776,6 +776,23 @@ class User < ApplicationRecord
   end
 
   # Transactions preferences management
+  def last_entry_date
+    date = Date.iso8601(preferences&.dig("last_entry_date").to_s)
+    date if date > Entry.min_supported_date && date <= Date.current
+  rescue Date::Error
+    nil
+  end
+
+  def remember_entry_date(value)
+    date = Date.iso8601(value.to_s)
+    return false unless date > Entry.min_supported_date && date <= Date.current
+
+    with_locked_preferences { |prefs| prefs["last_entry_date"] = date.iso8601 }
+    true
+  rescue Date::Error
+    false
+  end
+
   def show_split_grouped?
     preferences&.dig("show_split_grouped") != false
   end

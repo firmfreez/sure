@@ -1,4 +1,42 @@
 module TransactionsHelper
+  def transaction_display_name(entry)
+    return entry.name unless entry.entryable_type == "Transaction"
+
+    transfer = entry.entryable.transfer
+    return entry.name unless transfer
+
+    %w[to from].each do |direction|
+      { "Transfer" => "name", "Payment" => "payment_name" }.each do |prefix, key|
+        next unless entry.name.start_with?("#{prefix} #{direction} ")
+
+        account = direction == "to" ? transfer.to_account : transfer.from_account
+        next unless account
+        next unless entry.name == "#{prefix} #{direction} #{account.name}"
+
+        translation_key = direction == "from" ? "#{key}_from" : key
+        return t("transfer.#{translation_key}", to_account: account.name, from_account: account.name)
+      end
+    end
+
+    entry.name
+  end
+
+  def transaction_category_filter_checked?(category, query)
+    if query[:category_ids].present?
+      value = category.id.presence || Category::UNCATEGORIZED_FILTER_TOKEN
+      query[:category_ids].include?(value)
+    elsif category.persisted?
+      Array(query[:categories]).include?(category.name)
+    else
+      values = Array(query[:categories])
+      return true if values.include?(Category::UNCATEGORIZED_FILTER_VALUE)
+
+      legacy_names = values & Category.all_uncategorized_names
+      legacy_names -= Current.family.categories.where(name: legacy_names).pluck(:name) if legacy_names.any?
+      legacy_names.any?
+    end
+  end
+
   # @param exclude [Array<String>] filter keys to leave out (e.g. the account
   #   tab doesn't apply to the account activity feed, which is already scoped
   #   to one account)

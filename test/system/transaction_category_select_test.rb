@@ -5,6 +5,100 @@ class TransactionCategorySelectTest < ApplicationSystemTestCase
     sign_in @user = users(:family_admin)
   end
 
+  test "mobile category list expands in the form with touch sized options" do
+    page.current_window.resize_to(375, 812)
+    visit new_transaction_url
+
+    within "[data-controller='category-select']" do
+      find("button", match: :first).click
+      menu = find("[data-category-select-target='menu']")
+      assert_equal "static", menu.evaluate_script("getComputedStyle(this).position")
+      assert_no_selector "input[type='search']:focus"
+      option = find("[role='option']", match: :first)
+      assert_operator option.evaluate_script("this.getBoundingClientRect().height"), :>=, 48
+
+      search = find("input[type='search']")
+      search.set(categories(:food_and_drink).name)
+      find("[role='option'][data-category-id='#{categories(:food_and_drink).id}']").click
+      assert_selector "[data-category-select-target='hiddenInput'][value='#{categories(:food_and_drink).id}']", visible: :all
+      assert_no_selector "[data-category-select-target='menu']"
+      assert_selector "[data-category-select-target='button']:focus"
+
+      find("[data-category-select-target='button']").click
+      find("[data-category-select-target='button']").send_keys(:escape)
+      assert_no_selector "[data-category-select-target='menu']"
+    end
+  end
+
+  [ [ "mobile", 375, 812, 8 ], [ "desktop", 1400, 1000, 10 ] ].each do |layout, width, height, minimum_visible|
+    test "a long #{layout} category list has room to browse and select its final options" do
+      last_category = 30.times.map do |index|
+        @user.family.categories.create!(name: "Scrollable #{index.to_s.rjust(2, '0')}", color: categories(:food_and_drink).color)
+      end.last
+      page.current_window.resize_to(width, height)
+      visit new_transaction_url
+      find("[data-controller='category-select'] button").click
+
+      list = find("[data-category-select-target='list']")
+      page.document.synchronize do
+        visible_count = list.evaluate_script(<<~JS)
+          (() => {
+            const bounds = this.getBoundingClientRect();
+            const top = Math.max(bounds.top, 0);
+            const bottom = Math.min(bounds.bottom, window.innerHeight);
+            return Array.from(this.querySelectorAll("[role='option']")).filter((option) => {
+              const row = option.getBoundingClientRect();
+              return row.height > 0 && row.top >= top && row.bottom <= bottom;
+            }).length;
+          })()
+        JS
+        raise Capybara::ExpectationNotMet, "Only #{visible_count} category options fit in view" if visible_count < minimum_visible
+      end
+
+      assert_operator list.evaluate_script("this.clientHeight"), :<, page.evaluate_script("window.innerHeight")
+      assert_operator list.evaluate_script("this.scrollHeight"), :>, list.evaluate_script("this.clientHeight")
+      list.execute_script("this.scrollTop = this.scrollHeight")
+      find("[role='option'][data-category-id='#{last_category.id}']").click
+
+      assert_selector "[data-category-select-target='hiddenInput'][value='#{last_category.id}']", visible: :all
+      assert_no_selector "[data-category-select-target='menu']"
+    end
+  end
+
+  test "positioned lists remain usable when resized to mobile" do
+    visit new_transaction_url
+    find("summary", text: /details/i).click
+
+    [ "select", "merchant-select", "tag-select" ].each do |controller|
+      page.current_window.resize_to(1400, 1400)
+      trigger = find("[data-#{controller}-target='button']", match: :first)
+      trigger.click
+      menu_selector = "[data-#{controller}-target='menu']"
+      assert_selector "#{menu_selector}[style*='max-height']"
+
+      page.current_window.resize_to(375, 812)
+      assert_no_selector "#{menu_selector}[style*='max-height']"
+      assert_equal "static", find(menu_selector).evaluate_script("getComputedStyle(this).position")
+      trigger.click
+      assert_no_selector menu_selector
+      trigger.click
+
+      within menu_selector do
+        assert_no_selector "input[type='search']:focus"
+        option = find("[role='option']", match: :first)
+        assert_operator option.evaluate_script("this.getBoundingClientRect().height"), :>=, 48
+        option.click
+      end
+
+      if controller == "tag-select"
+        assert_selector "[data-tag-select-target='option'][aria-selected='true']"
+        trigger.click
+      else
+        assert_no_selector menu_selector
+      end
+    end
+  end
+
   test "can create a category from the transaction form" do
     visit new_transaction_url
 
@@ -176,6 +270,87 @@ class TransactionCategorySelectTest < ApplicationSystemTestCase
     end
   end
 
+  test "Enter selects an existing category from a partial search instead of creating one" do
+    visit new_transaction_url(account_id: accounts(:depository).id)
+    fill_in "entry_name", with: "Keyboard category selection"
+    find("input[name='entry[amount]']").set("12.34")
+
+    assert_no_difference [ "Category.count", "Entry.count" ] do
+      find("[data-controller='category-select'] button").click
+
+      within "[data-controller='category-select']" do
+        fill_in "Search categories", with: "Food"
+        assert_button 'Create "Food"'
+        find_field("Search categories").send_keys(:enter)
+
+        assert_selector "[data-category-select-target='hiddenInput'][value='#{categories(:food_and_drink).id}']", visible: :all
+        assert_no_selector "[data-category-select-target='menu']"
+        assert_selector "[data-category-select-target='button']:focus"
+      end
+    end
+  end
+
+  test "Enter with no matching category keeps the form open without creating a category" do
+    visit new_transaction_url(account_id: accounts(:depository).id)
+    fill_in "entry_name", with: "Unmatched category search"
+    find("input[name='entry[amount]']").set("12.34")
+
+    assert_no_difference [ "Category.count", "Entry.count" ] do
+      find("[data-controller='category-select'] button").click
+
+      within "[data-controller='category-select']" do
+        fill_in "Search categories", with: "No matching category"
+        find_field("Search categories").send_keys(:enter)
+
+        assert_button 'Create "No matching category"', disabled: false
+        assert_selector "[data-category-select-target='menu']"
+        assert_field "Search categories", with: "No matching category"
+        assert_selector "[data-category-select-target='hiddenInput'][value='']", visible: :all
+      end
+    end
+  end
+
+  test "search keeps the parent visible for a matching subcategory and Enter selects the match" do
+    parent = categories(:food_and_drink)
+    child = categories(:subcategory)
+    visit new_transaction_url
+    find("[data-controller='category-select'] button").click
+
+    within "[data-controller='category-select']" do
+      fill_in "Search categories", with: "Rest"
+
+      assert_selector "[role='option'][data-category-id='#{parent.id}']"
+      assert_selector "[role='option'][data-category-id='#{child.id}']"
+      assert_no_selector "[role='option'][data-category-id='#{categories(:income).id}']"
+
+      find_field("Search categories").send_keys(:enter)
+
+      assert_selector "[data-category-select-target='hiddenInput'][value='#{child.id}']", visible: :all
+      assert_no_selector "[data-category-select-target='menu']"
+    end
+  end
+
+  test "search distinguishes a root category from a same-name child by keeping its parent" do
+    parent = categories(:food_and_drink)
+    parent.update!(name: "Жильё")
+    root = @user.family.categories.create!(name: "Квартира", color: parent.color)
+    child = @user.family.categories.create!(name: "Квартира", parent: parent, color: parent.color)
+    visit new_transaction_url
+    find("[data-controller='category-select'] button").click
+
+    within "[data-controller='category-select']" do
+      fill_in "Search categories", with: "Квартира"
+
+      assert_selector "[role='option'][data-category-id='#{parent.id}']", text: "Жильё"
+      assert_selector "[role='option'][data-category-id='#{root.id}']", text: "Квартира"
+      assert_selector "[role='option'][data-category-id='#{child.id}'][data-category-parent-id='#{parent.id}']", text: "Квартира"
+      assert_no_selector "[role='option'][data-category-id='#{categories(:income).id}']"
+
+      fill_in "Search categories", with: ""
+      assert_selector "[role='option'][data-category-id='#{categories(:income).id}']"
+    end
+  end
+
   test "a new subcategory is listed under its parent straight away" do
     parent = categories(:food_and_drink)
     visit new_transaction_url
@@ -208,8 +383,8 @@ class TransactionCategorySelectTest < ApplicationSystemTestCase
       click_button "Add as a subcategory…"
     end
 
-    # Someone else takes the name after the page loaded, so the server rejects it.
-    Category.create!(family: parent.family, name: "Late Duplicate", color: "#e99537")
+    # Someone else takes the name under this parent after the page loaded.
+    Category.create!(family: parent.family, parent: parent, name: "Late Duplicate", color: "#e99537")
 
     within "[data-controller='category-select']" do
       find("button[data-parent-id='#{parent.id}']").click

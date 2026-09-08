@@ -13,6 +13,20 @@ class Transactions::TransferCounterpartViewTest < ActionView::TestCase
     @split_parent_entry_ids = Set.new
   end
 
+  test "renders existing English transfer names in Russian" do
+    transfer = transfers(:one)
+    transfer.outflow_transaction.update!(kind: "cc_payment")
+    entry = transfer.outflow_transaction.entry
+    entry.name = "Transfer to #{transfer.to_account.name}"
+
+    I18n.with_locale(:ru) do
+      html = render(partial: "transactions/transaction", locals: { entry: entry })
+
+      assert_includes html, "Перевод на #{transfer.to_account.name}"
+      assert_not_includes html, "Transfer to"
+    end
+  end
+
   test "renders outflow transfer with arrow to destination account" do
     outflow_tx = Transaction.create!(kind: "funds_movement")
     outflow_entry = Entry.create!(

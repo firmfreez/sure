@@ -3,6 +3,22 @@ class Transaction::Search
   include ActiveModel::Attributes
 
   class << self
+    def apply_category_ids_filter(query, values, family)
+      return query if values.blank?
+      raise ArgumentError, "family is required to filter by category" if family.nil?
+
+      selected_ids = family.categories.where(id: values).pluck(:id)
+      expanded_ids = selected_ids + family.categories.where(parent_id: selected_ids).pluck(:id)
+      if values.include?(Category::UNCATEGORIZED_FILTER_TOKEN)
+        query.where(
+          "transactions.category_id IN (?) OR (transactions.category_id IS NULL AND transactions.kind NOT IN (?))",
+          expanded_ids, Transaction::UNCATEGORIZED_EXCLUDED_KINDS
+        )
+      else
+        query.where(transactions: { category_id: expanded_ids })
+      end
+    end
+
     # Filter by category, supporting the synthetic "Uncategorized" bucket and
     # its budget-tracking exclusions. Shared with EntrySearch (see
     # https://github.com/we-promise/sure/issues/1480), so `query` need not be
@@ -19,8 +35,10 @@ class Transaction::Search
       return query unless categories.present?
       raise ArgumentError, "family is required to filter by category" if family.nil?
 
-      include_uncategorized = categories.include?(Category::UNCATEGORIZED_FILTER_VALUE)
-      real_categories = categories - [ Category::UNCATEGORIZED_FILTER_VALUE ]
+      legacy_names = categories & Category.all_uncategorized_names
+      legacy_names -= family.categories.where(name: legacy_names).pluck(:name) if legacy_names.any?
+      include_uncategorized = categories.include?(Category::UNCATEGORIZED_FILTER_VALUE) || legacy_names.any?
+      real_categories = categories - [ Category::UNCATEGORIZED_FILTER_VALUE, *legacy_names ]
 
       parent_category_ids = family.categories.where(name: real_categories).pluck(:id)
 
@@ -158,6 +176,7 @@ class Transaction::Search
   attribute :start_date, :string
   attribute :end_date, :string
   attribute :categories, array: true
+  attribute :category_ids, array: true
   attribute :merchants, array: true
   attribute :tags, array: true
   attribute :ai_status, array: true
@@ -183,7 +202,11 @@ class Transaction::Search
       query = query.where(entries: { account_id: accessible_account_ids }) unless accessible_account_ids.nil?
 
       query = apply_active_accounts_filter(query, active_accounts_only)
-      query = self.class.apply_category_filter(query, categories, family)
+      query = if category_ids.present?
+        self.class.apply_category_ids_filter(query, category_ids, family)
+      else
+        self.class.apply_category_filter(query, categories, family)
+      end
       query = self.class.apply_type_filter(query, types)
       query = apply_status_filter(query, status)
       query = self.class.apply_merchant_filter(query, merchants)
