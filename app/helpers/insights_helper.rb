@@ -96,7 +96,7 @@ module InsightsHelper
       category = insight.family.categories.find_by(id: metadata["category_id"])
       category && {
         text: t("insights.actions.spending_anomaly", category: category.name),
-        href: transactions_path(q: { categories: [ category.name ] })
+        href: transactions_path(q: { category_ids: [ category.id ] })
       }
     when "idle_cash"
       account = insight.family.accounts.visible.find_by(id: metadata["account_id"])

@@ -14,7 +14,9 @@ class Balance::Materializer
   end
 
   def materialize_balances
-    Balance.transaction do
+    # Serialize calculations with immediate refreshes after manual operations.
+    # Reload under the lock so a queued sync cannot persist an older snapshot.
+    account.with_lock do
       materialize_holdings
       calculate_balances
 

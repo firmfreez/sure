@@ -33,8 +33,8 @@
     </div>
 
     <div class="grid grid-cols-3 gap-2 text-sm text-center font-medium">
-      <% Date::ABBR_MONTHNAMES.compact.each do |month_name| %>
-        <% date = Date.strptime("#{month_name}-#{year}", "%b-%Y") %>
+      <% I18n.t("date.abbr_month_names").compact.each_with_index do |month_name, i| %>
+        <% date = Date.new(year.to_i, i + 1, 1) %>
         <% param_key = Budget.date_to_param(date) %>
 
         <% if Budget.budget_date_valid?(date, family: family) %>

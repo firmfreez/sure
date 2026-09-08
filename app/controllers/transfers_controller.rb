@@ -50,10 +50,16 @@ class TransfersController < ApplicationController
     ).create
 
     if @transfer.persisted?
+      Account::BalanceRefresh.call([ @transfer.from_account, @transfer.to_account ])
       success_message = "Transfer created"
+      return_path = safe_return_to(params[:return_to])
       respond_to do |format|
-        format.html { redirect_back_or_to transactions_path, notice: success_message }
-        format.turbo_stream { stream_redirect_back_or_to transactions_path, notice: success_message }
+        format.html do
+          return_path ? redirect_to(return_path, notice: success_message) : redirect_back_or_to(transactions_path, notice: success_message)
+        end
+        format.turbo_stream do
+          return_path ? stream_redirect_to(return_path, notice: success_message) : stream_redirect_back_or_to(transactions_path, notice: success_message)
+        end
       end
     else
       @from_account_id = transfer_params[:from_account_id]
@@ -96,6 +102,8 @@ class TransfersController < ApplicationController
       update_transfer_details unless transfer_update_params[:status] == "rejected"
     end
 
+    Account::BalanceRefresh.call([ @transfer.from_account, @transfer.to_account ])
+
     respond_to do |format|
       format.html { redirect_back_or_to transactions_url, notice: t(".success") }
       format.turbo_stream
@@ -122,10 +130,11 @@ class TransfersController < ApplicationController
   end
 
   def destroy
-    outflow_account = @transfer.outflow_transaction.entry.account
-    return unless require_account_permission!(outflow_account, redirect_path: transactions_url)
+    [ @transfer.from_account, @transfer.to_account ].uniq.each do |account|
+      return unless require_account_permission!(account, redirect_path: transactions_url)
+    end
 
-    @transfer.destroy!
+    @transfer.destroy_with_entries!
     redirect_back_or_to transactions_url, notice: t(".success")
   end
 

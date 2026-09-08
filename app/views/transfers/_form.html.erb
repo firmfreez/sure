@@ -1,5 +1,6 @@
 <% account_currencies = Current.family.accounts.map { |a| [a.id, a.currency] }.to_h.to_json %>
 <%= styled_form_with model: transfer, class: "space-y-4", data: { turbo_frame: "_top", controller: "transfer-form", transfer_form_exchange_rate_url_value: exchange_rate_path, transfer_form_account_currencies_value: account_currencies } do |f| %>
+  <%= hidden_field_tag :return_to, params[:return_to] if params[:return_to].is_a?(String) %>
   <% if transfer.errors.present? %>
     <div class="text-destructive flex items-center gap-2">
       <%= icon "circle-alert", size: "sm" %>

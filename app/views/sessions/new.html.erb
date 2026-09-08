@@ -98,7 +98,7 @@
         wording (brand-compliant) via the custom-icon asset, so no bespoke CSS.
       %>
       <%= render DS::Button.new(
-            href: "/auth/#{provider_name}",
+            href: omniauth_provider_path(provider_name),
             method: :post,
             variant: :outline,
             size: :md,
