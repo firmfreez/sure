@@ -8,6 +8,53 @@ class TransferTest < ActiveSupport::TestCase
     @inflow = transactions(:transfer_in)
   end
 
+  test "name uses the current locale for existing transfers" do
+    transfer = transfers(:one)
+    transfer.to_account.name = "Ксюша - Карта"
+    transfer.to_account.stubs(:liability?).returns(false)
+
+    I18n.with_locale(:ru) do
+      assert_equal "Перевод на Ксюша - Карта", transfer.name
+    end
+
+    I18n.with_locale(:en) do
+      assert_equal "Transfer to Ксюша - Карта", transfer.name
+    end
+  end
+
+  test "payment name and missing account name use the current locale" do
+    transfer = transfers(:one)
+
+    I18n.with_locale(:ru) do
+      assert_equal "Платеж на #{transfer.to_account.name}", transfer.name
+      assert_equal "Перевод", Transfer.new.name
+    end
+  end
+
+  test "destroy with entries removes both legs and fees and syncs both accounts" do
+    transfer = transfers(:one)
+    transfer.fee_transactions.create!(entry: transfer.from_account.entries.build(
+      name: "Transfer fee", date: Date.current, amount: 2, currency: "USD"
+    ))
+    transfer.from_account.expects(:sync_later).once
+    transfer.to_account.expects(:sync_later).once
+
+    assert_difference "Transfer.count", -1 do
+      assert_difference [ "Entry.count", "Transaction.count" ], -3 do
+        transfer.destroy_with_entries!
+      end
+    end
+  end
+
+  test "destroy with entries rolls back both sides if one cannot be deleted" do
+    transfer = transfers(:one)
+    transfer.inflow_transaction.entry.stubs(:destroy!).raises(ActiveRecord::RecordNotDestroyed)
+
+    assert_no_difference [ "Transfer.count", "Entry.count", "Transaction.count" ] do
+      assert_raises(ActiveRecord::RecordNotDestroyed) { transfer.destroy_with_entries! }
+    end
+  end
+
   test "transfer destroyed if either transaction is destroyed" do
     assert_difference [ "Transfer.count", "Transaction.count", "Entry.count" ], -1 do
       @outflow.entry.destroy

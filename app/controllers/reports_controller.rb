@@ -1181,7 +1181,7 @@ class ReportsController < ApplicationController
     def period_label
       case @period_type
       when :monthly
-        I18n.l(@start_date, format: :month_year)
+        LocalizedDate.month_year(@start_date)
       when :quarterly
         t("reports.index.period_label.quarterly", quarter: @start_date.quarter, year: @start_date.year)
       when :ytd

@@ -26,6 +26,8 @@ class RecurringTransactionFrequencyTest < ApplicationSystemTestCase
     select I18n.t("date.day_names")[5],
            from: I18n.t("recurring_transactions.form.frequency_weekday_label")
     click_button I18n.t("recurring_transactions.form.submit")
+    # Wait for the save and its Turbo redirect before starting another visit.
+    assert_text I18n.t("recurring_transactions.update.success")
 
     # The update redirects via the referer; the cadence label lives on the
     # All bills management view now.

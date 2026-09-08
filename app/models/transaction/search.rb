@@ -12,6 +12,7 @@ class Transaction::Search
   attribute :start_date, :string
   attribute :end_date, :string
   attribute :categories, array: true
+  attribute :category_ids, array: true
   attribute :merchants, array: true
   attribute :tags, array: true
   attribute :active_accounts_only, :boolean, default: true
@@ -35,7 +36,7 @@ class Transaction::Search
       query = query.where(entries: { account_id: accessible_account_ids }) unless accessible_account_ids.nil?
 
       query = apply_active_accounts_filter(query, active_accounts_only)
-      query = apply_category_filter(query, categories)
+      query = category_ids.present? ? apply_category_ids_filter(query, category_ids) : apply_category_filter(query, categories)
       query = apply_type_filter(query, types)
       query = apply_status_filter(query, status)
       query = apply_merchant_filter(query, merchants)
@@ -128,6 +129,19 @@ class Transaction::Search
 
 
     # Filter transactions by category, supporting uncategorized and budget exclusions
+    def apply_category_ids_filter(query, values)
+      selected_ids = family.categories.where(id: values).pluck(:id)
+      expanded_ids = selected_ids + family.categories.where(parent_id: selected_ids).pluck(:id)
+      if values.include?(Category::UNCATEGORIZED_FILTER_TOKEN)
+        query.left_joins(:category).where(
+          "categories.id IN (?) OR (categories.id IS NULL AND transactions.kind NOT IN (?))",
+          expanded_ids, Transaction::UNCATEGORIZED_EXCLUDED_KINDS
+        )
+      else
+        query.where(category_id: expanded_ids)
+      end
+    end
+
     def apply_category_filter(query, categories)
       return query unless categories.present?
 

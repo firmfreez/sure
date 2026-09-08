@@ -42,7 +42,11 @@ export default class extends Controller {
     this.searchTarget.value = "";
     this.filter();
 
-    requestAnimationFrame(() => this.searchTarget.focus());
+    requestAnimationFrame(() => {
+      if (getComputedStyle(this.menuTarget).position !== "static") {
+        this.searchTarget.focus({ preventScroll: true });
+      }
+    });
   }
 
   close() {
@@ -78,13 +82,6 @@ export default class extends Controller {
   }
 
   handleSearchKeydown(event) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      this.close();
-      this.buttonTarget.focus();
-      return;
-    }
-
     if (
       event.key === "Enter" &&
       !this.createFormTarget.classList.contains("hidden") &&
@@ -95,6 +92,14 @@ export default class extends Controller {
     }
   }
 
+  handleKeydown(event) {
+    if (event.key === "Escape" && this.isOpen) {
+      event.preventDefault();
+      this.close();
+      this.buttonTarget.focus({ preventScroll: true });
+    }
+  }
+
   selectCategory(event) {
     event.preventDefault();
 
@@ -102,6 +107,7 @@ export default class extends Controller {
 
     this.selectOption(option);
     this.close();
+    this.buttonTarget.focus({ preventScroll: true });
     this.submitForm();
   }
 
@@ -186,6 +192,7 @@ export default class extends Controller {
       this.searchTarget.value = "";
       this.filter();
       this.close();
+      this.buttonTarget.focus({ preventScroll: true });
       this.submitForm();
     } catch {
       this.showCreateError();

@@ -1,6 +1,16 @@
 require "test_helper"
 
 class ApplicationHelperTest < ActionView::TestCase
+  test "ingress prefixes local assets once and preserves external URLs" do
+    request.script_name = "/api/hassio_ingress/test"
+    assert_equal "/api/hassio_ingress/test/assets/app.js", ingress_prefixed_path("/assets/app.js")
+    assert_equal "/api/hassio_ingress/test", ingress_prefixed_path("/api/hassio_ingress/test")
+    assert_equal "/api/hassio_ingress/test/assets/app.js", ingress_prefixed_path("/api/hassio_ingress/test/assets/app.js")
+    [ "https://cdn.example/app.js", "//cdn.example/app.js", "data:image/png;base64,abc" ].each do |url|
+      assert_equal url, ingress_prefixed_path(url)
+    end
+  end
+
   test "#icon normalizes icon names to lowercase" do
     capture = []
 

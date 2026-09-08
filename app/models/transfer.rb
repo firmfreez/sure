@@ -63,9 +63,9 @@ class Transfer < ApplicationRecord
   def name
     acc = to_account
     if payment?
-      acc ? "Payment to #{acc.name}" : "Payment"
+      acc ? I18n.t("transfer.payment_name", to_account: acc.name) : I18n.t("transfer.payment", default: "Payment")
     else
-      acc ? "Transfer to #{acc.name}" : "Transfer"
+      acc ? I18n.t("transfer.name", to_account: acc.name) : I18n.t("transfer.label", default: "Transfer")
     end
   end
 
@@ -100,6 +100,19 @@ class Transfer < ApplicationRecord
       RejectedTransfer.find_or_create_by!(inflow_transaction_id: inflow_transaction_id, outflow_transaction_id: outflow_transaction_id)
       destroy!
     end
+  end
+
+  def destroy_with_entries!
+    entries = [ outflow_transaction.entry, inflow_transaction.entry, *fee_transactions.map(&:entry) ]
+    accounts = entries.map(&:account).uniq
+
+    Transfer.transaction do
+      destroy!
+      entries.each { |entry| entry.destroy! unless entry.destroyed? }
+    end
+
+    Account::BalanceRefresh.call(accounts)
+    accounts.each(&:sync_later)
   end
 
   def destroy!

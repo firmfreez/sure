@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+require_relative "../lib/ha/upstream"
+
+usage = <<~USAGE
+  Usage:
+    bin/ha-upstream check
+    bin/ha-upstream report REF
+    bin/ha-upstream prepare [REF]
+    bin/ha-upstream record-review REF --reviewed-migrations
+
+  prepare fetches upstream/main when REF is omitted, backs up Git and rebases
+  into a separate worktree. It never pushes, deploys or connects to a database.
+USAGE
+command, ref, flag = ARGV
+if command.nil? || %w[-h --help help].include?(command)
+  puts usage
+  exit 0
+end
+
+begin
+  tool = Ha::Upstream.new(root: File.expand_path("..", __dir__))
+  case command
+  when "check"
+    abort usage unless ARGV.size == 1
+    tool.check
+  when "report"
+    abort usage unless ARGV.size == 2
+    puts tool.report(ref)
+  when "prepare"
+    abort usage unless ARGV.size <= 2
+    tool.prepare(ref)
+  when "record-review"
+    abort usage unless ARGV.size == 3 && flag == "--reviewed-migrations"
+    tool.record_review(ref, reviewed_migrations: true)
+  else
+    abort usage
+  end
+rescue Ha::Upstream::Error, KeyError, JSON::ParserError, Errno::ENOENT => error
+  warn error.message
+  exit 1
+end

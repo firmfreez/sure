@@ -19,6 +19,12 @@ class ApplicationController < ActionController::Base
   helper_method :demo_config, :demo_host_match?, :show_demo_warning?, :current_sidekiq_health
 
   private
+    def valid_request_origin?
+      return true if request.env["sure.trusted_ha_ingress"]
+
+      super
+    end
+
     def accept_pending_invitation_for(user)
       return false if user.blank?
 

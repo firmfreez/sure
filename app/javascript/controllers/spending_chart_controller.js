@@ -15,8 +15,9 @@ export default class extends Controller {
   static values = {
     data: Object,
     currency: { type: String, default: "USD" },
-    currentLabel: { type: String, default: "Current" },
-    previousLabel: { type: String, default: "Previous" },
+    locale: String,
+    currentLabel: String,
+    previousLabel: String,
   };
 
   _resizeObserver = null;
@@ -306,7 +307,7 @@ export default class extends Controller {
 
   _formatCurrency(value) {
     try {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat(this.localeValue || undefined, {
         style: "currency",
         currency: this.currencyValue,
       }).format(value);
@@ -317,7 +318,7 @@ export default class extends Controller {
 
   _formatCompact(value) {
     try {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat(this.localeValue || undefined, {
         style: "currency",
         currency: this.currencyValue,
         notation: "compact",

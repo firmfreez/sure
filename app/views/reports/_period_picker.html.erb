@@ -34,7 +34,7 @@
       </div>
 
       <div class="grid grid-cols-3 gap-2 text-sm text-center font-medium">
-        <% Date::ABBR_MONTHNAMES.compact.each_with_index do |month_name, i| %>
+        <% I18n.t("date.abbr_month_names").compact.each_with_index do |month_name, i| %>
           <% month = i + 1 %>
           <% date = Date.new(start_date.year, month, 1) %>
           <% if date <= Date.current %>
